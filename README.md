@@ -13,6 +13,15 @@ consumed by [officesuite-web](https://github.com/Decumano/officesuite-web) as a 
 - `auth-gate.js` — login/register screen shown before `main.js` loads when a web backend is present
 - `vendor/` — third-party libraries (see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md))
 - `assets/` — static assets
+- `FLAVOR.md` — spec for every file format the app reads and writes
+
+## File formats
+
+This frontend owns all parsing and serialization — the backends only move bytes.
+[FLAVOR.md](FLAVOR.md) documents the Markdown extensions (math, Mermaid, alignment and
+font blocks, `[TOC]`, roman lists, field cards, tags, cross-file embeds), the spreadsheet
+serialization, the notebook payload and the JSON-backed data types. Keep it in step with
+`configureMarkedExtensions` and the `save*`/`parse*` functions in `main.js`.
 
 ## Platform adapter
 
@@ -45,3 +54,8 @@ Add as a submodule:
 git submodule add https://github.com/Decumano/officesuite-frontend.git web
 git submodule update --init --recursive
 ```
+
+## License
+
+GPLv3 — see [LICENSE](LICENSE). Vendored third-party libraries keep their own licenses,
+listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
