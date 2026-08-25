@@ -382,8 +382,8 @@ var Platform = (function () {
   }
 
   var DEFAULT_FILE_CONTENT = [
-    "# Welcome to Lore Keep\n\n",
-    "Lore Keep is a lightweight office suite that stores everything in **Markdown**.\n\n",
+    "# Welcome to Lectern\n\n",
+    "Lectern is a lightweight office suite that stores everything in **Markdown**.\n\n",
     "## Features\n\n",
     "**Documents** rich markdown editing with live preview\n",
     "**Spreadsheets** formula-capable grid stored as cell=value pairs\n",
@@ -412,7 +412,7 @@ var Platform = (function () {
   function defaultFile(name) {
     if (tauri) return tauri.invoke('defaultFile', { name: name });
     return Promise.resolve({
-      name: 'Welcome to Lore Keep ' + name,
+      name: 'Welcome to Lectern ' + name,
       docType: 'doc',
       content: DEFAULT_FILE_CONTENT
     });

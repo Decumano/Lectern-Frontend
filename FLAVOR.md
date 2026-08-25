@@ -1,8 +1,8 @@
-# Lore Keep Flavor
+# Lectern Flavor
 
 The file format spec for every app in the suite.
 
-Lore Keep never invents a binary format. Every file it writes is UTF-8 text you
+Lectern never invents a binary format. Every file it writes is UTF-8 text you
 can open in any editor, diff in git, and — for the document and diagram types —
 read in a plain Markdown viewer without losing the words. This document is the
 reference for what is actually written to disk, so a file stays readable even if
