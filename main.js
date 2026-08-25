@@ -1686,7 +1686,7 @@ function openSecondaryWindow(fileId, screenX, screenY)
   {
     try
     {
-      var opts = { url: url, title: (fileId && files[fileId] ? files[fileId].name : 'Lore Keep'), width: 1100, height: 750 };
+      var opts = { url: url, title: (fileId && files[fileId] ? files[fileId].name : 'Lectern'), width: 1100, height: 750 };
       if (hasPos) { opts.x = Math.max(0, screenX - 100); opts.y = Math.max(0, screenY - 20); }
       new t.webviewWindow.WebviewWindow('viewer-' + winId, opts);
       return;
@@ -2203,7 +2203,7 @@ async function initSecondaryContext()
       await openFile(openTabs[0]);
 
     if (currentFileId && files[currentFileId])
-      document.title = files[currentFileId].name || 'Lore Keep';
+      document.title = files[currentFileId].name || 'Lectern';
 
     renderSplitPane(); // satellites can hold their own (non-persisted) split
     registerThisWindow();
@@ -16762,7 +16762,7 @@ async function stopUsingWorkFolder()
 }
 
 // ── CLOUD SYNC (desktop only) ──
-// Connects the active work folder to an officesuite-web server via the
+// Connects the active work folder to a Lectern server via the
 // Tauri-only cloud* commands (platform.js -> src-tauri/src/cloud.rs). The web
 // build already talks to the cloud natively through Platform's work-folder
 // calls and has no separate "connect" concept, so this whole section stays
@@ -17344,7 +17344,7 @@ function sanitizeHtml(html)
 
 // ── SHARING & COMMENTS (web only) ──────────────────────────
 // Files/folders can be shared with other accounts at view/comment/edit level
-// (server: officesuite-web src/share.rs). Shared entries appear in their own
+// (server: lectern-web src/share.rs). Shared entries appear in their own
 // sidebar section; opening one loads it into the normal editors under the
 // reserved id SHARED_TMP_ID, so it never mixes with the user's own workspace
 // files. Saves are routed through the share (edit permission) or dropped.
