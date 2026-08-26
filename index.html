@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lectern</title>
   <link rel="icon" type="image/png" href="assets/lectern.png">
-  <link rel="stylesheet" href="styles.css?v=23">
+  <link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body>
   <div id="auth-gate" style="position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:#14161a;font-family:system-ui,sans-serif;">
@@ -890,6 +890,7 @@
         </div>
         <div id="cloud-sync-connected" style="display:none;">
           <p class="settings-help-text" id="cloud-sync-status"></p>
+          <p class="settings-help-text" id="cloud-sync-errors" style="display:none;"></p>
           <button type="button" class="btn-cancel" onclick="syncNowCloud()">Sync now</button>
           <button type="button" class="btn-cancel" id="cloud-conflicts-btn" onclick="openSyncConflictsModal()" style="display:none;">View conflicts</button>
           <button type="button" class="btn-cancel" onclick="disconnectCloud()">Disconnect</button>

@@ -4272,3 +4272,8 @@ body.tab-drag-active #split-embed { pointer-events: none; }
   transition: color .2s, border-color .2s;
 }
 #live-sync-pill.flash { color: var(--accent); border-color: var(--accent); }
+
+/* Files a sync pass could not send; the pass itself still succeeded. */
+#cloud-sync-errors {
+  color: var(--red);
+}

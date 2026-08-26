@@ -80,6 +80,29 @@ function renderCloudSyncSection()
   {
     conflictsBtn.style.display = 'none';
   }
+
+  // Files the pass could not send come back in syncErrors while the pass
+  // itself reports success -- an oversized file, a refused upload. These used
+  // to be dropped on the floor, so a file could silently never reach the
+  // server while this panel still read "Last synced: <time>".
+  var errorsEl = document.getElementById('cloud-sync-errors'),
+      errors = cloudStatusCache.syncErrors || [];
+
+  if (errorsEl)
+  {
+    if (errors.length)
+    {
+      errorsEl.style.display = '';
+      errorsEl.textContent = (errors.length === 1 ? "1 file didn't sync: "
+                                                  : errors.length + " files didn't sync: ")
+                             + errors.join('; ');
+    }
+    else
+    {
+      errorsEl.style.display = 'none';
+      errorsEl.textContent = '';
+    }
+  }
 }
 
 async function connectCloud()
