@@ -476,12 +476,6 @@ function openSecondaryWindow(fileId, screenX, screenY)
   {
     try
     {
-      // dragDropEnabled:false is what lets HTML5 drag-and-drop work inside
-      // the new window. Tauri's default is true, which makes it intercept
-      // OS-level drops so the webview never sees them - a tab dragged onto a
-      // torn-off window would simply be refused. tauri.conf.json already sets
-      // this for the main window; a window created at runtime does not
-      // inherit it.
       var opts = { url: url, title: (fileId && files[fileId] ? files[fileId].name : 'Lectern'), width: 1100, height: 750, dragDropEnabled: false };
       if (hasPos) { opts.x = Math.max(0, screenX - 100); opts.y = Math.max(0, screenY - 20); }
       new t.webviewWindow.WebviewWindow('viewer-' + winId, opts);
