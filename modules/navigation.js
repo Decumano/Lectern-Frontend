@@ -64,6 +64,17 @@ function extractSearchableText(id)
     catch(e) { return c; }
   }
 
+  if (f.type === 'slides')
+  {
+    try
+    {
+      var deck = parseSlides(c), words = [];
+      deck.slides.forEach(function(s) { s.blocks.forEach(function(b) { words.push(b.text); }); });
+      return words.join('\n');
+    }
+    catch(e) { return c; }
+  }
+
   if (f.type === 'sheet')
   {
     // "REF=value" or "REF=formula=result" lines — extract value parts

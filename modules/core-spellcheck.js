@@ -117,6 +117,9 @@ function defaultContentForType(type, name)
   if (type === 'notebook')
     return serializeNotebookData(defaultNotebookData());
 
+  if (type === 'slides')
+    return defaultSlidesContent();
+
   // The JSON-backed apps embed a display title; seed it with the name the
   // user gave the file so the first save doesn't rename the file to a
   // canned default.
@@ -230,6 +233,15 @@ function fileTypeIcon(type)
               '<line x1="8.5" y1="16.5" x2="15.5" y2="13.5"/>'+
             '</svg>';
 
+  if (type === 'slides')
+    return  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+              '<rect x="2" y="4" width="20" height="13" rx="2"/>'+
+              '<line x1="12" y1="17" x2="12" y2="21"/>'+
+              '<line x1="8" y1="21" x2="16" y2="21"/>'+
+              '<line x1="6" y1="8.5" x2="13" y2="8.5"/>'+
+              '<line x1="6" y1="12.5" x2="10" y2="12.5"/>'+
+            '</svg>';
+
   if (type === 'notebook')
     return  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
               '<rect x="4" y="3" width="16" height="18" rx="2"/>'+
@@ -283,6 +295,7 @@ function fileExtensionFor(type)
   if (type === 'sheet')    return 'mds';
   if (type === 'notebook') return 'mdn';
   if (type === 'graph')    return 'mdg';
+  if (type === 'slides')   return 'mdd';
   if (type === 'glossary') return 'mdl';
   if (type === 'calendar') return 'mdc';
   if (type === 'economy')  return 'mde';

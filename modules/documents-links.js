@@ -692,6 +692,9 @@ function setView(newView)
 
   if (newView !== 'write')
     updatePreview();
+
+  if (typeof frIsOpen === 'function' && frIsOpen())
+    frRender(true);
 }
 
 document.getElementById('editor').addEventListener('dblclick', function()

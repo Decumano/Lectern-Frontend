@@ -85,7 +85,11 @@
     'settings.js',
     'cloud-sync.js',
     'sharing.js',
-    'live-sync.js'
+    'live-sync.js',
+
+    // Slides. Appended rather than placed by the other editors: it only
+    // calls into earlier modules, and appending is the safe kind of edit.
+    'app-slides.js'
   ];
 
   var suffix = version() ? '?v=' + version() : '';

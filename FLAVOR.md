@@ -23,6 +23,7 @@ are additions, never replacements.
 | `.mdg` | Diagrams | Markdown wrapper around one Mermaid block |
 | `.mds` | Sheets | Line-oriented text with a YAML front-matter header |
 | `.mdn` | Notebook / Maps | Markdown wrapper around a JSON block |
+| `.mdd` | Slides | Line-oriented text: YAML front matter, `--- N ---` slides |
 | `.mdl` | Glossary | JSON |
 | `.mdc` | Calendar | JSON |
 | `.mde` | Economy | JSON |
@@ -361,6 +362,114 @@ does array math without an array-formula mode:
 
 All `@` ranges in one expression must be the same size; scalars repeat on every
 line.
+
+---
+
+# Slides (`.mdd`)
+
+YAML front matter, then one section per slide. A presentation is text like
+every other format: it diffs line by line, and each slide reads top to bottom
+as its look followed by its words.
+
+```
+---
+type: presentation
+size: 1280x720
+---
+
+--- 1 ---
+{
+background-color: #1b2a41;
+background-image: url(assets/Campaign/ocean.png);
+color: #f0ede6;
+line: 120, 470, 1160, 470, #d4a843, 4;
+}
+[120, 220, 1040, 160, ;;
+# The Northmarch Campaign
+;;]
+[120, 500, 1040, 120, A world of **ice** and *iron*.]
+
+--- 2 ---
+[100, 90, 1080, 100, ## Factions]
+```
+
+`size` is the slide's coordinate space, `WIDTHxHEIGHT` (default `1280x720`).
+Every position below is in these units, whatever size the slide is shown at.
+
+## Slides
+
+A line `--- N ---` starts a slide, and it runs until the next such line. The
+number is a label: the app renumbers slides 1, 2, 3… when it saves, so
+reordering them never leaves gaps.
+
+## Slide style
+
+An optional `{ … }` block straight after the slide header styles the slide.
+It is written like CSS — `property: value;`, one or several per line — and
+must come before the slide's first text box (so a [field card](#field-cards)
+inside a box is never mistaken for it).
+
+These properties are applied to the slide as CSS:
+
+`background`, `background-color`, `background-image`, `background-size`,
+`background-position`, `background-repeat`, `background-blend-mode`, `color`,
+`font-family`, `font-size`, `font-weight`, `font-style`, `line-height`,
+`letter-spacing`, `text-align`, `text-shadow`.
+
+`color`, the `font-*` properties and `line-height` set the defaults for the
+slide's text. Any other property is kept in the file but has no effect.
+`background/color` is accepted as another spelling of `background-color`.
+
+**Background images** are written `url(path)`. `background-image: [path]` and a
+bare `background-image: path` mean the same. A relative path is relative to the
+work folder's root. An image chosen in the app — from the computer, from a web
+address, or dropped on the slide — is copied into the work folder under
+`assets/<presentation name>/`, so the presentation never depends on a file
+somewhere else or a site staying up. Without a work folder there is no project
+to copy into, and the image is embedded in the file as a `data:` URL instead.
+
+An image covers the slide by default (`background-size: cover`, centred, no
+repeat); set those properties to change it. CSS gradients work anywhere an
+image does — `background-image: linear-gradient(135deg, #1b2a41, #324a5f)`.
+
+## Decorations
+
+Four more declarations draw on the slide, over the background and under the
+text, in the order they are written. Unlike CSS properties they can repeat:
+each line is one shape. Colors are any CSS color, or `none`.
+
+| Declaration | Values |
+|---|---|
+| `line` | `x1, y1, x2, y2, color, width` |
+| `rect` | `x, y, width, height, fill, stroke, strokeWidth` |
+| `ellipse` | `x, y, width, height, fill, stroke, strokeWidth` (the box it fits in) |
+| `stroke` | `color, width, x y, x y, x y, …` |
+
+`stroke` is freehand ink — what the pen tool draws — smoothed the same way as
+Notebook ink.
+
+```
+{
+rect: 60, 60, 1160, 600, none, #324a5f, 2;
+ellipse: 1040, 60, 160, 160, #d4a84333, #d4a843, 3;
+stroke: #d4a843, 5, 100 600, 140 580, 180 610, 220 585;
+}
+```
+
+## Text boxes
+
+```
+[x, y, width, height, text]
+```
+
+A line beginning `[` and four numbers starts a text box at (`x`, `y`) of the
+given size. The text is [Documents Markdown](#documents-mdp) with every
+extension — headings, lists, alignment and font blocks, math, Mermaid, field
+cards — and may run over several lines. It ends at the last `]` before the
+next text box, the next slide, or the end of the file, so text that itself ends
+in `]` (a `[TOC]`, a link label) needs nothing special.
+
+Text that overflows its box is clipped, as it would be on a projected slide.
 
 ---
 

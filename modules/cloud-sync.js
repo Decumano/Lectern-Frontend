@@ -472,6 +472,8 @@ async function exportCurrentAs(format)
     html = buildSheetExportHtml(f);
   else if (f.type === 'graph')
     html = await buildGraphExportHtml(f);
+  else if (f.type === 'slides')
+    html = await buildSlidesExportHtml(f);
   else if (f.type === 'notebook')
     html = await buildNotebookExportHtml(f);
   else
@@ -534,6 +536,7 @@ function handleImport(e)
     var content = ev.target.result,
         type =  (file.name.endsWith('.mds') || file.name.endsWith('.csv')) ? 'sheet'
               : file.name.endsWith('.mdg') ? 'graph'
+              : file.name.endsWith('.mdd') ? 'slides'
               : file.name.endsWith('.mdn') ? 'notebook'
               : file.name.endsWith('.mdl') ? 'glossary'
               : file.name.endsWith('.mdc') ? 'calendar'

@@ -24,6 +24,7 @@ function typeForFileName(name)
   var n = (name || '').toLowerCase();
   return n.endsWith('.mds') ? 'sheet'
        : n.endsWith('.mdg') ? 'graph'
+       : n.endsWith('.mdd') ? 'slides'
        : n.endsWith('.mdn') ? 'notebook'
        : n.endsWith('.mdl') ? 'glossary'
        : n.endsWith('.mdc') ? 'calendar'
@@ -251,6 +252,7 @@ async function openSharedRegistry(key)
   var file = files[SHARED_TMP_ID];
   if (type === 'doc')           loadDocFile(file);
   else if (type === 'graph')    loadGraphFile(file);
+  else if (type === 'slides')   loadSlidesFile(file);
   else if (type === 'notebook') loadNotebookFile(file);
   else if (type === 'glossary') loadGlossaryFile(file);
   else if (type === 'calendar') loadCalendarFile(file);

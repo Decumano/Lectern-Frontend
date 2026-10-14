@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lectern</title>
   <link rel="icon" type="image/png" href="assets/lectern.png">
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
   <div id="auth-gate" style="position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:#14161a;font-family:system-ui,sans-serif;">
@@ -53,6 +53,9 @@
         </button>
         <button class="app-tab" onclick="switchAppType('graph')" id="tab-graph" title="Graphs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="10.5"/><line x1="8.5" y1="16.5" x2="15.5" y2="13.5"/></svg>
+        </button>
+        <button class="app-tab" onclick="switchAppType('slides')" id="tab-slides" title="Slides">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="6" y1="8.5" x2="13" y2="8.5"/><line x1="6" y1="12.5" x2="10" y2="12.5"/></svg>
         </button>
         <button class="app-tab" onclick="switchAppType('notebook')" id="tab-notebook" title="Notebook">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/><line x1="12" y1="16" x2="15" y2="16"/></svg>
@@ -197,6 +200,7 @@
             <input id="fr-replace" placeholder="Replace with" onkeydown="frKey(event)">
             <label class="fr-case" title="Match case"><input type="checkbox" id="fr-case" onchange="frUpdateCount()">Aa</label>
             <span id="fr-count"></span>
+            <button type="button" class="fr-btn" onclick="frFindPrev()" title="Find previous (Shift+Enter)">Prev</button>
             <button type="button" class="fr-btn" onclick="frFindNext()" title="Find next (Enter)">Next</button>
             <button type="button" class="fr-btn" onclick="frReplaceOne()" title="Replace the current match, then jump to the next">Replace</button>
             <button type="button" class="fr-btn" onclick="frReplaceAll()" title="Replace every match">All</button>
@@ -298,6 +302,69 @@
             <div id="graph-preview-content"></div>
           </div>
         </div>
+      </div>
+
+      <!-- SLIDES APP -->
+      <div id="slides-app" style="display:none;flex-direction:column;">
+        <div id="slides-toolbar">
+          <input id="slides-title-input" placeholder="Presentation title…" oninput="onSlidesTitleChange()">
+          <div class="toolbar-sep"></div>
+          <div class="sl-visual-only sl-tool-group">
+            <button type="button" class="tb-btn" data-sl-tool="select" onclick="setSlidesTool('select')" title="Select, move and resize (double-click a text box to edit it)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 8-6 2-3 6z"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="text" onclick="setSlidesTool('text')" title="Text box: drag on the slide (or click for a default size)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="line" onclick="setSlidesTool('line')" title="Line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="rect" onclick="setSlidesTool('rect')" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="1"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="ellipse" onclick="setSlidesTool('ellipse')" title="Ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="pen" onclick="setSlidesTool('pen')" title="Pen: draw freehand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg></button>
+          </div>
+          <div class="sl-visual-only sl-style-group">
+            <label class="sl-swatch" title="Line color"><span>Line</span><input type="color" id="slides-stroke-color" value="#d4a843" onchange="setSlidesStrokeColor(this.value)"></label>
+            <label class="sl-swatch" title="Fill color"><span>Fill</span><input type="color" id="slides-fill-color" value="#d4a843" onchange="setSlidesFillColor(this.value)"></label>
+            <label class="sl-check" title="No fill"><input type="checkbox" id="slides-fill-none" checked onchange="setSlidesFillNone(this.checked)">none</label>
+            <input type="number" id="slides-line-width" class="sl-width" min="1" max="60" value="4" title="Line width" onchange="setSlidesLineWidth(this.value)">
+            <button type="button" class="tb-btn" id="slides-delete-sel" onclick="slDeleteSelection()" title="Delete the selected item (Delete)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+            <button type="button" class="tb-btn" onclick="slReorderSelection(true)" title="Bring the selected item to the front"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M15 9V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h5"/></svg></button>
+            <button type="button" class="tb-btn" onclick="slReorderSelection(false)" title="Send the selected item to the back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M9 15v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-5"/></svg></button>
+          </div>
+          <div class="toolbar-sep sl-visual-only"></div>
+          <div class="sl-visual-only sl-style-group">
+            <label class="sl-swatch" title="Slide background color"><span>Bg</span><input type="color" id="slides-bg-color" value="#ffffff" onchange="slSetBackgroundColor(this.value)"></label>
+            <label class="sl-swatch" title="Slide text color"><span>Text</span><input type="color" id="slides-text-color" value="#1a1a1a" onchange="slSetTextColor(this.value)"></label>
+            <div style="position:relative;">
+              <button type="button" class="tb-btn sl-wide-btn" onclick="toggleSlidesBgMenu(event)" title="Background image">Image ▾</button>
+              <div id="slides-bg-menu" class="sl-menu">
+                <button type="button" onclick="slPickImageFile()">From this computer…</button>
+                <button type="button" onclick="slPickImageUrl()">From a web address…</button>
+                <button type="button" onclick="slRemoveImage()">Remove image</button>
+                <div class="sl-menu-sep"></div>
+                <button type="button" onclick="slApplyBackgroundToAll()">Apply this background to all slides</button>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+          <span id="slides-counter" class="sl-counter"></span>
+          <span class="sl-hint">Stored as text with --- N --- slides (.mdd)</span>
+          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <div class="view-toggle">
+            <button class="view-btn active" id="svbtn-visual" onclick="setSlidesView('visual')" title="Slides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/></svg></button>
+            <button class="view-btn" id="svbtn-source" onclick="setSlidesView('source')" title="Source text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8,6 2,12 8,18"/><polyline points="16,6 22,12 16,18"/></svg></button>
+          </div>
+          <button type="button" class="tb-btn sl-wide-btn sl-present-btn" onclick="startSlidesPresentation(0)" title="Present from the first slide (F5; Shift+F5 from this one)">▶ Present</button>
+        </div>
+        <div id="slides-visual">
+          <div id="slides-strip"></div>
+          <div id="slides-stage"><div id="slides-canvas"></div></div>
+        </div>
+        <div id="slides-source-pane" style="display:none;">
+          <textarea id="slides-source" spellcheck="false" oninput="onSlidesSourceInput()" placeholder="--- 1 ---&#10;{&#10;background-color: #ffffff;&#10;}&#10;[120, 200, 1040, 140, # Title]"></textarea>
+        </div>
+        <input type="file" id="slides-image-input" accept="image/*" style="display:none" onchange="onSlidesImageChosen(event)">
+      </div>
+
+      <div id="slides-present" tabindex="-1">
+        <div id="slides-present-frame"></div>
+        <div id="slides-present-counter"></div>
+        <button type="button" class="sl-present-exit" title="Stop presenting (Esc)">×</button>
       </div>
 
       <!-- NOTEBOOK APP -->
@@ -651,6 +718,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="10.5"/><line x1="8.5" y1="16.5" x2="15.5" y2="13.5"/></svg>
           <span>Diagram</span>
         </div>
+        <div class="type-card" data-type="slides" onclick="selectNewType('slides',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="6" y1="8.5" x2="13" y2="8.5"/><line x1="6" y1="12.5" x2="10" y2="12.5"/></svg>
+          <span>Slides</span>
+        </div>
         <div class="type-card" data-type="notebook" onclick="selectNewType('notebook',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/><line x1="12" y1="16" x2="15" y2="16"/></svg>
           <span>Notebook</span>
@@ -864,7 +935,7 @@
         <div class="settings-field-label">Work folder &amp; workspaces</div>
         <p class="settings-help-text">
           By default, files are stored in this browser. Choose a folder to store files as real
-          <code>.mdp</code>/<code>.mds</code>/<code>.mdg</code>/<code>.mdn</code>/<code>.mdl</code>/<code>.mdc</code>/<code>.mde</code>
+          <code>.mdp</code>/<code>.mds</code>/<code>.mdg</code>/<code>.mdd</code>/<code>.mdn</code>/<code>.mdl</code>/<code>.mdc</code>/<code>.mde</code>
           files instead, organized into folders you create yourself. Each folder you choose is saved
           as a named workspace, and you can switch between them here.
         </p>
@@ -1007,7 +1078,7 @@
     </div>
   </div>
 
-  <input type="file" id="import-input" accept=".mdp,.mds,.mdg,.mdn,.mdl,.mdc,.mde,.md,.csv,.txt" style="display:none" onchange="handleImport(event)">
+  <input type="file" id="import-input" accept=".mdp,.mds,.mdg,.mdd,.mdn,.mdl,.mdc,.mde,.mdb,.md,.csv,.txt" style="display:none" onchange="handleImport(event)">
 
   <script>
   // ── INLINE MARKED.JS ──
@@ -1029,7 +1100,7 @@
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/chart.umd.js"></script>
-  <script type="text/javascript" src="platform.js?v=22"></script>
+  <script type="text/javascript" src="platform.js?v=23"></script>
   <!-- Shared-file banner (fixed, web only) -->
   <div id="view-only-banner" style="display:none"></div>
 
@@ -1087,7 +1158,7 @@
     </div>
   </div>
 
-  <script type="text/javascript" src="auth-gate.js?v=23"></script>
+  <script type="text/javascript" src="auth-gate.js?v=24"></script>
 
   <!-- TRAVEL DETAIL POPOVER -->
   <div id="travel-popover" style="display:none;position:fixed;z-index:901;min-width:300px;max-width:360px;">

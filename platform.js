@@ -113,6 +113,70 @@ var Platform = (function () {
     }).then(function () { return undefined; });
   }
 
+  // ── Binary files (presentation images) ──
+  // On the desktop the bridge carries JSON, so bytes travel as base64; the
+  // web backend stores and returns a request body byte for byte already.
+
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var url = String(reader.result || '');
+        resolve(url.slice(url.indexOf(',') + 1));
+      };
+      reader.onerror = function () { reject(reader.error || new Error('could not read the file')); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function base64ToBlob(data, type) {
+    var bin = atob(data || ''), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: type || '' });
+  }
+
+  // Resolves a Blob. `type` labels it (the stored bytes carry no MIME type).
+  function readWorkFileBinary(root, relPath, type) {
+    if (tauri) {
+      return tauri.invoke('read_work_file_base64', { root: root, relPath: relPath }).then(function (data) {
+        return base64ToBlob(data, type);
+      });
+    }
+    return api('/workspace/file?path=' + encodeURIComponent(cloudRel(root, relPath))).then(function (res) {
+      return res.blob();
+    }).then(function (blob) {
+      return type ? new Blob([blob], { type: type }) : blob;
+    });
+  }
+
+  function writeWorkFileBinary(root, relPath, blob) {
+    if (tauri) {
+      return blobToBase64(blob).then(function (data) {
+        return tauri.invoke('write_work_file_base64', { root: root, relPath: relPath, data: data });
+      });
+    }
+    return api('/workspace/file?path=' + encodeURIComponent(cloudRel(root, relPath)), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: blob
+    }).then(function () { return undefined; });
+  }
+
+  // Downloads a remote file (an image picked by URL) as a Blob. The desktop
+  // fetches natively; a browser page can only read hosts that allow it (CORS),
+  // so on the web this rejects for most image hosts and the caller says so.
+  function fetchRemoteFile(url) {
+    if (tauri) {
+      return tauri.invoke('fetch_remote_file', { url: url }).then(function (res) {
+        return base64ToBlob(res && res.data, res && res.contentType);
+      });
+    }
+    return fetch(url, { mode: 'cors', credentials: 'omit' }).then(function (res) {
+      if (!res.ok) throw new Error('the server answered ' + res.status);
+      return res.blob();
+    });
+  }
+
   // Cheap change-detection: {modified, hash} for one file, without the
   // content. Resolves null on Tauri, where live sync doesn't apply (the
   // desktop app has its own explicit cloud-sync flow).
@@ -466,6 +530,9 @@ var Platform = (function () {
     listWorkFolder: listWorkFolder,
     readWorkFile: readWorkFile,
     writeWorkFile: writeWorkFile,
+    readWorkFileBinary: readWorkFileBinary,
+    writeWorkFileBinary: writeWorkFileBinary,
+    fetchRemoteFile: fetchRemoteFile,
     statWorkFile: statWorkFile,
     createWorkFolder: createWorkFolder,
     deleteWorkEntry: deleteWorkEntry,

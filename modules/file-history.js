@@ -520,8 +520,18 @@ async function restoreHistoryEntry(index)
     loadDocFile(file);
   else if (file.type === 'graph')
     loadGraphFile(file);
+  else if (file.type === 'slides')
+    loadSlidesFile(file);
   else if (file.type === 'notebook')
     loadNotebookFile(file);
+  else if (file.type === 'glossary')
+    loadGlossaryFile(file);
+  else if (file.type === 'calendar')
+    loadCalendarFile(file);
+  else if (file.type === 'economy')
+    loadEconomyFile(file);
+  else if (file.type === 'bestiary')
+    loadBestiaryFile(file);
   else
     loadSheetFile(file);
 
@@ -581,6 +591,9 @@ async function openFile(id)
 
   else if (file.type === 'graph')
     loadGraphFile(file);
+
+  else if (file.type === 'slides')
+    loadSlidesFile(file);
 
   else if (file.type === 'notebook')
     loadNotebookFile(file);
