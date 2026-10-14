@@ -724,6 +724,9 @@ function updatePreview()
   renderMermaidDiagrams(previewContent);
   renderEmbeddedSheetCharts(previewContent);
   renderPreviewBacklinks();
+
+  if (typeof frAfterPreviewRender === 'function')
+    frAfterPreviewRender();
 }
 
 function renderPreviewBacklinks()

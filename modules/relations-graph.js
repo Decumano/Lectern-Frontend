@@ -67,6 +67,7 @@ var REL_TYPE_COLORS =
   doc:      '#3498db',
   sheet:    '#2ecc71',
   graph:    '#9b59b6',
+  slides:   '#1abc9c',
   notebook: '#e67e22',
   glossary: '#f1c40f',
   calendar: '#4a9fc8',
@@ -76,7 +77,7 @@ var REL_TYPE_COLORS =
 
 var REL_TYPE_LABELS =
 {
-  doc: 'Document', sheet: 'Spreadsheet', graph: 'Diagram', notebook: 'Notebook',
+  doc: 'Document', sheet: 'Spreadsheet', graph: 'Diagram', slides: 'Slides', notebook: 'Notebook',
   glossary: 'Glossary', calendar: 'Calendar', economy: 'Economy', bestiary: 'Bestiary'
 };
 

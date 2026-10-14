@@ -247,7 +247,7 @@ function buildSheet()
   for (var i = 1; i <= ROWS; i++)
   {
     html += '<tr>' +
-              '<th class="row-header" id="rowh-' + i + '" onmousedown="rowHeaderMouseDown(event,' + i + ')" style="position: sticky; left: 0; z-index: 1;">' +
+              '<th class="row-header" id="rowh-' + i + '" onmousedown="rowHeaderMouseDown(event,' + i + ')">' +
                 i +
               '</th>';
 
@@ -324,7 +324,7 @@ function growSheetGrid(targetRows, targetCols)
     var html = '';
     for (var i = ROWS + 1; i <= targetRows; i++)
     {
-      html += '<tr><th class="row-header" id="rowh-' + i + '" onmousedown="rowHeaderMouseDown(event,' + i + ')" style="position: sticky; left: 0; z-index: 1;">' + i + '</th>';
+      html += '<tr><th class="row-header" id="rowh-' + i + '" onmousedown="rowHeaderMouseDown(event,' + i + ')">' + i + '</th>';
       for (var j2 = 0; j2 < COLS; j2++)
         html += sheetCellHtml(colName(j2) + i);
       html += '</tr>';
@@ -1166,16 +1166,36 @@ document.addEventListener
 // faster. Each scroll step retargets the drag, since the grid moved under a
 // pointer that didn't.
 
-var AUTOSCROLL_ZONE = 48; // px from an edge where scrolling kicks in
+var AUTOSCROLL_ZONE = 24; // px inside the visible cells where scrolling kicks in
 var AUTOSCROLL_MAX = 28;  // px per frame at (or past) the very edge
+// A drag only scrolls once the pointer has travelled this far from where the
+// button went down. Without it, the hand jitter of a double-click on a cell
+// near an edge scrolled the grid between the two clicks, so the second click
+// — and the edit it starts — landed on a different cell.
+var AUTOSCROLL_ARM_DISTANCE = 6;
 
 var autoScrollMouse = null;
 var autoScrollRaf = null;
+var autoScrollOrigin = null;
+var autoScrollArmed = false;
 
 function sheetDragActive()
 {
   return isDragging || isRefDragging || isFillDragging || !!refBoxDrag || !!sheetChartDrag;
 }
+
+// Capture phase, so the origin is recorded before any cell, header, chart or
+// ref-box handler starts its drag.
+document.addEventListener
+(
+  'mousedown',
+  function(mouseEvent)
+  {
+    autoScrollOrigin = { x: mouseEvent.clientX, y: mouseEvent.clientY };
+    autoScrollArmed = false;
+  },
+  true
+);
 
 document.addEventListener
 (
@@ -1185,7 +1205,20 @@ document.addEventListener
     if (!sheetDragActive())
     {
       autoScrollMouse = null;
+      autoScrollArmed = false;
       return;
+    }
+
+    if (!autoScrollArmed)
+    {
+      var ox = autoScrollOrigin ? autoScrollOrigin.x : mouseEvent.clientX,
+          oy = autoScrollOrigin ? autoScrollOrigin.y : mouseEvent.clientY;
+
+      if (Math.abs(mouseEvent.clientX - ox) < AUTOSCROLL_ARM_DISTANCE &&
+          Math.abs(mouseEvent.clientY - oy) < AUTOSCROLL_ARM_DISTANCE)
+        return;
+
+      autoScrollArmed = true;
     }
 
     autoScrollMouse = { x: mouseEvent.clientX, y: mouseEvent.clientY };
@@ -1225,9 +1258,19 @@ function autoScrollStep()
   if (!container)
     return;
 
+  // The zones are measured from the edges of the visible cells: the sticky
+  // column letters and row numbers cover the container's top and left, and
+  // the scrollbars its bottom and right. Measuring from the container itself
+  // made the first visible row and column scroll as soon as a drag began.
   var rect = container.getBoundingClientRect(),
-      dx = autoScrollSpeed(autoScrollMouse.x, rect.left, rect.right),
-      dy = autoScrollSpeed(autoScrollMouse.y, rect.top, rect.bottom);
+      head = document.getElementById('sheet-head'),
+      corner = head && head.rows[0] && head.rows[0].cells[0],
+      top = rect.top + container.clientTop + (head ? head.offsetHeight : 0),
+      left = rect.left + container.clientLeft + (corner ? corner.offsetWidth : 0),
+      bottom = rect.top + container.clientTop + container.clientHeight,
+      right = rect.left + container.clientLeft + container.clientWidth,
+      dx = autoScrollSpeed(autoScrollMouse.x, left, right),
+      dy = autoScrollSpeed(autoScrollMouse.y, top, bottom);
 
   if (dx || dy)
   {

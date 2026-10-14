@@ -10,6 +10,8 @@
 // refresh after any structural change (create/delete/move) rather than
 // hand-patching the in-memory tree - simpler and safe at the scale of a
 // person clicking buttons rather than a hot path.
+var WORK_ASSET_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?|pdf|zip|7z|rar|gz|mp3|wav|ogg|flac|mp4|webm|mov|woff2?|ttf|otf|eot|exe|dll|bin)$/i;
+
 async function loadWorkFolderTree()
 {
   if (!workFolderRoot)
@@ -56,10 +58,16 @@ async function loadWorkFolderTree()
       if (/\.json$/i.test(entry.name))
         return;
 
+      // Neither are images and other binary assets (a presentation's
+      // backgrounds live in the work folder too); opened as a document they
+      // would show as garbage, and saving one would destroy it.
+      if (WORK_ASSET_EXT_RE.test(entry.name))
+        return;
+
       const dot = entry.name.lastIndexOf('.'),
             ext = (dot === -1) ? '' : entry.name.slice(dot + 1).toLowerCase(),
             baseName = (dot === -1) ? entry.name : entry.name.slice(0, dot),
-            type = ext === 'mds' ? 'sheet' : ext === 'mdg' ? 'graph' : ext === 'mdn' ? 'notebook' : ext === 'mdl' ? 'glossary' : ext === 'mdc' ? 'calendar' : ext === 'mde' ? 'economy' : ext === 'mdb' ? 'bestiary' : 'doc',
+            type = ext === 'mds' ? 'sheet' : ext === 'mdg' ? 'graph' : ext === 'mdd' ? 'slides' : ext === 'mdn' ? 'notebook' : ext === 'mdl' ? 'glossary' : ext === 'mdc' ? 'calendar' : ext === 'mde' ? 'economy' : ext === 'mdb' ? 'bestiary' : 'doc',
             kept = preserved[entry.relPath];
 
       newFiles[entry.relPath] =
@@ -198,6 +206,9 @@ async function persistFileEntry(id)
 
     else if (file.type === 'graph')
       document.getElementById('graph-title-input').value = file.name;
+
+    else if (file.type === 'slides')
+      document.getElementById('slides-title-input').value = file.name;
   }
 }
 
@@ -558,6 +569,7 @@ function switchAppType(type, rerender)
   document.getElementById('doc-app').style.display      = (type === 'doc')      ? 'flex' : 'none';
   document.getElementById('sheet-app').style.display    = (type === 'sheet')    ? 'flex' : 'none';
   document.getElementById('graph-app').style.display    = (type === 'graph')    ? 'flex' : 'none';
+  document.getElementById('slides-app').style.display   = (type === 'slides')   ? 'flex' : 'none';
   document.getElementById('notebook-app').style.display = (type === 'notebook') ? 'flex' : 'none';
   document.getElementById('glossary-app').style.display = (type === 'glossary') ? 'flex' : 'none';
   document.getElementById('calendar-app').style.display = (type === 'calendar') ? 'flex' : 'none';

@@ -681,11 +681,23 @@ function initCrossWindowSync()
 //     window at the drop position (Chrome-style)
 // Native HTML5 dnd carries the payload across same-profile windows, so the
 // same handlers cover local and cross-window drags. Cancelled drags
-// (dropEffect 'none' released inside the window) change nothing.
+// (released inside the window with no target) change nothing.
+//
+// A tab only leaves this window when another Lectern window says it took it.
+// The drag carries a one-off token; the window that handles the drop writes
+// it back under TAB_DROP_ACK_KEY in localStorage, which every same-origin
+// window shares. dropEffect alone can't tell "another Lectern window" from
+// "some other app": a drag that offered text/plain was accepted by chat
+// boxes and editors (Discord, for one), so the tab was closed as moved while
+// no window received it — no tear-off, and the tab was gone.
 
 var TAB_DND_MIME = 'application/x-lorekeep-file';
+var TAB_DND_TOKEN_MIME = 'application/x-lorekeep-drag';
+var TAB_DROP_ACK_KEY = 'lk_tabdrop_ack';
+var TAB_DROP_ACK_WAIT_MS = 600; // how long dragend waits to hear from the target
 var dragTabId = null;        // set while a drag that started here is in flight
 var dragSource = null;       // 'tab' | 'split' (null for drags from other windows)
+var dragToken = null;        // this drag's token, for the target's acknowledgement
 var dragDropHandled = false; // a target in this window consumed the drop
 var lastDragOverAt = 0;
 var dragModeTimer = null;
@@ -696,16 +708,24 @@ function tabDragHasFile(e)
   return !!types && Array.prototype.indexOf.call(types, TAB_DND_MIME) >= 0;
 }
 
+// Starts a tab drag. Only private types go on the drag: anything an
+// ordinary app understands (text/plain) lets that app accept the drop.
+function beginTabDrag(e, id, source)
+{
+  dragTabId = id;
+  dragSource = source;
+  dragDropHandled = false;
+  dragToken = id + ':' + Date.now().toString(36) + ':' + Math.random().toString(36).slice(2);
+  e.dataTransfer.setData(TAB_DND_MIME, id);
+  e.dataTransfer.setData(TAB_DND_TOKEN_MIME, dragToken);
+  e.dataTransfer.effectAllowed = 'move';
+}
+
 function onTabDragStart(e, id)
 {
   if (!files[id]) return;
 
-  dragTabId = id;
-  dragSource = 'tab';
-  dragDropHandled = false;
-  e.dataTransfer.setData(TAB_DND_MIME, id);
-  e.dataTransfer.setData('text/plain', files[id].name || id);
-  e.dataTransfer.effectAllowed = 'move';
+  beginTabDrag(e, id, 'tab');
 
   // Deferred so the browser snapshots the drag image before layout shifts
   setTimeout(activateTabDragMode, 0);
@@ -719,12 +739,7 @@ function onSplitTabDragStart(e)
 
   if (!id || !files[id]) { e.preventDefault(); return; }
 
-  dragTabId = id;
-  dragSource = 'split';
-  dragDropHandled = false;
-  e.dataTransfer.setData(TAB_DND_MIME, id);
-  e.dataTransfer.setData('text/plain', files[id].name || id);
-  e.dataTransfer.effectAllowed = 'move';
+  beginTabDrag(e, id, 'split');
 
   setTimeout(activateTabDragMode, 0);
 }
@@ -733,34 +748,104 @@ function onTabDragEnd(e)
 {
   var id = dragTabId,
       src = dragSource,
-      handled = dragDropHandled;
+      token = dragToken,
+      handled = dragDropHandled,
+      // Read now: the pointer, and how recently it was over this page, are
+      // only meaningful at the moment of release.
+      outside = dragEndedOutsideWindow(e),
+      screenX = e.screenX,
+      screenY = e.screenY;
 
   dragTabId = null;
   dragSource = null;
+  dragToken = null;
   dragDropHandled = false;
   deactivateTabDragMode();
 
   if (handled || !id)
     return;
 
-  var accepted = e.dataTransfer && e.dataTransfer.dropEffect !== 'none';
-
-  if (accepted)
+  waitForTabDropAck(token).then(function(taken)
   {
-    // Another window took the tab; this one lets its copy go
-    if (src === 'split') closeSplitPane(); else removeTab(id);
-  }
-  else if (dragEndedOutsideWindow(e))
-  {
-    // Released where no app window is: tear off into a fresh window there
-    openSecondaryWindow(id, e.screenX, e.screenY);
-    if (src === 'split') closeSplitPane(); else removeTab(id);
-  }
-  // else: cancelled inside the window - keep everything as it was
+    if (taken)
+    {
+      // Another Lectern window took the tab; this one lets its copy go.
+      if (src === 'split') closeSplitPane(); else removeTab(id);
+    }
+    else if (outside && files[id])
+    {
+      // Released where no Lectern window took it — over the desktop or over
+      // another app: tear off into a fresh window there.
+      openSecondaryWindow(id, screenX, screenY);
+      if (src === 'split') closeSplitPane(); else removeTab(id);
+    }
+    // else: cancelled inside the window - keep everything as it was
+  });
 }
 
+// Resolves true once the window that handled the drop has acknowledged this
+// drag's token, false if none does in time. The acknowledgement normally
+// lands just before dragend, but storage events cross windows
+// asynchronously, so it may also arrive a moment after.
+function waitForTabDropAck(token)
+{
+  return new Promise(function(resolve)
+  {
+    if (!token) { resolve(false); return; }
+
+    var done = false, timer = null;
+
+    function acked(value)
+    {
+      return !!value && value.split('|')[0] === token;
+    }
+
+    function finish(result)
+    {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      window.removeEventListener('storage', onStorage);
+      if (result)
+        try { localStorage.removeItem(TAB_DROP_ACK_KEY); } catch(err) {}
+      resolve(result);
+    }
+
+    function onStorage(ev)
+    {
+      if (ev.key === TAB_DROP_ACK_KEY && acked(ev.newValue)) finish(true);
+    }
+
+    var current = null;
+    try { current = localStorage.getItem(TAB_DROP_ACK_KEY); } catch(err) {}
+    if (acked(current)) { finish(true); return; }
+
+    window.addEventListener('storage', onStorage);
+    timer = setTimeout(function()
+    {
+      var late = null;
+      try { late = localStorage.getItem(TAB_DROP_ACK_KEY); } catch(err) {}
+      finish(acked(late));
+    }, TAB_DROP_ACK_WAIT_MS);
+  });
+}
+
+// Called by the window that handled a drop from another window.
+function acknowledgeTabDrop(token)
+{
+  if (!token) return;
+  try { localStorage.setItem(TAB_DROP_ACK_KEY, token + '|' + Date.now()); } catch(err) {}
+}
+
+// Whether the drag was released somewhere other than this page: outside the
+// window's rectangle, or over another app's window that sits on top of it
+// (this page then stops receiving dragover — it fires continuously, every
+// ~50ms, while the pointer is over the page, even when it doesn't move).
 function dragEndedOutsideWindow(e)
 {
+  if (Date.now() - lastDragOverAt > 350)
+    return true;
+
   if (typeof e.screenX !== 'number' || (e.screenX === 0 && e.screenY === 0))
     return false;
 
@@ -892,6 +977,10 @@ document.addEventListener('drop', function(e)
   if (!zone || !id || !files[id]) return;
 
   dragDropHandled = true;
+
+  // A tab from another window: tell it the tab arrived, so it closes its copy.
+  if (!src)
+    acknowledgeTabDrop(e.dataTransfer.getData(TAB_DND_TOKEN_MIME));
 
   if (zone === 'left' || zone === 'right')
   {

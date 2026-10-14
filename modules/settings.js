@@ -353,7 +353,12 @@ function handleFileMenuSettings()
 // ── ENABLED TYPES ──
 
 var enabledTypes = null;
-var ALL_APP_TYPES = ['doc','sheet','graph','notebook','glossary','calendar','economy','bestiary'];
+var ALL_APP_TYPES = ['doc','sheet','graph','slides','notebook','glossary','calendar','economy','bestiary'];
+
+// The types that existed when lk_known_types started being recorded. A saved
+// list of enabled types only says which of the *known* types were switched
+// off, so a type added later starts enabled instead of silently hidden.
+var ORIGINAL_APP_TYPES = ['doc','sheet','graph','notebook','glossary','calendar','economy','bestiary'];
 
 function getEnabledTypes()
 {
@@ -363,6 +368,20 @@ function getEnabledTypes()
     {
       var saved = localStorage.getItem('lk_enabled_types');
       enabledTypes = saved ? JSON.parse(saved) : null;
+
+      if (enabledTypes)
+      {
+        var knownRaw = localStorage.getItem('lk_known_types'),
+            known = knownRaw ? JSON.parse(knownRaw) : ORIGINAL_APP_TYPES;
+
+        ALL_APP_TYPES.forEach(function(t)
+        {
+          if (known.indexOf(t) === -1 && enabledTypes.indexOf(t) === -1)
+            enabledTypes.push(t);
+        });
+
+        localStorage.setItem('lk_known_types', JSON.stringify(ALL_APP_TYPES));
+      }
     }
     catch(e) {}
     if (!enabledTypes) enabledTypes = ALL_APP_TYPES.slice();
@@ -373,7 +392,12 @@ function getEnabledTypes()
 function saveEnabledTypes(types)
 {
   enabledTypes = types.length ? types : [currentAppType || 'doc'];
-  try { localStorage.setItem('lk_enabled_types', JSON.stringify(enabledTypes)); } catch(e) {}
+  try
+  {
+    localStorage.setItem('lk_enabled_types', JSON.stringify(enabledTypes));
+    localStorage.setItem('lk_known_types', JSON.stringify(ALL_APP_TYPES));
+  }
+  catch(e) {}
   applyEnabledTypes();
 }
 
@@ -624,7 +648,7 @@ function closeSettingsModal()
   document.getElementById('settings-modal').classList.remove('open');
 }
 
-var TYPE_LABELS = { doc:'Documents', sheet:'Sheets', graph:'Diagrams', notebook:'Notebook / Maps', glossary:'Glossary', calendar:'Calendar', economy:'Economy', bestiary:'Bestiary' };
+var TYPE_LABELS = { doc:'Documents', sheet:'Sheets', graph:'Diagrams', slides:'Slides', notebook:'Notebook / Maps', glossary:'Glossary', calendar:'Calendar', economy:'Economy', bestiary:'Bestiary' };
 
 function renderSettingsModal()
 {

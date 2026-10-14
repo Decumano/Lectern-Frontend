@@ -612,8 +612,37 @@ html, body
 {
   font-size: 11px;
   color: var(--text3);
-  min-width: 52px;
+  min-width: 64px;
   text-align: center;
+  white-space: nowrap;
+}
+#fr-count.fr-none
+{
+  color: var(--red);
+}
+/* Find matches: a marker drawn over the editor textarea at the current
+   match, and highlights inside the rendered preview. */
+.fr-editor-mark
+{
+  position: absolute;
+  pointer-events: none;
+  background: rgba(212,168,67,0.28);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  outline: 1px solid var(--accent);
+  border-radius: 2px;
+}
+mark.fr-hl
+{
+  background: rgba(212,168,67,0.25);
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+mark.fr-hl.fr-current
+{
+  background: rgba(212,168,67,0.6);
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
+  outline: 1px solid var(--accent);
 }
 #write-pane
 {
@@ -621,6 +650,7 @@ html, body
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative; /* anchors the find marker layer */
 }
 #doc-title-input
 {
@@ -991,9 +1021,15 @@ html, body
 {
   background: var(--bg2);
 }
+/* Separate (not collapsed) borders, each cell drawing only its right and
+   bottom edge. With border-collapse the sticky headers' borders belong to the
+   table, not the cell: half of each one sits outside the header box, so the
+   header row starts half a pixel below the toolbar and jumps when scrolled,
+   leaving a slit (a full pixel on scaled displays) the cells scroll through. */
 #sheet-grid
 {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 12px;
   min-width: 100%;
 }
@@ -1001,7 +1037,9 @@ html, body
 {
   position: sticky;
   background: var(--bg2);
-  border: 1px solid var(--border);
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   color: var(--text3);
   font-family: var(--mono);
   font-size: 11px;
@@ -1011,6 +1049,8 @@ html, body
   user-select: none;
   z-index: 2;
 }
+/* Row numbers sit above every cell (an active cell is z-index 1) and below
+   the corner, which both the row numbers and the column letters slide under. */
 #sheet-grid th.row-header
 {
   left: 0;
@@ -1032,7 +1072,7 @@ html, body
   background-image: linear-gradient(var(--accent-dim), var(--accent-dim));
   color: var(--text1);
 }
-#sheet-grid th:first-child
+#sheet-grid thead th:first-child
 {
   top: 0;
   left: 0;
@@ -1048,7 +1088,9 @@ html, body
 #sheet-grid td
 {
   position: relative;
-  border: 1px solid var(--border);
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   padding: 0;
   background: var(--bg);
   min-width: 100px;
@@ -1647,6 +1689,335 @@ html, body
 }
 
 /* ── GRAPH APP (Mermaid diagrams stored as Markdown) ── */
+/* ── SLIDES ──
+   The slide itself (.sl-slide and its boxes) is styled from SLIDE_EXPORT_CSS
+   in app-slides.js, so the editor, the presenter and exported files share
+   one look. These are the editor's surroundings. */
+#slides-app
+{
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+#slides-toolbar
+{
+  min-height: 40px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 12px;
+}
+#slides-title-input
+{
+  width: 220px;
+  height: 26px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 0 10px;
+  outline: none;
+}
+#slides-title-input:focus { border-color: var(--accent); }
+#slides-title-input::placeholder { color: var(--text3); }
+.sl-tool-group,
+.sl-style-group
+{
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sl-style-group { gap: 6px; }
+.sl-swatch
+{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text3);
+  cursor: pointer;
+}
+.sl-swatch input[type="color"]
+{
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.sl-check
+{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text3);
+  cursor: pointer;
+}
+.sl-width
+{
+  width: 48px;
+  height: 24px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 0 4px;
+}
+.tb-btn.sl-wide-btn { width: auto; padding: 0 10px; font-size: 12px; font-family: var(--sans); }
+.tb-btn:disabled { opacity: .35; cursor: default; }
+.sl-present-btn { color: var(--accent); }
+.sl-counter { font-size: 11px; color: var(--text2); font-family: var(--mono); }
+.sl-hint { font-size: 11px; color: var(--text3); white-space: nowrap; }
+@media (max-width: 1500px) { .sl-hint { display: none; } }
+.sl-menu
+{
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 60;
+  display: none;
+  flex-direction: column;
+  min-width: 240px;
+  padding: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.sl-menu.open { display: flex; }
+.sl-menu button
+{
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.sl-menu button:hover { background: var(--accent-dim); color: var(--accent); }
+.sl-menu-sep { height: 1px; background: var(--border); margin: 4px 2px; }
+
+#slides-visual
+{
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+#slides-strip
+{
+  width: 190px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 12px 12px 24px;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sl-thumb
+{
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  cursor: pointer;
+  border-radius: 4px;
+  position: relative;
+}
+.sl-thumb-num
+{
+  width: 14px;
+  font-size: 10px;
+  color: var(--text3);
+  font-family: var(--mono);
+  text-align: right;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+.sl-thumb-frame
+{
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  outline: 1px solid var(--border2);
+  pointer-events: none;
+}
+.sl-thumb:hover .sl-thumb-frame { outline-color: var(--text3); }
+.sl-thumb.active .sl-thumb-frame { border-color: var(--accent); outline-color: transparent; }
+.sl-thumb.active .sl-thumb-num { color: var(--accent); }
+.sl-thumb.drop-before::before,
+.sl-thumb.drop-after::after
+{
+  content: '';
+  position: absolute;
+  left: 20px;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.sl-thumb.drop-before::before { top: -6px; }
+.sl-thumb.drop-after::after { bottom: -6px; }
+.sl-thumb-add
+{
+  margin-left: 20px;
+  padding: 8px;
+  background: none;
+  border: 1px dashed var(--border2);
+  border-radius: 4px;
+  color: var(--text3);
+  font-size: 12px;
+  cursor: pointer;
+}
+.sl-thumb-add:hover { color: var(--accent); border-color: var(--accent); }
+
+#slides-stage
+{
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+#slides-canvas
+{
+  position: relative;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  flex-shrink: 0;
+}
+#slides-canvas .sl-slide { user-select: none; }
+#slides-canvas .sl-block { cursor: move; }
+#slides-canvas .sl-block:hover:not(.sl-editing) { outline: 1px dashed rgba(127,127,127,.6); }
+#slides-canvas .sl-block:empty::after,
+#slides-canvas .sl-block-content:empty::after
+{
+  content: 'Empty text box';
+  opacity: .35;
+  font-style: italic;
+}
+/* Decorations take clicks in the editor (not in exports or the presenter). */
+#slides-canvas .sl-deco [data-decl] { pointer-events: visiblePainted; cursor: move; }
+#slides-canvas.sl-tool-draw,
+#slides-canvas.sl-tool-draw .sl-block,
+#slides-canvas.sl-tool-draw .sl-deco [data-decl] { cursor: crosshair; }
+.sl-sel-box
+{
+  position: absolute;
+  border: 1.5px solid var(--accent);
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 5;
+}
+.sl-handle
+{
+  position: absolute;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: auto;
+}
+.sl-handle-nw { left: 0; top: 0; cursor: nwse-resize; }
+.sl-handle-ne { right: 0; top: 0; cursor: nesw-resize; }
+.sl-handle-sw { left: 0; bottom: 0; cursor: nesw-resize; }
+.sl-handle-se { right: 0; bottom: 0; cursor: nwse-resize; }
+.sl-block.sl-editing { outline: 2px solid var(--accent); z-index: 6; overflow: visible; }
+.sl-block-editor
+{
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 6px;
+  background: rgba(20,20,20,.92);
+  color: #f0ede6;
+  font-family: var(--mono);
+  line-height: 1.5;
+}
+
+#slides-source-pane
+{
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+#slides-source
+{
+  flex: 1;
+  padding: 24px 40px 60px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+#slides-present
+{
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  outline: none;
+  cursor: default;
+}
+#slides-present.open { display: flex; }
+#slides-present-frame { position: relative; overflow: hidden; }
+#slides-present-counter
+{
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  font: 12px var(--mono);
+  color: rgba(255,255,255,.35);
+}
+.sl-present-exit
+{
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.6);
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .2s;
+}
+#slides-present:hover .sl-present-exit { opacity: 1; }
+
+@media (max-width: 768px)
+{
+  #slides-strip { width: 110px; padding: 8px; }
+  .sl-hint, .sl-counter { display: none; }
+}
+
 #graph-app
 {
   flex: 1;
