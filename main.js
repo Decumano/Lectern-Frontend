@@ -84,6 +84,7 @@
     // Settings, and the account-backed features.
     'settings.js',
     'cloud-sync.js',
+    'pdf-pagination.js',
     'sharing.js',
     'live-sync.js',
 

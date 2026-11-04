@@ -105,9 +105,8 @@ function fScheduleSave()
 //   ::: ... :::                                             wraps a block, right-aligned
 //   ;; ... ;;                                                wraps a block, centered
 //   ;;; ... ;;;                                              wraps a block, justified
-//   ||Georgia ... ||                                        wraps a block in a font-family div
-//   :::font="Georgia" ... :::                              older keyword form, still parses
-//   [text]{font="Georgia"}                                 changes the font of an inline passage
+//   ||font=Georgia size=12 spacing=1.4 ... ||              sets the font; the ONLY way to change it, nests
+//   [text]{size=Huge color=#a00}                           formats an inline passage (never the font family)
 //   [TOC]                                                  expands into a generated table of contents
 // Implemented as marked.js extensions (not a post-processing pass) so headings nested inside
 // styled blocks are still visited in true document order, keeping TOC anchors in sync.
@@ -161,7 +160,7 @@ function fCssColorValue(value)
   return /^(#[0-9a-f]{3,8}|[a-z]{3,20}|(?:rgb|hsl)a?\([\d\s.,%]+\))$/i.test(value) ? value : '';
 }
 
-// Tokenises "left size=Huge font="Fette Fraktur" bold" into
+// Tokenises "left size=Huge color=#a00 bold" into
 // [{key, hasValue, value}] - the shared syntax of block lines (::: ...),
 // inline spans ({...}), headings ({...}) and the [PAGE ...] / [TOC ...] macros.
 function fParseDirectiveTokens(line)
@@ -201,8 +200,6 @@ function fDirectiveStyle(key, hasValue, value)
     return '';
   }
 
-  if (key === 'font' && value)
-    return 'font-family:' + fEscHtml(fCssFontFamilyValue(value)) + ';';
   if (key === 'size' && (css = fCssSizeValue(value)))
     return 'font-size:' + css + ';';
   if (key === 'color' && (css = fCssColorValue(value)))
@@ -227,15 +224,15 @@ function fParseBlockDirectives(line)
 
 // Keys that make a "{...}" group count as inline/heading formatting rather
 // than ordinary braced text.
-var cInlineAttrKeys = /^(?:font|size|color|bold|italic|underline|smallcaps|tracking)\b/i;
-var cHeadingAttrKeys = /^(?:font|size|color|bold|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak)\b/i;
+var cInlineAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking)\b/i;
+var cHeadingAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak)\b/i;
 
 function fUnescapeEntities(text)
 {
   return text.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 }
 
-// Splits "Title {font=Chomsky size=Huge center}" into the clean title and the
+// Splits "Title {size=Huge center}" into the clean title and the
 // parsed attributes. Works on plain text and on already-rendered heading HTML.
 function fSplitHeadingAttrs(text)
 {
@@ -263,11 +260,278 @@ function fHasToken(tokens, key)
   return tokens.some(function(t) { return t.key === key && !t.hasValue; });
 }
 
+// ── FONT BLOCKS ──
+//   ||font=Fette Fraktur size=12 spacing=1.4
+//   text
+//   ||
+// The only way to change a font. All three options are optional (at least one
+// is required); blocks nest. A block is not a paragraph: its marker lines vanish
+// and the text flows on, so only a blank line separates paragraphs, and a block
+// may start mid-paragraph or run across several paragraphs, headings and lists.
+//
+// That doesn't fit a marked block extension (which would need balanced content
+// per block), so the marker lines become invisible private-use markers before
+// lexing, and fApplyFontMarkers resolves them on the rendered DOM by wrapping
+// each run of text in a span carrying the styles of the blocks open around it.
+var cFontOpenMark = '', cFontOpenMarkEnd = '', cFontCloseMark = '';
+
+function fParseFontBlockOptions(text)
+{
+  var re = /(font|size|spacing)=("[^"]*"|'[^']*'|.*?)(?=\s+(?:font|size|spacing)=|\s*$)/gi,
+      style = {},
+      found = false,
+      match;
+
+  while ((match = re.exec(text)))
+  {
+    var key = match[1].toLowerCase(),
+        value = match[2].replace(/^(["'])(.*)\1$/, '$2').trim(),
+        css = '';
+
+    if (key === 'font' && value)
+      css = fCssFontFamilyValue(value);
+    else if (key === 'size')
+      css = fCssSizeValue(value);
+    else if (key === 'spacing' && /^\d+(\.\d+)?(pt|px|em|rem|%|cm|mm|in)?$/i.test(value))
+      css = value.toLowerCase();
+
+    if (css)
+    {
+      style[key] = css;
+      found = true;
+    }
+  }
+
+  return found ? style : null;
+}
+
+function fPreprocessFontBlocks(source)
+{
+  if (source.indexOf('||') === -1)
+    return { text: source, styles: [] };
+
+  var lines = source.split('\n'),
+      out = [],
+      styles = [],
+      depth = 0,
+      fence = null,
+      inMath = false;
+
+  for (var i = 0; i < lines.length; i++)
+  {
+    var line = lines[i],
+        fenceMatch = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+
+    if (fence)
+    {
+      if (fenceMatch && fenceMatch[1][0] === fence[0] && fenceMatch[1].length >= fence.length)
+        fence = null;
+    }
+    else if (fenceMatch)
+      fence = fenceMatch[1];
+    else if (((line.match(/\$\$/g) || []).length) % 2 === 1)
+      inMath = !inMath;
+
+    var marker = null;
+
+    if (!fence && !fenceMatch && !inMath)
+    {
+      var open = /^ {0,3}\|\|[ \t]*((?:font|size|spacing)=.*?)[ \t\r]*$/i.exec(line);
+
+      if (open)
+      {
+        var style = fParseFontBlockOptions(open[1]);
+
+        if (style)
+        {
+          marker = cFontOpenMark + styles.length + cFontOpenMarkEnd;
+          styles.push(style);
+          depth++;
+        }
+      }
+      else if (depth > 0 && /^ {0,3}\|\|[ \t\r]*$/.test(line))
+      {
+        marker = cFontCloseMark;
+        depth--;
+      }
+    }
+
+    if (marker === null)
+    {
+      out.push(line);
+      continue;
+    }
+
+    // A marker line must not be swallowed as a table row, or turn the line
+    // before it into a setext heading.
+    var next = lines[i + 1] || '',
+        prev = out.length ? out[out.length - 1] : '';
+
+    if (/^\s*\|/.test(prev))
+      out.push('');
+
+    out.push(marker);
+
+    if (/^\s*\|/.test(next) || /^ {0,3}(-{2,}|={2,})[ \t\r]*$/.test(next))
+      out.push('');
+  }
+
+  return { text: out.join('\n'), styles: styles };
+}
+
+function fFontRunCss(stack, styles)
+{
+  var merged = {};
+
+  stack.forEach
+  (
+    function(index)
+    {
+      var style = styles[index];
+      Object.keys(style).forEach(function(k) { merged[k] = style[k]; });
+    }
+  );
+
+  return  (merged.font ? 'font-family:' + merged.font + ';' : '') +
+          (merged.size ? 'font-size:' + merged.size + ';' : '') +
+          (merged.spacing ? 'line-height:' + merged.spacing + ';' : '');
+}
+
+function fFontRunSpacing(stack, styles)
+{
+  for (var i = stack.length - 1; i >= 0; i--)
+    if (styles[stack[i]].spacing)
+      return styles[stack[i]].spacing;
+
+  return null;
+}
+
+function fApplyFontMarkers(html, styles)
+{
+  if (!styles.length || html.indexOf(cFontOpenMark) === -1)
+    return html;
+
+  var template = document.createElement('template');
+  template.innerHTML = html;
+
+  var walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT),
+      nodes = [],
+      node;
+
+  while ((node = walker.nextNode()))
+    nodes.push(node);
+
+  var stack = [],
+      blocks = new Map(),
+      markerRe = /(\d+)|/g,
+      cBlockSelector = 'p,li,h1,h2,h3,h4,h5,h6,td,th,blockquote,figcaption,nav,div';
+
+  nodes.forEach
+  (
+    function(textNode)
+    {
+      var text = textNode.nodeValue,
+          parent = textNode.parentNode,
+          hasMarker = /[]/.test(text);
+
+      if (!hasMarker && (!stack.length || !text.trim()))
+        return;
+
+      // Math, diagrams and code keep their own typography.
+      var parentElement = parent.nodeType === 1 ? parent : null;
+
+      if (!hasMarker && parentElement && parentElement.closest('.katex,.mermaid,pre,code,svg'))
+        return;
+
+      var fragment = document.createDocumentFragment(),
+          last = 0,
+          match,
+          addRun = function(run)
+          {
+            if (!run)
+              return;
+
+            if (!stack.length || !run.trim())
+            {
+              fragment.appendChild(document.createTextNode(run));
+            }
+            else
+            {
+              var span = document.createElement('span');
+              span.setAttribute('style', fFontRunCss(stack, styles));
+              span.textContent = run;
+              fragment.appendChild(span);
+            }
+
+            if (run.trim() && parentElement)
+            {
+              var block = parentElement.closest(cBlockSelector);
+
+              if (block)
+              {
+                if (!blocks.has(block)) blocks.set(block, []);
+                blocks.get(block).push(fFontRunSpacing(stack, styles));
+              }
+            }
+          };
+
+      markerRe.lastIndex = 0;
+
+      while ((match = markerRe.exec(text)))
+      {
+        addRun(text.slice(last, match.index));
+        last = match.index + match[0].length;
+
+        if (match[1] !== undefined)
+          stack.push(parseInt(match[1], 10));
+        else
+          stack.pop();
+      }
+
+      addRun(text.slice(last));
+      parent.replaceChild(fragment, textNode);
+    }
+  );
+
+  // line-height on an inline span can only ever grow a line, because the
+  // paragraph's own line-height is the floor. When a whole block shares one
+  // spacing, set it on the block too so smaller spacings work as well.
+  blocks.forEach
+  (
+    function(spacings, block)
+    {
+      if (spacings[0] && spacings.every(function(v) { return v === spacings[0]; }))
+        block.style.lineHeight = spacings[0];
+    }
+  );
+
+  // A marker with a blank line on either side leaves an empty paragraph.
+  Array.prototype.forEach.call
+  (
+    template.content.querySelectorAll('p'),
+    function(p)
+    {
+      if (!p.textContent.trim() && !p.querySelector('img,input,svg,br'))
+        p.parentNode.removeChild(p);
+    }
+  );
+
+  return template.innerHTML;
+}
+
+// For renderers that have no document-level state (slides, diagram notes).
+function fRenderMarkdownFragment(source)
+{
+  var pre = fPreprocessFontBlocks(source);
+
+  return fApplyFontMarkers(marked.parser(marked.lexer(pre.text)), pre.styles);
+}
+
 // ── PAGE SETUP ([PAGE ...]) ──
 // A document-level directive describing how the document looks as a page:
-//   [PAGE size=A4 margin=2.5cm spacing=1.2 paragraph=0.8em font="Garamond" fontsize=12
+//   [PAGE size=A4 margin=2.5cm spacing=1.2 paragraph=0.8em fontsize=12
 //         header="Lore and Chaos" footer="Chapter notes" numbers=bottom-center
-//         newpage=h1 chapter-label="Chapter" h1-font=Chomsky h1-size=Huge h1-center h1-bold]
+//         chapter-label="Chapter" h1-size=Huge h1-center h1-bold]
 // It is invisible in the exported document. Layout options apply to the
 // preview and the export; header/footer/numbers/size/margin only exist on
 // paper, so they take effect in the exported PDF.
@@ -295,14 +559,11 @@ function fParsePageOptions(line)
       else if (k === 'spacing' && /^\d+(\.\d+)?$/.test(v))         o.spacing = v;
       else if (k === 'paragraph' && (css = fCssLengthValue(v)))    o.paragraph = css;
       else if (k === 'indent' && (css = fCssLengthValue(v)))       o.indent = css;
-      else if (k === 'font' && v)                                  o.font = v;
       else if (k === 'fontsize' && (css = fCssSizeValue(v)))       o.fontSize = css;
       else if (k === 'header')                                     o.header = v;
       else if (k === 'footer')                                     o.footer = v;
       else if (k === 'header-align' && /^(left|center|right)$/i.test(v)) o.headerAlign = v.toLowerCase();
       else if (k === 'footer-align' && /^(left|center|right)$/i.test(v)) o.footerAlign = v.toLowerCase();
-      else if (k === 'header-font' && v)                           o.headerFont = v;
-      else if (k === 'footer-font' && v)                           o.footerFont = v;
       else if (k === 'header-size' && (css = fCssSizeValue(v)))    o.headerSize = css;
       else if (k === 'footer-size' && (css = fCssSizeValue(v)))    o.footerSize = css;
       else if (k === 'numbers')
@@ -312,7 +573,7 @@ function fParsePageOptions(line)
         else if (n === 'top') o.numbers = 'top-center';
         else if (cNumberSlots[n]) o.numbers = n;
       }
-      else if (k === 'newpage' && /^h[1-6]$/i.test(v))            o.newPage = v.toLowerCase();
+      else if (k === 'newpage' && /^(h[1-6]|none)$/i.test(v))      o.newPage = v.toLowerCase();
       else if (k === 'chapter-label')                              o.chapterLabel = v || 'Chapter';
       else if (k === 'first-page' && /^plain$/i.test(v))           o.firstPagePlain = true;
       else if (k === 'title' && /^(off|no|false|none)$/i.test(v))  o.hideTitle = true;
@@ -354,13 +615,13 @@ function fCssString(text)
 }
 
 // scope: CSS selector the layout rules attach to ('#preview-content' in the
-// editor, 'body' in an export). forPaper adds the @page rules, which only mean
-// something when printing.
-function fBuildPageCss(o, scope, forPaper, title)
+// editor, 'body' in an export). mode: 'screen' for the live preview; 'paged' when
+// the export is laid out by fPaginateDocument, which draws pages itself; 'paper'
+// when a CSS paged-media engine does it (the server's headless Chromium).
+function fBuildPageCss(o, scope, mode, title)
 {
   var css = '', body = '';
 
-  if (o.font)      body += 'font-family:' + fCssFontFamilyValue(o.font) + ';';
   if (o.fontSize)  body += 'font-size:' + o.fontSize + ';';
   if (o.spacing)   body += 'line-height:' + o.spacing + ';';
 
@@ -381,10 +642,12 @@ function fBuildPageCss(o, scope, forPaper, title)
     }
   );
 
-  if (forPaper)
+  if (mode === 'paper')
   {
-    if (o.newPage)
-      css += scope + ' ' + o.newPage + '{break-before:page;}\n' + scope + ' ' + o.newPage + ':first-child{break-before:auto;}\n';
+    var breakLevel = o.newPage || 'h1';
+
+    if (breakLevel !== 'none')
+      css += scope + ' ' + breakLevel + '{break-before:page;}\n' + scope + ' ' + breakLevel + ':first-child{break-before:auto;}\n';
 
     var size = [o.size, o.orientation].filter(Boolean).join(' '),
         slots = {},
@@ -401,12 +664,10 @@ function fBuildPageCss(o, scope, forPaper, title)
       function(name)
       {
         var top = name.indexOf('top') === 0,
-            font = top ? o.headerFont : o.footerFont,
             fsize = top ? o.headerSize : o.footerSize;
 
         rules += '@' + name + '{content:' + slots[name].join(' "  \\00b7  " ') + ';' +
-                 'font-size:' + (fsize || '10pt') + ';color:#444;' +
-                 (font ? 'font-family:' + fCssFontFamilyValue(font) + ';' : '') + '}';
+                 'font-size:' + (fsize || '10pt') + ';color:#444;}';
         clear += '@' + name + '{content:none;}';
       }
     );
@@ -436,13 +697,19 @@ function fRenderMarkdownDoc(source)
   chapterRenderCount = 0;
   docPageSettings = { headings: {} };
 
-  var tokens = marked.lexer(source);
+  var pre = fPreprocessFontBlocks(source),
+      tokens = marked.lexer(pre.text);
+
   fCollectHeadings(tokens);
 
+  // Looks inside wrappers, so a centered "# Title" counts as opening with a title.
   var first = tokens.filter(function(t) { return t.type !== 'space' && t.type !== 'pageSetup'; })[0];
 
+  while (first && first.type !== 'heading' && first.tokens && first.tokens.length)
+    first = first.tokens.filter(function(t) { return t.type !== 'space'; })[0];
+
   var result =  {
-                  html: marked.parser(tokens),
+                  html: fApplyFontMarkers(marked.parser(tokens), pre.styles),
                   settings: docPageSettings,
                   startsWithTitle: !!(first && first.type === 'heading' && first.depth === 1)
                 };
@@ -520,7 +787,7 @@ function fConfigureMarkedExtensions()
             headingRenderCursor++;
           }
 
-          // Trailing "{font=... size=... center}" formats just this heading.
+          // Trailing "{size=... center}" formats just this heading.
           // (Parsed from the plain text at collection time: in the rendered HTML a
           // "#a00" colour would already have been turned into a tag pill.)
           var parts = entry ? { tokens: entry.tokens, style: entry.style } : { tokens: [], style: '' },
@@ -669,45 +936,13 @@ function fConfigureMarkedExtensions()
           }
         },
         {
-          // Bare-symbol font blocks (see fWrapFontBlock, which is what writes
-          // these): || followed directly by the font name - no "font=" keyword,
-          // no quotes - closed by a bare ||. The older ":::font="..." ... :::"
-          // form (fParseBlockDirectives, above) still parses correctly for
-          // documents written before this existed.
-          name: 'fontSymbolBlock',
-          level: 'block',
-          start: function(src)
-          {
-            var match = /^\|\|[ \t]*\S[^\n]*$/m.exec(src);
-            return match ? match.index : undefined;
-          },
-          tokenizer: function(src)
-          {
-            var match = /^\|\|[ \t]*(\S[^\n]*)\n([\s\S]*?)\n\|\|[ \t]*(?:\n+|$)/.exec(src);
-
-            if (!match)
-              return undefined;
-
-            return  {
-                      type: 'fontSymbolBlock',
-                      raw: match[0],
-                      style: 'font-family:' + fEscHtml(fCssFontFamilyValue(match[1].trim())) + ';',
-                      tokens: this.lexer.blockTokens(match[2], [])
-                    };
-          },
-          renderer: function(token)
-          {
-            return '<div style="' + token.style + '">\n' + this.parser.parse(token.tokens) + '</div>\n';
-          }
-        },
-        {
-          // Inline formatting: [text]{font=Georgia}, [text]{size=Huge},
-          // [text]{font="Fette Fraktur" size=24 color=#a00 bold}.
-          name: 'fontSpan',
+          // Inline formatting: [text]{size=Huge}, [text]{size=24 color=#a00 bold}.
+          // Fonts are the one thing this can't do: see fPreprocessFontBlocks.
+          name: 'styleSpan',
           level: 'inline',
           start: function(src)
           {
-            var match = /\[[^\]\n]+\]\{(?:font|size|color|bold|italic|underline|smallcaps|tracking)\b/i.exec(src);
+            var match = /\[[^\]\n]+\]\{(?:size|color|bold|italic|underline|smallcaps|tracking)\b/i.exec(src);
             return match ? match.index : undefined;
           },
           tokenizer: function(src)
@@ -723,7 +958,7 @@ function fConfigureMarkedExtensions()
               return undefined;
 
             return  {
-                      type: 'fontSpan',
+                      type: 'styleSpan',
                       raw: match[0],
                       style: style,
                       tokens: this.lexer.inlineTokens(match[1])
@@ -735,7 +970,7 @@ function fConfigureMarkedExtensions()
           }
         },
         {
-          // [TOC] or [TOC title="Contents:" font=Chomsky size=Large center numbers=on depth=2]
+          // [TOC] or [TOC title="Contents:" size=Large center numbers=on depth=2]
           name: 'tocBlock',
           level: 'block',
           start: function(src)
@@ -770,6 +1005,25 @@ function fConfigureMarkedExtensions()
           renderer: function()
           {
             return '<div class="page-break" role="separator"><span>page break</span></div>\n';
+          }
+        },
+        {
+          // A line holding just \\\ : a new page in the PDF, nothing at all on screen.
+          name: 'pdfPageBreak',
+          level: 'block',
+          start: function(src)
+          {
+            var match = /^ {0,3}\\\\\\[ \t]*$/m.exec(src);
+            return match ? match.index : undefined;
+          },
+          tokenizer: function(src)
+          {
+            var match = /^ {0,3}\\\\\\[ \t]*(?:\n+|$)/.exec(src);
+            return match ? { type: 'pdfPageBreak', raw: match[0] } : undefined;
+          },
+          renderer: function()
+          {
+            return '<div class="page-break pdf-only"></div>\n';
           }
         },
         {
@@ -1156,7 +1410,7 @@ function fUpdatePreview(deferBacklinks)
     var rendered = fRenderMarkdownDoc(source);
 
     html = rendered.html;
-    pageCss = fBuildPageCss(rendered.settings, '#preview-content', false);
+    pageCss = fBuildPageCss(rendered.settings, '#preview-content', 'screen');
   }
 
   fSetPreviewPageStyle(pageCss);

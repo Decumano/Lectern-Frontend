@@ -460,8 +460,7 @@ document.getElementById('preview-content').addEventListener
 
 // Alignment blocks are written with a bare symbol (no keyword) repeated on
 // the opening and closing line - :: for left, ::: for right, ;; for center,
-// ;;; for justify. Anything else (currently just font="...") still uses the
-// older ":::keyword ... :::" form, unchanged.
+// ;;; for justify.
 var cAlignBlockSymbols = { left: '::', right: ':::', center: ';;', justify: ';;;' };
 
 function fWrapBlock(align)
@@ -483,9 +482,8 @@ function fWrapBlock(align)
   fOnEditorChange();
 }
 
-// Font blocks use their own bare-symbol scheme (see fontSymbolBlock above) -
-// || followed directly by the font name, no "font=" keyword, no quotes,
-// closed by a bare ||.
+// The one font syntax: ||font=Name ... ||. Blocks flow with the surrounding
+// text (see fPreprocessFontBlocks), so this works mid-sentence as well.
 function fWrapFontBlock(fontName)
 {
   docTextUndo.fForceSnapshot();
@@ -495,7 +493,7 @@ function fWrapFontBlock(fontName)
       selectionEnd = editor.selectionEnd,
       selection = editor.value.slice(selectionStart, selectionEnd) || 'Text';
 
-  var block = '\n||' + fontName + '\n' + selection + '\n||\n';
+  var block = '\n||font=' + fontName + '\n' + selection + '\n||\n';
 
   editor.value = editor.value.slice(0, selectionStart) + block + editor.value.slice(selectionEnd);
   editor.selectionStart = editor.selectionEnd = selectionStart + block.length;
@@ -529,7 +527,7 @@ function fInsertTOC()
 
 function fInsertPageBreak()
 {
-  fInsertLineMacro('[PAGEBREAK]');
+  fInsertLineMacro('\\\\\\');
 }
 
 // ── FONT PICKER ──
@@ -613,8 +611,6 @@ async function fGetAvailableFonts()
 }
 
 // Changes the font of the current selection, akin to LaTeX's \fontspec/\setfont commands.
-// A selection spanning multiple paragraphs becomes a ":::" block (own font for the whole passage);
-// a single-line/inline selection becomes a "[text]{font="..."}" span (own font for that phrase only).
 async function fApplyFont()
 {
   var editor = document.getElementById('editor');
@@ -678,11 +674,7 @@ function fChooseFontFromPicker(fontName)
   editor.selectionStart = selectionStart;
   editor.selectionEnd = selectionEnd;
 
-  if (selection && !/\n[ \t]*\n/.test(selection))
-    fWrapSelectedText('[', ']{font="' + fontName + '"}');
-
-  else
-    fWrapFontBlock(fontName);
+  fWrapFontBlock(fontName);
 }
 
 function fSetView(newView)

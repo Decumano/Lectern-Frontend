@@ -262,7 +262,9 @@ function fWrapExportHtml(title, bodyHtml, extraCss)
           'body{font-family:Georgia,\'Times New Roman\',serif;font-size:11pt;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;}\n'+
           'h1,h2,h3,h4,h5,h6{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.25;margin:1.4em 0 .5em;}\n'+
           'h1{font-size:1.9em;}h2{font-size:1.5em;}h3{font-size:1.25em;}h4{font-size:1.1em;}\n'+
-          'p{margin:0 0 .8em;orphans:3;widows:3;}\n'+
+          'p{margin:0 0 .8em;orphans:2;widows:2;}\n'+
+          'p,li,td,th,h1,h2,h3,h4,h5,h6{overflow-wrap:anywhere;}\n'+
+          'thead{display:table-header-group;}\n'+
           'a{color:#1a4d8f;text-decoration:none;}\n'+
           'ul,ol{margin:0 0 .8em;padding-left:1.6em;}\n'+
           'li{margin:.15em 0;}\n'+
@@ -270,14 +272,14 @@ function fWrapExportHtml(title, bodyHtml, extraCss)
           'td{border:1px solid #ccc;padding:4px 8px;}\n'+
           'th{border:1px solid #ccc;padding:4px 8px;background:#f2f2f2;text-align:left;}\n'+
           'code{background:#f0f0f0;padding:2px 4px;border-radius:3px;font-size:.9em;}\n'+
-          'pre{background:#f0f0f0;padding:12px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;}\n'+
+          'pre{background:#f0f0f0;padding:12px;border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere;}\n'+
           'pre code{background:none;padding:0;}\n'+
           'blockquote{border-left:3px solid #ccc;margin-left:0;padding-left:16px;color:#555;}\n'+
           'hr{border:none;border-top:1px solid #ccc;margin:1.5em 0;}\n'+
           'img{max-width:100%;}\n'+
           '.mermaid-diagram{text-align:center;margin:1.5em 0;}\n'+
           '.mermaid-diagram svg{max-width:100%;height:auto;}\n'+
-          '.math-block{text-align:center;margin:1em 0;overflow-x:auto;overflow-y:hidden;}\n'+
+          '.math-block{text-align:center;margin:1em 0;}\n'+
           '.doc-fields{display:flex;flex-wrap:wrap;gap:4px 12px;margin:.8em 0;padding:8px 12px;background:#f6f6f6;border:1px solid #ddd;border-left:3px solid #7a6a4f;border-radius:4px;font-size:.85em;break-inside:avoid;}\n'+
           '.doc-field b{margin-right:4px;}\n'+
           '.doc-fields-vertical{display:inline-grid;grid-template-columns:auto 1fr;gap:3px 16px;}\n'+
@@ -296,7 +298,7 @@ function fWrapExportHtml(title, bodyHtml, extraCss)
           '.page-break span,.page-setup-note{display:none;}\n'+
           '.force-break{break-before:page;}\n'+
           '.no-break{break-before:avoid;}\n'+
-          'table,tr,blockquote,pre,.mermaid-diagram,.notebook-page{break-inside:avoid;}\n'+
+          'tr,.mermaid-diagram,.math-block,.notebook-page{break-inside:avoid;}\n'+
           'h1,h2,h3,h4,h5,h6{break-after:avoid;}\n'+
           '.notebook-page{break-after:page;}\n'+
           '.notebook-page:last-child{break-after:auto;}\n'+
@@ -357,7 +359,9 @@ async function fGetKatexExportCss()
   return katexExportCssCache;
 }
 
-async function fBuildDocExportHtml(file)
+// overrides: values from the PDF options dialog, on top of the [PAGE] line.
+// mode: 'paper' for CSS paged media, 'paged' when fPaginateDocument lays it out.
+async function fBuildDocExport(file, overrides, mode)
 {
   var bodyHtml = fEscHtml(file.content || ''),
       settings = { headings: {} },
@@ -372,15 +376,107 @@ async function fBuildDocExportHtml(file)
     showTitle = !settings.hideTitle && !rendered.startsWithTitle;
   }
 
+  Object.keys(overrides || {}).forEach(function(k) { settings[k] = overrides[k]; });
+
   // Sanitise first, then inline mermaid as static SVG (the diagram library
   // isn't shipped inside an exported file).
   bodyHtml = await fInlineMermaidSvgs(fSanitizeHtml(bodyHtml));
 
   var extraCss = bodyHtml.indexOf('class="katex') !== -1 ? await fGetKatexExportCss() : '';
 
-  extraCss += fBuildPageCss(settings, 'body', true, file.name);
+  extraCss += fBuildPageCss(settings, 'body', mode || 'paper', file.name);
 
-  return fWrapExportHtml(file.name, (showTitle ? '<h1>' + fEscHtml(file.name) + '</h1>\n' : '') + bodyHtml, extraCss);
+  return  {
+            html: fWrapExportHtml(file.name, (showTitle ? '<h1>' + fEscHtml(file.name) + '</h1>\n' : '') + bodyHtml, extraCss),
+            settings: settings
+          };
+}
+
+// ── PDF options dialog (Documents) ──
+// Prefilled from the document's [PAGE] line; what's chosen here wins for this export.
+var pdfOptionsFile = null;
+
+function fOpenPdfOptions(file)
+{
+  pdfOptionsFile = file;
+
+  var settings = (typeof marked !== 'undefined') ? fRenderMarkdownDoc(file.content || '').settings : {},
+      set = function(id, value) { document.getElementById(id).value = value; };
+
+  set('pdf-opt-size', settings.size || 'A4');
+  set('pdf-opt-orientation', settings.orientation || 'portrait');
+  set('pdf-opt-margin', settings.margin || '2cm');
+  set('pdf-opt-numbers', settings.numbers || '');
+  set('pdf-opt-header', settings.header || '');
+  set('pdf-opt-footer', settings.footer || '');
+  document.getElementById('pdf-opt-newpage').checked = settings.newPage !== 'none';
+
+  document.getElementById('pdf-options-modal').classList.add('open');
+}
+
+function fClosePdfOptions()
+{
+  document.getElementById('pdf-options-modal').classList.remove('open');
+}
+
+async function fConfirmPdfOptions()
+{
+  var get = function(id) { return document.getElementById(id).value.trim(); },
+      margin = get('pdf-opt-margin').split(/\s+/).map(fCssLengthValue).join(' '),
+      existingBreak = (typeof marked !== 'undefined') ? fRenderMarkdownDoc(pdfOptionsFile.content || '').settings.newPage : '',
+      overrides =
+      {
+        size: get('pdf-opt-size'),
+        orientation: get('pdf-opt-orientation'),
+        numbers: get('pdf-opt-numbers'),
+        header: get('pdf-opt-header'),
+        footer: get('pdf-opt-footer'),
+        newPage: document.getElementById('pdf-opt-newpage').checked
+                 ? ((existingBreak && existingBreak !== 'none') ? existingBreak : 'h1')
+                 : 'none'
+      };
+
+  // A bare number in this box means centimetres, the way it's labelled.
+  if (/^[\d.]+(\s+[\d.]+)*$/.test(get('pdf-opt-margin')))
+    margin = get('pdf-opt-margin').split(/\s+/).map(function(v) { return v + 'cm'; }).join(' ');
+
+  if (!fParseMarginsValid(margin))
+  {
+    alert('Margins must be 1 to 4 lengths in mm, cm, in, pt or px, for example 2cm or "2cm 3cm".');
+    return;
+  }
+
+  overrides.margin = margin;
+
+  fClosePdfOptions();
+
+  var file = pdfOptionsFile;
+
+  try
+  {
+    if (Platform.isNative)
+    {
+      var built = await fBuildDocExport(file, overrides, 'paged');
+      fPrintHtmlContent(built.html, { layout: fPageLayoutFromSettings(built.settings, file.name), name: file.name });
+    }
+    else
+    {
+      var served = await fBuildDocExport(file, overrides, 'paper');
+      await Platform.fExportPdf(file.name.replace(/\s+/g,'_') + '.pdf', served.html);
+    }
+  }
+  catch(e)
+  {
+    console.warn('PDF export error', e);
+    alert('Could not export PDF.');
+  }
+}
+
+function fParseMarginsValid(text)
+{
+  var parts = text.split(/\s+/);
+
+  return parts.length >= 1 && parts.length <= 4 && parts.every(function(v) { return fCssLengthToMm(v) !== null; });
 }
 
 function fBuildSheetExportHtml(file)
@@ -482,7 +578,7 @@ async function fBuildGraphExportHtml(file)
   var bodyHtml = fEscHtml(file.content || '');
 
   if (typeof marked !== 'undefined')
-    bodyHtml = marked.parser(marked.lexer(file.content || ''));
+    bodyHtml = fRenderMarkdownFragment(file.content || '');
 
   bodyHtml = await fInlineMermaidSvgs(fSanitizeHtml(bodyHtml));
 
@@ -497,7 +593,11 @@ async function fBuildGraphExportHtml(file)
 // internal layout - which is empty when the iframe sits off-screen, so the
 // resulting PDF comes out blank. Keeping the content visibly on-screen
 // sidesteps that entirely, and lets the user see what they're printing.
-function fPrintHtmlContent(html)
+var printPreviewJob = null;
+
+// paged: { layout, name } lays the document out into real pages once it has
+// loaded, in this frame's engine, the one that goes on to print it.
+function fPrintHtmlContent(html, paged)
 {
   var overlay = document.getElementById('print-preview-overlay'),
       iframe = document.getElementById('print-preview-frame');
@@ -505,16 +605,57 @@ function fPrintHtmlContent(html)
   if (!overlay || !iframe)
     return;
 
+  printPreviewJob = paged || null;
+
+  if (paged)
+  {
+    iframe.onload = async function()
+    {
+      iframe.onload = null;
+
+      var doc = iframe.contentDocument;
+
+      // Measuring before the fonts arrive would put every break in the wrong place.
+      if (doc.fonts && doc.fonts.ready)
+        await doc.fonts.ready;
+
+      fPaginateDocument(doc, paged.layout);
+    };
+  }
+  else
+  {
+    iframe.onload = null;
+  }
+
   iframe.srcdoc = html;
   overlay.classList.add('open');
 }
 
-function fPrintPreviewNow()
+async function fPrintPreviewNow()
 {
   var iframe = document.getElementById('print-preview-frame');
 
   if (!iframe || !iframe.contentWindow)
     return;
+
+  // Linux: write the PDF natively, because WebKitGTK's print path would impose
+  // the print dialog's margins on the pages. Elsewhere, or if that isn't
+  // available, the ordinary print dialog (Chromium honours @page margin:0).
+  if (printPreviewJob && Platform.fSavePdf)
+  {
+    try
+    {
+      var job = printPreviewJob,
+          html = '<!DOCTYPE html>\n' + iframe.contentDocument.documentElement.outerHTML;
+
+      await Platform.fSavePdf(job.name.replace(/\s+/g, '_') + '.pdf', html, job.layout.widthMm, job.layout.heightMm);
+      return;
+    }
+    catch(e)
+    {
+      console.warn('Native PDF export unavailable, using the print dialog', e);
+    }
+  }
 
   iframe.contentWindow.focus();
   iframe.contentWindow.print();
@@ -561,8 +702,13 @@ async function fExportCurrentAs(format)
     html = await fBuildSlidesExportHtml(f);
   else if (f.type === 'notebook')
     html = await fBuildNotebookExportHtml(f);
+  else if (format === 'pdf')
+  {
+    fOpenPdfOptions(f);
+    return;
+  }
   else
-    html = await fBuildDocExportHtml(f);
+    html = (await fBuildDocExport(f, null, 'paper')).html;
 
   if (format === 'pdf')
   {

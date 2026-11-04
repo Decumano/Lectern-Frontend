@@ -543,7 +543,7 @@ function fSlRenderMarkdown(text)
 
   try
   {
-    return fSanitizeHtml(marked.parser(marked.lexer(text || '')));
+    return fSanitizeHtml(fRenderMarkdownFragment(text || ''));
   }
   catch(e)
   {

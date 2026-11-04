@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lectern</title>
   <link rel="icon" type="image/png" href="assets/lectern.png">
-  <link rel="stylesheet" href="styles.css?v=26">
+  <link rel="stylesheet" href="styles.css?v=27">
 </head>
 <body>
   <div id="auth-gate" style="position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:#14161a;font-family:system-ui,sans-serif;">
@@ -913,14 +913,42 @@
     </div>
   </div>
 
+  <!-- PDF OPTIONS (Documents) -->
+  <div class="modal-overlay" id="pdf-options-modal">
+    <div class="modal">
+      <h3>Export PDF</h3>
+      <div class="pdf-options-grid">
+        <label for="pdf-opt-size">Paper</label>
+        <select id="pdf-opt-size"><option>A3</option><option>A4</option><option>A5</option><option>A6</option><option>B4</option><option>B5</option><option value="letter">Letter</option><option value="legal">Legal</option><option value="tabloid">Tabloid</option></select>
+        <label for="pdf-opt-orientation">Orientation</label>
+        <select id="pdf-opt-orientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
+        <label for="pdf-opt-margin">Margins</label>
+        <input type="text" id="pdf-opt-margin" placeholder="2cm" title="One to four lengths, in top, right, bottom, left order. A bare number is centimetres.">
+        <label for="pdf-opt-numbers">Page numbers</label>
+        <select id="pdf-opt-numbers"><option value="">None</option><option value="bottom-center">Bottom center</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option><option value="top-center">Top center</option><option value="top-left">Top left</option><option value="top-right">Top right</option></select>
+        <label for="pdf-opt-header">Header</label>
+        <input type="text" id="pdf-opt-header" placeholder="None">
+        <label for="pdf-opt-footer">Footer</label>
+        <input type="text" id="pdf-opt-footer" placeholder="None">
+        <label for="pdf-opt-newpage">Chapters</label>
+        <label><input type="checkbox" id="pdf-opt-newpage"> Start each # heading on a new page</label>
+      </div>
+      <p class="pdf-options-help">Header and footer can use {page}, {pages} and {title}. Defaults come from the document's [PAGE] line.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="fClosePdfOptions()">Cancel</button>
+        <button class="btn-create" onclick="fConfirmPdfOptions()">Continue</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PRINT PREVIEW (export as PDF) -->
   <div class="modal-overlay" id="print-preview-overlay">
     <div class="print-preview-panel">
       <div class="print-preview-toolbar">
         <span class="print-preview-title">Print Preview</span>
-        <span class="print-preview-hint">Tip: uncheck "Headers and footers" under More settings in the print dialog &mdash; the document's own [PAGE] header, footer and page numbers are drawn instead</span>
+        <span class="print-preview-hint">Margins, header and page numbers are part of each page. If a print dialog opens, set its margins to None and turn off its headers and footers.</span>
         <div style="flex:1;"></div>
-        <button class="btn-create" onclick="fPrintPreviewNow()">Print / Save as PDF</button>
+        <button class="btn-create" onclick="fPrintPreviewNow()">Save as PDF</button>
         <button class="btn-cancel" onclick="fClosePrintPreview()">Close</button>
       </div>
       <iframe id="print-preview-frame" class="print-preview-frame"></iframe>
@@ -1101,7 +1129,7 @@
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/chart.umd.js"></script>
-  <script type="text/javascript" src="platform.js?v=23"></script>
+  <script type="text/javascript" src="platform.js?v=24"></script>
   <!-- Shared-file banner (fixed, web only) -->
   <div id="view-only-banner" style="display:none"></div>
 
@@ -1159,7 +1187,7 @@
     </div>
   </div>
 
-  <script type="text/javascript" src="auth-gate.js?v=25"></script>
+  <script type="text/javascript" src="auth-gate.js?v=26"></script>
 
   <!-- TRAVEL DETAIL POPOVER -->
   <div id="travel-popover" style="display:none;position:fixed;z-index:901;min-width:300px;max-width:360px;">
