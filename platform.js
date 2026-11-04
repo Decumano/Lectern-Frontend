@@ -506,6 +506,13 @@ var Platform = (function () {
     }
   }
 
+  // Desktop: writes `html` to a PDF natively, with a save dialog and the exact
+  // paper size and no margins of its own (the HTML draws its own pages). Rejects
+  // where the build has no native PDF writer.
+  function fSavePdf(name, html, widthMm, heightMm) {
+    return tauri.invoke('save_pdf', { name: name, html: html, widthMm: widthMm, heightMm: heightMm });
+  }
+
   // Renders `html` to a PDF server-side (headless Chromium, headers/footers
   // disabled - see src/export.rs) and downloads the result. Not available on
   // Tauri, which renders/prints PDFs locally via the print-preview flow instead.
@@ -540,6 +547,7 @@ var Platform = (function () {
     fDefaultFile: fDefaultFile,
     fSaveFile: fSaveFile,
     fExportPdf: fExportPdf,
+    fSavePdf: tauri ? fSavePdf : null,
     fCurrentUser: fCurrentUser,
     register: fRegister,
     fLogin: fLogin,

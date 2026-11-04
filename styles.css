@@ -4698,3 +4698,35 @@ body.tab-drag-active #split-embed { pointer-events: none; }
   display: inline-block;
   min-width: 1.6em;
 }
+
+:is(#preview-content, #split-rendered) .page-break.pdf-only
+{
+  display: none;
+}
+
+/* ── PDF export options ── */
+.pdf-options-grid
+{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.pdf-options-grid input[type="text"],
+.pdf-options-grid select
+{
+  width: 100%;
+  box-sizing: border-box;
+}
+.pdf-options-grid label
+{
+  color: var(--text2);
+}
+.pdf-options-help
+{
+  color: var(--text3);
+  font-size: 11px;
+  margin: 0 0 8px;
+}

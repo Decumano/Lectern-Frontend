@@ -66,7 +66,7 @@ function fUpdateGraphPreview()
       html = fEscHtml(source);
 
   if (typeof marked !== 'undefined')
-    html = marked.parser(marked.lexer(source));
+    html = fRenderMarkdownFragment(source);
 
   var container = document.getElementById('graph-preview-content');
 
