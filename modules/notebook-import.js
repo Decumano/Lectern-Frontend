@@ -6,12 +6,12 @@
 
 // ── PDF import ──
 
-function triggerNotebookPdfImport()
+function fTriggerNotebookPdfImport()
 {
   document.getElementById('notebook-pdf-input').click();
 }
 
-async function handleNotebookPdfImport(e)
+async function fHandleNotebookPdfImport(e)
 {
   const file = e.target.files[0];
   e.target.value = '';
@@ -66,9 +66,9 @@ async function handleNotebookPdfImport(e)
     nbPdfDocCache = pdfDoc;
     nbPdfDocCacheKey = nbData.pdfData;
 
-    renderNotebookPages();
-    commitNotebookChange();
-    notebookGoToPage(firstNewPageIndex);
+    fRenderNotebookPages();
+    fCommitNotebookChange();
+    fNotebookGoToPage(firstNewPageIndex);
   }
   catch(err)
   {
@@ -79,12 +79,12 @@ async function handleNotebookPdfImport(e)
 
 // ── SVG vector import ──
 
-function triggerNotebookVectorImport()
+function fTriggerNotebookVectorImport()
 {
   document.getElementById('notebook-svg-input').click();
 }
 
-async function handleNotebookVectorImport(e)
+async function fHandleNotebookVectorImport(e)
 {
   const file = e.target.files[0];
   e.target.value = '';
@@ -93,7 +93,7 @@ async function handleNotebookVectorImport(e)
     return;
 
   const text = await file.text(),
-        converted = convertSvgToNotebookStrokes(text);
+        converted = fConvertSvgToNotebookStrokes(text);
 
   if (!converted || !converted.strokes.length)
   {
@@ -117,7 +117,7 @@ async function handleNotebookVectorImport(e)
   };
 
   document.getElementById('nb-import-bar').style.display = 'flex';
-  redrawNotebookPage(nbCurrentPage);
+  fRedrawNotebookPage(nbCurrentPage);
 }
 
 // Parses an SVG path's `d` into flattened polyline runs (one per subpath),
@@ -128,7 +128,7 @@ async function handleNotebookVectorImport(e)
 // large drawing - while direct evaluation keeps the import linear.
 // Returns null for anything it doesn't cover (arcs, malformed data), so the
 // caller can fall back to the slow-but-complete DOM sampler.
-function flattenSvgPathData(d)
+function fFlattenSvgPathData(d)
 {
   const tokens = d.match(/[A-Za-z]|-?(?:\d*\.\d+|\d+\.?)(?:[eE][+-]?\d+)?/g);
 
@@ -144,13 +144,13 @@ function flattenSvgPathData(d)
       pcx = null, pcy = null, // previous curve control point (S/T reflection)
       prevCmd = '';
 
-  function num()
+  function fNum()
   {
     const v = parseFloat(tokens[i++]);
     return isFinite(v) ? v : NaN;
   }
 
-  function quadTo(qx, qy, x, y)
+  function fQuadTo(qx, qy, x, y)
   {
     const x0 = cx, y0 = cy;
 
@@ -163,7 +163,7 @@ function flattenSvgPathData(d)
     cx = x; cy = y; pcx = qx; pcy = qy;
   }
 
-  function cubicTo(x1, y1, x2, y2, x, y)
+  function fCubicTo(x1, y1, x2, y2, x, y)
   {
     const x0 = cx, y0 = cy;
 
@@ -200,7 +200,7 @@ function flattenSvgPathData(d)
     switch (cmd)
     {
       case 'M': case 'm':
-        x = num(); y = num();
+        x = fNum(); y = fNum();
         if (rel) { x += cx; y += cy; }
         if (run && run.length > 1) runs.push(run);
         run = [{ x: x, y: y }];
@@ -208,47 +208,47 @@ function flattenSvgPathData(d)
         break;
 
       case 'L': case 'l':
-        x = num(); y = num();
+        x = fNum(); y = fNum();
         if (rel) { x += cx; y += cy; }
         run.push({ x: x, y: y }); cx = x; cy = y; pcx = pcy = null;
         break;
 
       case 'H': case 'h':
-        x = num(); if (rel) x += cx;
+        x = fNum(); if (rel) x += cx;
         run.push({ x: x, y: cy }); cx = x; pcx = pcy = null;
         break;
 
       case 'V': case 'v':
-        y = num(); if (rel) y += cy;
+        y = fNum(); if (rel) y += cy;
         run.push({ x: cx, y: y }); cy = y; pcx = pcy = null;
         break;
 
       case 'Q': case 'q':
-        x1 = num(); y1 = num(); x = num(); y = num();
+        x1 = fNum(); y1 = fNum(); x = fNum(); y = fNum();
         if (rel) { x1 += cx; y1 += cy; x += cx; y += cy; }
-        quadTo(x1, y1, x, y);
+        fQuadTo(x1, y1, x, y);
         break;
 
       case 'T': case 't':
-        x = num(); y = num();
+        x = fNum(); y = fNum();
         if (rel) { x += cx; y += cy; }
         x1 = (pcx === null || !/^[QqTt]$/.test(prevCmd)) ? cx : 2 * cx - pcx;
         y1 = (pcy === null || !/^[QqTt]$/.test(prevCmd)) ? cy : 2 * cy - pcy;
-        quadTo(x1, y1, x, y);
+        fQuadTo(x1, y1, x, y);
         break;
 
       case 'C': case 'c':
-        x1 = num(); y1 = num(); x2 = num(); y2 = num(); x = num(); y = num();
+        x1 = fNum(); y1 = fNum(); x2 = fNum(); y2 = fNum(); x = fNum(); y = fNum();
         if (rel) { x1 += cx; y1 += cy; x2 += cx; y2 += cy; x += cx; y += cy; }
-        cubicTo(x1, y1, x2, y2, x, y);
+        fCubicTo(x1, y1, x2, y2, x, y);
         break;
 
       case 'S': case 's':
-        x2 = num(); y2 = num(); x = num(); y = num();
+        x2 = fNum(); y2 = fNum(); x = fNum(); y = fNum();
         if (rel) { x2 += cx; y2 += cy; x += cx; y += cy; }
         x1 = (pcx === null || !/^[CcSs]$/.test(prevCmd)) ? cx : 2 * cx - pcx;
         y1 = (pcy === null || !/^[CcSs]$/.test(prevCmd)) ? cy : 2 * cy - pcy;
-        cubicTo(x1, y1, x2, y2, x, y);
+        fCubicTo(x1, y1, x2, y2, x, y);
         break;
 
       case 'Z': case 'z':
@@ -275,7 +275,7 @@ function flattenSvgPathData(d)
 
 // Thins a polyline to roughly evenly spaced points at least 1.5 units apart
 // (and at most maxPoints total), always preserving the endpoints.
-function thinRunByArcLength(run, maxPoints)
+function fThinRunByArcLength(run, maxPoints)
 {
   if (run.length < 3)
     return run;
@@ -318,7 +318,7 @@ function thinRunByArcLength(run, maxPoints)
 // paths) looking like the browser's rendering instead of hollow outlines.
 // Returns { strokes, w, h } with points normalized so their bounds start at
 // (0,0), or null if the markup isn't parseable SVG.
-function convertSvgToNotebookStrokes(svgText)
+function fConvertSvgToNotebookStrokes(svgText)
 {
   const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
 
@@ -397,7 +397,7 @@ function convertSvgToNotebookStrokes(svgText)
     // Phase 2: turn each element into local-space polyline runs, one per
     // subpath - separate runs are what keep glyph holes and disjoint pieces
     // from getting connected. Paths flatten analytically (see
-    // flattenSvgPathData for why the DOM sampling APIs are avoided);
+    // fFlattenSvgPathData for why the DOM sampling APIs are avoided);
     // everything else - rect/circle/ellipse/line/poly*, plus the rare path
     // with arcs - samples via getPointAtLength, which is fine for those
     // cheap single-geometry elements.
@@ -406,7 +406,7 @@ function convertSvgToNotebookStrokes(svgText)
       let rawRuns = null;
 
       if (job.el.nodeName.toLowerCase() === 'path')
-        rawRuns = flattenSvgPathData(job.el.getAttribute('d') || '');
+        rawRuns = fFlattenSvgPathData(job.el.getAttribute('d') || '');
 
       if (!rawRuns)
       {
@@ -443,7 +443,7 @@ function convertSvgToNotebookStrokes(svgText)
           return { x: round(m.a * p.x + m.c * p.y + m.e), y: round(m.b * p.x + m.d * p.y + m.f) };
         });
 
-        const thinned = thinRunByArcLength(t, MAX_POINTS_PER_ELEMENT);
+        const thinned = fThinRunByArcLength(t, MAX_POINTS_PER_ELEMENT);
 
         if (thinned.length >= 2)
           runs.push(thinned);
@@ -523,7 +523,7 @@ function convertSvgToNotebookStrokes(svgText)
 // Bakes the pending import into the page: placement offset/scale are applied
 // to every point, then the strokes join page.strokes as ordinary pen ink
 // (undoable, erasable, selectable, saved with the file).
-function acceptNotebookVectorImport()
+function fAcceptNotebookVectorImport()
 {
   if (!nbImport || !nbData)
     return;
@@ -533,11 +533,11 @@ function acceptNotebookVectorImport()
 
   if (!page)
   {
-    cancelNotebookVectorImport();
+    fCancelNotebookVectorImport();
     return;
   }
 
-  notebookSnapshotForUndo(imp.pageIndex);
+  fNotebookSnapshotForUndo(imp.pageIndex);
 
   imp.strokes.forEach(function(s)
   {
@@ -573,12 +573,12 @@ function acceptNotebookVectorImport()
   nbActive = null;
   document.getElementById('nb-import-bar').style.display = 'none';
 
-  rebuildNotebookCommittedCache(imp.pageIndex);
-  commitNotebookChange();
-  redrawNotebookPage(imp.pageIndex);
+  fRebuildNotebookCommittedCache(imp.pageIndex);
+  fCommitNotebookChange();
+  fRedrawNotebookPage(imp.pageIndex);
 }
 
-function cancelNotebookVectorImport()
+function fCancelNotebookVectorImport()
 {
   if (!nbImport)
     return;
@@ -588,23 +588,23 @@ function cancelNotebookVectorImport()
   nbImport = null;
   nbActive = null;
   document.getElementById('nb-import-bar').style.display = 'none';
-  redrawNotebookPage(pageIndex);
+  fRedrawNotebookPage(pageIndex);
 }
 
-function notebookVectorScaleBy(factor)
+function fNotebookVectorScaleBy(factor)
 {
   if (!nbImport)
     return;
 
   nbImport.scale = Math.max(0.05, Math.min(20, nbImport.scale * factor));
-  redrawNotebookPage(nbImport.pageIndex);
+  fRedrawNotebookPage(nbImport.pageIndex);
 }
 
 // ── Export (composites each page to a PNG, embedded as <img> in the wrapped HTML) ──
 
-async function buildNotebookExportHtml(file)
+async function fBuildNotebookExportHtml(file)
 {
-  const data = parseNotebookContent(file.content || '');
+  const data = fParseNotebookContent(file.content || '');
 
   let imagesHtml = '';
 
@@ -668,11 +668,11 @@ async function buildNotebookExportHtml(file)
     }
     else if (page.background.type === 'ruled' || page.background.type === 'grid')
     {
-      renderNotebookPageBackground(page, canvas);
+      fRenderNotebookPageBackground(page, canvas);
     }
 
-    page.strokes.forEach(function(s){ drawNotebookStroke(ctx, s); });
-    page.shapes.forEach(function(s){ drawNotebookShape(ctx, s); });
+    page.strokes.forEach(function(s){ fDrawNotebookStroke(ctx, s); });
+    page.shapes.forEach(function(s){ fDrawNotebookShape(ctx, s); });
 
     page.texts.forEach(function(t)
     {
@@ -708,7 +708,7 @@ async function buildNotebookExportHtml(file)
     {
       (page.pins || []).forEach(function(pin)
       {
-        const color = pin.color || PIN_COLORS[0],
+        const color = pin.color || cPinColors[0],
               px = pin.x, py = pin.y, r = 9;
 
         ctx.save();
@@ -738,5 +738,5 @@ async function buildNotebookExportHtml(file)
     imagesHtml += '<img class="notebook-page" src="' + canvas.toDataURL('image/png') + '" style="display:block;max-width:100%;margin:0 auto 24px;border:1px solid #ddd;">\n';
   }
 
-  return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + imagesHtml);
+  return fWrapExportHtml(file.name, '<h1>' + fEscHtml(file.name) + '</h1>\n' + imagesHtml);
 }

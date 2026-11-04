@@ -21,26 +21,26 @@ This frontend owns all parsing and serialization — the backends only move byte
 [FLAVOR.md](FLAVOR.md) documents the Markdown extensions (math, Mermaid, alignment and
 font blocks, `[TOC]`, roman lists, field cards, tags, cross-file embeds), the spreadsheet
 serialization, the notebook payload and the JSON-backed data types. Keep it in step with
-`configureMarkedExtensions` and the `save*`/`parse*` functions in `main.js`.
+`fConfigureMarkedExtensions` and the `save*`/`parse*` functions in `main.js`.
 
 ## Platform adapter
 
-`platform.js` isolates every backend call behind a single `Platform` object (`pickWorkFolder`,
-`readWorkFile`, `writeWorkFile`, `listWorkFolder`, `createWorkFolder`, `deleteWorkEntry`,
-`moveWorkEntry`, `defaultFile`, `saveFile`, `exportPdf`, plus `login`/`register`/`logout`/
-`currentUser`). `main.js` never talks to a backend directly.
+`platform.js` isolates every backend call behind a single `Platform` object (`fPickWorkFolder`,
+`fReadWorkFile`, `fWriteWorkFile`, `fListWorkFolder`, `fCreateWorkFolder`, `fDeleteWorkEntry`,
+`fMoveWorkEntry`, `fDefaultFile`, `fSaveFile`, `fExportPdf`, plus `login`/`register`/`logout`/
+`fCurrentUser`). `main.js` never talks to a backend directly.
 
 - **On Tauri**, `platform.js` detects `window.__TAURI__` and delegates to `invoke(...)` calls
   against the host app's Rust commands (see `src-tauri/src/lib.rs` in the OfficeSuite repo for the
   reference implementation of those commands). `auth-gate.js` is a no-op on Tauri — there's no
   account system, so it loads `main.js` immediately.
 - **Without Tauri**, the work-folder methods call a web backend's `/api/workspace/*` endpoints
-  instead of rejecting as unavailable, `exportPdf` posts HTML to `/api/export/pdf` and downloads
+  instead of rejecting as unavailable, `fExportPdf` posts HTML to `/api/export/pdf` and downloads
   the resulting blob, and `auth-gate.js` shows a login/register form backed by `/api/auth/*` before
   `main.js` is loaded. `officesuite-web`'s `src/` is the reference implementation of that API.
 - **Without any backend at all**, work-folder operations are simply unavailable and the app runs
   off in-memory/`localStorage` state instead (the existing behavior before a work folder is
-  picked). `saveFile` falls back to a standard browser download instead of a native save dialog.
+  picked). `fSaveFile` falls back to a standard browser download instead of a native save dialog.
 
 To embed this frontend in a new host, either provide a matching backend (Tauri commands or the
 `/api/*` HTTP routes, matching the names/params in `platform.js`) or implement an equivalent by

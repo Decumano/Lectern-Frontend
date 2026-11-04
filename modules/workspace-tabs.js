@@ -10,49 +10,49 @@
 // between a handful of working files doesn't mean hunting the sidebar. The
 // bar is hidden on phones via CSS (the sidebar drawer plays that role there).
 // Tab entries are file ids, so Work Folder renames/moves must remap them
-// (remapOpenTab) and structural refreshes must drop dead ids (pruneOpenTabs).
+// (fRemapOpenTab) and structural refreshes must drop dead ids (fPruneOpenTabs).
 
 var openTabs = [];
 
 // Satellite windows keep their own tab list; the main window keeps the
 // original key. (Embeds have no tab bar and never persist tabs at all.)
-function tabsStorageKey()
+function fTabsStorageKey()
 {
   return isSatelliteWindow ? ('lk_tabs_' + satelliteWinId) : 'lk_tabs';
 }
 
-function loadOpenTabs()
+function fLoadOpenTabs()
 {
   try
   {
-    var raw = localStorage.getItem(tabsStorageKey());
+    var raw = localStorage.getItem(fTabsStorageKey());
     openTabs = raw ? JSON.parse(raw).filter(function(id) { return !!files[id]; }) : [];
   }
   catch(e) { openTabs = []; }
-  renderOpenTabs();
+  fRenderOpenTabs();
 }
 
-function persistOpenTabs()
+function fPersistOpenTabs()
 {
   if (isEmbedContext) return;
-  try { localStorage.setItem(tabsStorageKey(), JSON.stringify(openTabs)); } catch(e) {}
+  try { localStorage.setItem(fTabsStorageKey(), JSON.stringify(openTabs)); } catch(e) {}
 }
 
-function noteTabOpened(id)
+function fNoteTabOpened(id)
 {
-  if (isEmbedContext || id === SHARED_TMP_ID || !files[id])
+  if (isEmbedContext || id === cSharedTmpId || !files[id])
     return;
 
   if (openTabs.indexOf(id) < 0)
   {
     openTabs.push(id);
-    persistOpenTabs();
+    fPersistOpenTabs();
   }
 
-  renderOpenTabs();
+  fRenderOpenTabs();
 }
 
-function remapOpenTab(oldId, newId)
+function fRemapOpenTab(oldId, newId)
 {
   var i = openTabs.indexOf(oldId);
 
@@ -64,37 +64,37 @@ function remapOpenTab(oldId, newId)
   else
     openTabs[i] = newId;
 
-  persistOpenTabs();
-  renderOpenTabs();
+  fPersistOpenTabs();
+  fRenderOpenTabs();
 
   // A rename/move must not orphan the side pane
   if (splitState.fileId === oldId)
   {
     splitState.fileId = newId;
-    persistSplitState();
-    renderSplitPane();
+    fPersistSplitState();
+    fRenderSplitPane();
   }
 }
 
-function pruneOpenTabs()
+function fPruneOpenTabs()
 {
   var before = openTabs.length;
   openTabs = openTabs.filter(function(id) { return !!files[id]; });
 
   if (openTabs.length !== before)
-    persistOpenTabs();
+    fPersistOpenTabs();
 
-  renderOpenTabs();
+  fRenderOpenTabs();
 
   if (splitState.fileId && !files[splitState.fileId])
   {
     splitState.fileId = null;
-    persistSplitState();
-    renderSplitPane();
+    fPersistSplitState();
+    fRenderSplitPane();
   }
 }
 
-function closeOpenTab(e, id)
+function fCloseOpenTab(e, id)
 {
   e.stopPropagation();
 
@@ -103,7 +103,7 @@ function closeOpenTab(e, id)
   if (i >= 0)
   {
     openTabs.splice(i, 1);
-    persistOpenTabs();
+    fPersistOpenTabs();
   }
 
   // Closing the active tab moves to a neighbor; closing the last one leaves
@@ -114,19 +114,19 @@ function closeOpenTab(e, id)
 
     if (next)
     {
-      openFile(next);
+      fOpenFile(next);
       return;
     }
 
     currentFileId = null;
-    clearActiveEditors();
-    renderFileList();
+    fClearActiveEditors();
+    fRenderFileList();
   }
 
-  renderOpenTabs();
+  fRenderOpenTabs();
 }
 
-function renderOpenTabs()
+function fRenderOpenTabs()
 {
   var bar = document.getElementById('open-tabs-bar');
 
@@ -147,10 +147,10 @@ function renderOpenTabs()
   {
     var f = files[id];
 
-    return '<div class="open-tab' + (id === currentFileId ? ' active' : '') + '" draggable="true" ondragstart="onTabDragStart(event,\'' + escAttr(id) + '\')" ondragend="onTabDragEnd(event)" onclick="openFile(\'' + escAttr(id) + '\')" oncontextmenu="showTabContextMenu(event,\'' + escAttr(id) + '\')" title="' + escAttr(f.name) + '">' +
-             '<span class="open-tab-icon">' + fileTypeIcon(f.type) + '</span>' +
-             '<span class="open-tab-name">' + escHtml(f.name) + '</span>' +
-             '<button class="open-tab-close" onclick="closeOpenTab(event,\'' + escAttr(id) + '\')" title="Close tab">×</button>' +
+    return '<div class="open-tab' + (id === currentFileId ? ' active' : '') + '" draggable="true" ondragstart="fOnTabDragStart(event,\'' + fEscAttr(id) + '\')" ondragend="fOnTabDragEnd(event)" onclick="fOpenFile(\'' + fEscAttr(id) + '\')" oncontextmenu="fShowTabContextMenu(event,\'' + fEscAttr(id) + '\')" title="' + fEscAttr(f.name) + '">' +
+             '<span class="open-tab-icon">' + fFileTypeIcon(f.type) + '</span>' +
+             '<span class="open-tab-name">' + fEscHtml(f.name) + '</span>' +
+             '<button class="open-tab-close" onclick="fCloseOpenTab(event,\'' + fEscAttr(id) + '\')" title="Close tab">×</button>' +
            '</div>';
   }).join('');
 
@@ -175,9 +175,9 @@ function renderOpenTabs()
 //                   pane's iframe, permanently showing one file
 //
 // Windows stay consistent through storage events: browser-storage workspaces
-// merge the whole file map on every save (mergeFilesFromStorage), work-folder
+// merge the whole file map on every save (fMergeFilesFromStorage), work-folder
 // files are separate on disk already, and the web cloud workspace additionally
-// live-polls the open file (updateLiveSync).
+// live-polls the open file (fUpdateLiveSync).
 
 var bootParams        = new URLSearchParams(window.location.search);
 var embedFileId       = bootParams.get('embed');
@@ -190,7 +190,7 @@ var splitState     = { fileId: null, mode: 'rendered', width: 400, side: 'right'
 var tabMenuFileId  = null;
 var lastLocalEditAt = 0;
 
-function loadSplitState()
+function fLoadSplitState()
 {
   try
   {
@@ -205,7 +205,7 @@ function loadSplitState()
   catch(e) {}
 }
 
-function persistSplitState()
+function fPersistSplitState()
 {
   if (!isMainWindow) return; // satellites/embeds must not steal the main window's pane state
   try { localStorage.setItem('lk_split', JSON.stringify(splitState)); } catch(e) {}
@@ -213,50 +213,50 @@ function persistSplitState()
 
 // Called once from init after files are available: restores the pane the user
 // had open last session.
-function initSplitView()
+function fInitSplitView()
 {
-  loadSplitState();
-  renderSplitPane();
+  fLoadSplitState();
+  fRenderSplitPane();
 }
 
-function openInSplit(id, mode)
+function fOpenInSplit(id, mode)
 {
   if (!files[id]) return;
   splitState.fileId = id;
   if (mode) splitState.mode = mode === 'raw' ? 'raw' : 'rendered';
-  persistSplitState();
-  renderSplitPane();
+  fPersistSplitState();
+  fRenderSplitPane();
 }
 
-function closeSplitPane()
+function fCloseSplitPane()
 {
   splitState.fileId = null;
-  persistSplitState();
-  renderSplitPane();
+  fPersistSplitState();
+  fRenderSplitPane();
 }
 
-function setSplitMode(mode)
+function fSetSplitMode(mode)
 {
   splitState.mode = mode === 'raw' ? 'raw' : 'rendered';
-  persistSplitState();
-  renderSplitPane();
+  fPersistSplitState();
+  fRenderSplitPane();
 }
 
 // Work-folder files are read lazily; the split pane needs the same guarantee
-// openFile gives the main editor.
-async function ensureFileContentLoaded(id)
+// fOpenFile gives the main editor.
+async function fEnsureFileContentLoaded(id)
 {
   var f = files[id];
   if (!f || !workFolderRoot || f.contentLoaded) return;
   try
   {
-    f.content       = await Platform.readWorkFile(workFolderRoot, id);
+    f.content       = await Platform.fReadWorkFile(workFolderRoot, id);
     f.contentLoaded = true;
   }
   catch(e) { console.warn('Split view read error', e); }
 }
 
-async function renderSplitPane()
+async function fRenderSplitPane()
 {
   var pane    = document.getElementById('split-pane'),
       divider = document.getElementById('split-divider');
@@ -288,9 +288,9 @@ async function renderSplitPane()
   pane.style.width = splitState.width + 'px';
   document.getElementById('editor-split').classList.toggle('split-side-left', splitState.side === 'left');
 
-  await ensureFileContentLoaded(id);
+  await fEnsureFileContentLoaded(id);
 
-  document.getElementById('split-pane-icon').innerHTML   = fileTypeIcon(f.type);
+  document.getElementById('split-pane-icon').innerHTML   = fFileTypeIcon(f.type);
   document.getElementById('split-pane-name').textContent = f.name || '';
   document.getElementById('split-pane-name').title       = f.name || '';
 
@@ -327,10 +327,10 @@ async function renderSplitPane()
 
 // Raw side-pane edits persist through the same funnel as the main editor.
 // The pane can hold a file other than currentFileId, so it debounces on its
-// own timer instead of scheduleSave's.
+// own timer instead of fScheduleSave's.
 var splitSaveTimer = null;
 
-function onSplitRawInput()
+function fOnSplitRawInput()
 {
   var id = splitState.fileId,
       f = id && files[id];
@@ -346,17 +346,17 @@ function onSplitRawInput()
   if (currentFileId === id && f.type === 'doc')
   {
     document.getElementById('editor').value = f.content;
-    updatePreview();
-    updateStatus();
+    fUpdatePreview();
+    fUpdateStatus();
   }
 
   clearTimeout(splitSaveTimer);
-  splitSaveTimer = setTimeout(function() { persistFileEntry(id); }, 800);
+  splitSaveTimer = setTimeout(function() { fPersistFileEntry(id); }, 800);
 }
 
 // ── Split divider drag ──
 
-function startSplitDrag(e)
+function fStartSplitDrag(e)
 {
   e.preventDefault();
 
@@ -364,7 +364,7 @@ function startSplitDrag(e)
       startX = e.clientX,
       startW = pane.getBoundingClientRect().width;
 
-  function move(ev)
+  function fMove(ev)
   {
     var delta = (splitState.side === 'left') ? (ev.clientX - startX) : (startX - ev.clientX),
         w = Math.min(Math.max(240, startW + delta), window.innerWidth * 0.75);
@@ -372,20 +372,20 @@ function startSplitDrag(e)
     pane.style.width = splitState.width + 'px';
   }
 
-  function up()
+  function fUp()
   {
-    document.removeEventListener('mousemove', move);
-    document.removeEventListener('mouseup', up);
-    persistSplitState();
+    document.removeEventListener('mousemove', fMove);
+    document.removeEventListener('mouseup', fUp);
+    fPersistSplitState();
   }
 
-  document.addEventListener('mousemove', move);
-  document.addEventListener('mouseup', up);
+  document.addEventListener('mousemove', fMove);
+  document.addEventListener('mouseup', fUp);
 }
 
 // ── Tab context menu ──
 
-function showTabContextMenu(e, id)
+function fShowTabContextMenu(e, id)
 {
   e.preventDefault();
   e.stopPropagation();
@@ -394,67 +394,67 @@ function showTabContextMenu(e, id)
 
   tabMenuFileId = id;
 
-  var winItems = listOtherWindows().map(function(w)
+  var winItems = fListOtherWindows().map(function(w)
   {
-    return '<button class="file-menu-item" onclick="tabMenuSendToWindow(\'' + escAttr(w.id) + '\')">Move to &ldquo;' + escHtml(w.title) + '&rdquo;</button>';
+    return '<button class="file-menu-item" onclick="fTabMenuSendToWindow(\'' + fEscAttr(w.id) + '\')">Move to &ldquo;' + fEscHtml(w.title) + '&rdquo;</button>';
   }).join('');
 
   var menu = document.getElementById('tab-context-menu');
   menu.innerHTML =
-    '<button class="file-menu-item" onclick="tabMenuAction(\'split\')">Open to the side</button>' +
-    '<button class="file-menu-item" onclick="tabMenuAction(\'splitRaw\')">Open raw text to the side</button>' +
-    '<button class="file-menu-item" onclick="tabMenuAction(\'detach\')">Move to a new window</button>' +
+    '<button class="file-menu-item" onclick="fTabMenuAction(\'split\')">Open to the side</button>' +
+    '<button class="file-menu-item" onclick="fTabMenuAction(\'splitRaw\')">Open raw text to the side</button>' +
+    '<button class="file-menu-item" onclick="fTabMenuAction(\'detach\')">Move to a new window</button>' +
     winItems +
     '<div class="file-menu-divider"></div>' +
-    '<button class="file-menu-item" onclick="tabMenuAction(\'close\')">Close tab</button>';
+    '<button class="file-menu-item" onclick="fTabMenuAction(\'close\')">Close tab</button>';
 
   menu.classList.add('open');
   menu.style.left = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8) + 'px';
   menu.style.top  = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8) + 'px';
 }
 
-function closeTabContextMenu()
+function fCloseTabContextMenu()
 {
   document.getElementById('tab-context-menu').classList.remove('open');
 }
 
-function tabMenuAction(action)
+function fTabMenuAction(action)
 {
   var id = tabMenuFileId;
 
-  closeTabContextMenu();
+  fCloseTabContextMenu();
 
   if (!id || !files[id]) return;
 
-  if (action === 'split')         openInSplit(id, 'rendered');
-  else if (action === 'splitRaw') openInSplit(id, 'raw');
-  else if (action === 'detach')   { openSecondaryWindow(id); removeTab(id); }
-  else if (action === 'close')    removeTab(id);
+  if (action === 'split')         fOpenInSplit(id, 'rendered');
+  else if (action === 'splitRaw') fOpenInSplit(id, 'raw');
+  else if (action === 'detach')   { fOpenSecondaryWindow(id); fRemoveTab(id); }
+  else if (action === 'close')    fRemoveTab(id);
 }
 
-function tabMenuSendToWindow(winId)
+function fTabMenuSendToWindow(winId)
 {
   var id = tabMenuFileId;
 
-  closeTabContextMenu();
+  fCloseTabContextMenu();
 
   if (!id || !files[id]) return;
 
-  sendFileToWindow(winId, id);
-  removeTab(id);
+  fSendFileToWindow(winId, id);
+  fRemoveTab(id);
 }
 
-// closeOpenTab without a real event: shared by menu actions and drag-drops
-function removeTab(id)
+// fCloseOpenTab without a real event: shared by menu actions and drag-drops
+function fRemoveTab(id)
 {
-  closeOpenTab({ stopPropagation: function(){} }, id);
+  fCloseOpenTab({ stopPropagation: function(){} }, id);
 }
 
 document.addEventListener('click', function(e)
 {
   var menu = document.getElementById('tab-context-menu');
   if (menu && menu.classList.contains('open') && !menu.contains(e.target))
-    closeTabContextMenu();
+    fCloseTabContextMenu();
 });
 
 // ── Secondary (satellite) windows ──
@@ -465,7 +465,7 @@ document.addEventListener('click', function(e)
 // localStorage (lk_wincmd) because storage events reach every same-origin
 // window - browser popups and Tauri webview windows alike.
 
-function openSecondaryWindow(fileId, screenX, screenY)
+function fOpenSecondaryWindow(fileId, screenX, screenY)
 {
   var winId = 'w' + Date.now().toString(36),
       url   = 'index.html?win=' + winId + (fileId ? '&file=' + encodeURIComponent(fileId) : ''),
@@ -489,79 +489,79 @@ function openSecondaryWindow(fileId, screenX, screenY)
   window.open(url, '_blank', feats);
 }
 
-function detachSplitPane()
+function fDetachSplitPane()
 {
   var id = splitState.fileId;
   if (!id) return;
-  openSecondaryWindow(id);
-  closeSplitPane();
+  fOpenSecondaryWindow(id);
+  fCloseSplitPane();
 }
 
 // ── Window registry & command channel ──
 
-function selfWindowId()
+function fSelfWindowId()
 {
   return isSatelliteWindow ? satelliteWinId : (isMainWindow ? 'main' : null);
 }
 
-function winRegRead()
+function fWinRegRead()
 {
   try { return JSON.parse(localStorage.getItem('lk_windows') || '{}'); } catch(e) { return {}; }
 }
 
-function winRegWrite(reg)
+function fWinRegWrite(reg)
 {
   try { localStorage.setItem('lk_windows', JSON.stringify(reg)); } catch(e) {}
 }
 
-var WIN_REG_STALE_MS = 15000;
+var cWinRegStaleMs = 15000;
 
-function registerThisWindow()
+function fRegisterThisWindow()
 {
-  var id = selfWindowId();
+  var id = fSelfWindowId();
   if (!id) return; // embeds aren't drop targets
 
-  function heartbeat()
+  function fHeartbeat()
   {
-    var reg = winRegRead();
+    var reg = fWinRegRead();
     reg[id] = {
       title: isMainWindow ? 'Main window' : (document.title || 'Window'),
       ts: Date.now()
     };
-    winRegWrite(reg);
+    fWinRegWrite(reg);
   }
 
-  heartbeat();
-  setInterval(heartbeat, 5000);
+  fHeartbeat();
+  setInterval(fHeartbeat, 5000);
 
   // pagehide is the reliable close signal; beforeunload kept as a belt.
   // Windows that die without either (crash, killed process) age out via
   // WIN_REG_STALE_MS and the boot-time prune.
-  function unregister()
+  function fUnregister()
   {
-    var reg = winRegRead();
+    var reg = fWinRegRead();
     delete reg[id];
-    winRegWrite(reg);
+    fWinRegWrite(reg);
     if (isSatelliteWindow)
       try { localStorage.removeItem('lk_tabs_' + id); } catch(e) {}
   }
 
-  window.addEventListener('pagehide', unregister);
-  window.addEventListener('beforeunload', unregister);
+  window.addEventListener('pagehide', fUnregister);
+  window.addEventListener('beforeunload', fUnregister);
 }
 
 // Registry entries other than this window, freshest first, stale ones skipped.
-function listOtherWindows()
+function fListOtherWindows()
 {
-  var reg = winRegRead(),
+  var reg = fWinRegRead(),
       now = Date.now(),
-      self = selfWindowId(),
+      self = fSelfWindowId(),
       out = [];
 
   Object.keys(reg).forEach(function(id)
   {
     if (id === self) return;
-    if (now - (reg[id].ts || 0) > WIN_REG_STALE_MS) return;
+    if (now - (reg[id].ts || 0) > cWinRegStaleMs) return;
     out.push({ id: id, title: reg[id].title || 'Window', ts: reg[id].ts });
   });
 
@@ -570,22 +570,22 @@ function listOtherWindows()
 
 // Crash-leftover registry rows and orphaned per-window tab lists, swept once
 // at main-window boot.
-function pruneWindowRegistry()
+function fPruneWindowRegistry()
 {
-  var reg = winRegRead(),
+  var reg = fWinRegRead(),
       now = Date.now(),
       changed = false;
 
   Object.keys(reg).forEach(function(id)
   {
-    if (id !== 'main' && now - (reg[id].ts || 0) > WIN_REG_STALE_MS)
+    if (id !== 'main' && now - (reg[id].ts || 0) > cWinRegStaleMs)
     {
       delete reg[id];
       changed = true;
     }
   });
 
-  if (changed) winRegWrite(reg);
+  if (changed) fWinRegWrite(reg);
 
   try
   {
@@ -598,20 +598,20 @@ function pruneWindowRegistry()
   catch(e) {}
 }
 
-function sendFileToWindow(winId, fileId)
+function fSendFileToWindow(winId, fileId)
 {
   try { localStorage.setItem('lk_wincmd', JSON.stringify({ target: winId, fileId: fileId, ts: Date.now() })); } catch(e) {}
 }
 
-function handleWindowCommand(raw)
+function fHandleWindowCommand(raw)
 {
   var cmd;
   try { cmd = JSON.parse(raw); } catch(e) { return; }
 
-  if (!cmd || cmd.target !== selfWindowId() || !cmd.fileId || !files[cmd.fileId])
+  if (!cmd || cmd.target !== fSelfWindowId() || !cmd.fileId || !files[cmd.fileId])
     return;
 
-  openFile(cmd.fileId);
+  fOpenFile(cmd.fileId);
 
   if (window.focus)
     try { window.focus(); } catch(e) {}
@@ -619,13 +619,13 @@ function handleWindowCommand(raw)
 
 // ── Cross-window file sync (browser-storage workspaces) ──
 //
-// saveToStorage writes the whole file map, so a window holding a stale copy
+// fSaveToStorage writes the whole file map, so a window holding a stale copy
 // of a file someone else just edited would clobber it on its next save.
 // Merging on every storage event closes that gap: adopt everything incoming
 // except the file being edited right here (kept unless the incoming copy is
 // strictly newer, which means it was edited elsewhere).
 
-function mergeFilesFromStorage(raw)
+function fMergeFilesFromStorage(raw)
 {
   var incoming;
   try { incoming = JSON.parse(raw); } catch(e) { return; }
@@ -643,29 +643,29 @@ function mergeFilesFromStorage(raw)
     {
       // Deleted in another window: let it go here too
       currentFileId = null;
-      clearActiveEditors();
+      fClearActiveEditors();
     }
     else if ((incCur.modified || 0) > (localCur.modified || 0))
-      openFile(currentFileId); // edited elsewhere more recently - reload the editors
+      fOpenFile(currentFileId); // edited elsewhere more recently - reload the editors
     else
       files[currentFileId] = localCur; // local (possibly unsaved) copy wins
   }
 
-  renderFileList();
-  pruneOpenTabs();
+  fRenderFileList();
+  fPruneOpenTabs();
 
   if (splitState.fileId)
-    renderSplitPane();
+    fRenderSplitPane();
 }
 
-function initCrossWindowSync()
+function fInitCrossWindowSync()
 {
   window.addEventListener('storage', function(e)
   {
     if (e.key === 'lore_keep_v2' && e.newValue && !workFolderRoot)
-      mergeFilesFromStorage(e.newValue);
+      fMergeFilesFromStorage(e.newValue);
     else if (e.key === 'lk_wincmd' && e.newValue)
-      handleWindowCommand(e.newValue);
+      fHandleWindowCommand(e.newValue);
   });
 }
 
@@ -691,10 +691,10 @@ function initCrossWindowSync()
 // boxes and editors (Discord, for one), so the tab was closed as moved while
 // no window received it — no tear-off, and the tab was gone.
 
-var TAB_DND_MIME = 'application/x-lorekeep-file';
-var TAB_DND_TOKEN_MIME = 'application/x-lorekeep-drag';
-var TAB_DROP_ACK_KEY = 'lk_tabdrop_ack';
-var TAB_DROP_ACK_WAIT_MS = 600; // how long dragend waits to hear from the target
+var cTabDndMime = 'application/x-lorekeep-file';
+var cTabDndTokenMime = 'application/x-lorekeep-drag';
+var cTabDropAckKey = 'lk_tabdrop_ack';
+var cTabDropAckWaitMs = 600; // how long dragend waits to hear from the target
 var dragTabId = null;        // set while a drag that started here is in flight
 var dragSource = null;       // 'tab' | 'split' (null for drags from other windows)
 var dragToken = null;        // this drag's token, for the target's acknowledgement
@@ -702,49 +702,49 @@ var dragDropHandled = false; // a target in this window consumed the drop
 var lastDragOverAt = 0;
 var dragModeTimer = null;
 
-function tabDragHasFile(e)
+function fTabDragHasFile(e)
 {
   var types = e.dataTransfer && e.dataTransfer.types;
-  return !!types && Array.prototype.indexOf.call(types, TAB_DND_MIME) >= 0;
+  return !!types && Array.prototype.indexOf.call(types, cTabDndMime) >= 0;
 }
 
 // Starts a tab drag. Only private types go on the drag: anything an
 // ordinary app understands (text/plain) lets that app accept the drop.
-function beginTabDrag(e, id, source)
+function fBeginTabDrag(e, id, source)
 {
   dragTabId = id;
   dragSource = source;
   dragDropHandled = false;
   dragToken = id + ':' + Date.now().toString(36) + ':' + Math.random().toString(36).slice(2);
-  e.dataTransfer.setData(TAB_DND_MIME, id);
-  e.dataTransfer.setData(TAB_DND_TOKEN_MIME, dragToken);
+  e.dataTransfer.setData(cTabDndMime, id);
+  e.dataTransfer.setData(cTabDndTokenMime, dragToken);
   e.dataTransfer.effectAllowed = 'move';
 }
 
-function onTabDragStart(e, id)
+function fOnTabDragStart(e, id)
 {
   if (!files[id]) return;
 
-  beginTabDrag(e, id, 'tab');
+  fBeginTabDrag(e, id, 'tab');
 
   // Deferred so the browser snapshots the drag image before layout shifts
-  setTimeout(activateTabDragMode, 0);
+  setTimeout(fActivateTabDragMode, 0);
 }
 
 // The split pane's pseudo-tab: drag it back into the bar, to the other edge,
 // into another window, or out of the app entirely.
-function onSplitTabDragStart(e)
+function fOnSplitTabDragStart(e)
 {
   var id = splitState.fileId;
 
   if (!id || !files[id]) { e.preventDefault(); return; }
 
-  beginTabDrag(e, id, 'split');
+  fBeginTabDrag(e, id, 'split');
 
-  setTimeout(activateTabDragMode, 0);
+  setTimeout(fActivateTabDragMode, 0);
 }
 
-function onTabDragEnd(e)
+function fOnTabDragEnd(e)
 {
   var id = dragTabId,
       src = dragSource,
@@ -752,7 +752,7 @@ function onTabDragEnd(e)
       handled = dragDropHandled,
       // Read now: the pointer, and how recently it was over this page, are
       // only meaningful at the moment of release.
-      outside = dragEndedOutsideWindow(e),
+      outside = fDragEndedOutsideWindow(e),
       screenX = e.screenX,
       screenY = e.screenY;
 
@@ -760,24 +760,24 @@ function onTabDragEnd(e)
   dragSource = null;
   dragToken = null;
   dragDropHandled = false;
-  deactivateTabDragMode();
+  fDeactivateTabDragMode();
 
   if (handled || !id)
     return;
 
-  waitForTabDropAck(token).then(function(taken)
+  fWaitForTabDropAck(token).then(function(fTaken)
   {
-    if (taken)
+    if (fTaken)
     {
       // Another Lectern window took the tab; this one lets its copy go.
-      if (src === 'split') closeSplitPane(); else removeTab(id);
+      if (src === 'split') fCloseSplitPane(); else fRemoveTab(id);
     }
     else if (outside && files[id])
     {
       // Released where no Lectern window took it — over the desktop or over
       // another app: tear off into a fresh window there.
-      openSecondaryWindow(id, screenX, screenY);
-      if (src === 'split') closeSplitPane(); else removeTab(id);
+      fOpenSecondaryWindow(id, screenX, screenY);
+      if (src === 'split') fCloseSplitPane(); else fRemoveTab(id);
     }
     // else: cancelled inside the window - keep everything as it was
   });
@@ -787,7 +787,7 @@ function onTabDragEnd(e)
 // drag's token, false if none does in time. The acknowledgement normally
 // lands just before dragend, but storage events cross windows
 // asynchronously, so it may also arrive a moment after.
-function waitForTabDropAck(token)
+function fWaitForTabDropAck(token)
 {
   return new Promise(function(resolve)
   {
@@ -795,53 +795,53 @@ function waitForTabDropAck(token)
 
     var done = false, timer = null;
 
-    function acked(value)
+    function fAcked(value)
     {
       return !!value && value.split('|')[0] === token;
     }
 
-    function finish(result)
+    function fFinish(result)
     {
       if (done) return;
       done = true;
       clearTimeout(timer);
-      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('storage', fOnStorage);
       if (result)
-        try { localStorage.removeItem(TAB_DROP_ACK_KEY); } catch(err) {}
+        try { localStorage.removeItem(cTabDropAckKey); } catch(err) {}
       resolve(result);
     }
 
-    function onStorage(ev)
+    function fOnStorage(ev)
     {
-      if (ev.key === TAB_DROP_ACK_KEY && acked(ev.newValue)) finish(true);
+      if (ev.key === cTabDropAckKey && fAcked(ev.newValue)) fFinish(true);
     }
 
     var current = null;
-    try { current = localStorage.getItem(TAB_DROP_ACK_KEY); } catch(err) {}
-    if (acked(current)) { finish(true); return; }
+    try { current = localStorage.getItem(cTabDropAckKey); } catch(err) {}
+    if (fAcked(current)) { fFinish(true); return; }
 
-    window.addEventListener('storage', onStorage);
+    window.addEventListener('storage', fOnStorage);
     timer = setTimeout(function()
     {
       var late = null;
-      try { late = localStorage.getItem(TAB_DROP_ACK_KEY); } catch(err) {}
-      finish(acked(late));
-    }, TAB_DROP_ACK_WAIT_MS);
+      try { late = localStorage.getItem(cTabDropAckKey); } catch(err) {}
+      fFinish(fAcked(late));
+    }, cTabDropAckWaitMs);
   });
 }
 
 // Called by the window that handled a drop from another window.
-function acknowledgeTabDrop(token)
+function fAcknowledgeTabDrop(token)
 {
   if (!token) return;
-  try { localStorage.setItem(TAB_DROP_ACK_KEY, token + '|' + Date.now()); } catch(err) {}
+  try { localStorage.setItem(cTabDropAckKey, token + '|' + Date.now()); } catch(err) {}
 }
 
 // Whether the drag was released somewhere other than this page: outside the
 // window's rectangle, or over another app's window that sits on top of it
 // (this page then stops receiving dragover — it fires continuously, every
 // ~50ms, while the pointer is over the page, even when it doesn't move).
-function dragEndedOutsideWindow(e)
+function fDragEndedOutsideWindow(e)
 {
   if (Date.now() - lastDragOverAt > 350)
     return true;
@@ -859,7 +859,7 @@ function dragEndedOutsideWindow(e)
 // pane's embed iframe goes pointer-transparent so drags pass through it.
 // A staleness timer clears the state for drags that simply leave the window
 // (their dragend fires elsewhere).
-function activateTabDragMode()
+function fActivateTabDragMode()
 {
   lastDragOverAt = Date.now();
   document.body.classList.add('tab-drag-active');
@@ -868,14 +868,14 @@ function activateTabDragMode()
     dragModeTimer = setInterval(function()
     {
       if (Date.now() - lastDragOverAt > 1500)
-        deactivateTabDragMode();
+        fDeactivateTabDragMode();
     }, 500);
 }
 
-function deactivateTabDragMode()
+function fDeactivateTabDragMode()
 {
   document.body.classList.remove('tab-drag-active');
-  hideSplitHints();
+  fHideSplitHints();
 
   if (dragModeTimer)
   {
@@ -884,7 +884,7 @@ function deactivateTabDragMode()
   }
 }
 
-function hideSplitHints()
+function fHideSplitHints()
 {
   document.getElementById('split-hint-left').classList.remove('open');
   document.getElementById('split-hint-right').classList.remove('open');
@@ -892,7 +892,7 @@ function hideSplitHints()
 
 // Which target the pointer is over: 'tabbar', 'left', 'right' or null.
 // The top strip counts as the bar even while the bar is empty/hidden.
-function tabDropZoneAt(e)
+function fTabDropZoneAt(e)
 {
   var bar = document.getElementById('open-tabs-bar'),
       barRect = bar.getBoundingClientRect();
@@ -913,7 +913,7 @@ function tabDropZoneAt(e)
 }
 
 // Insert position in the tab bar for a drop at this x
-function tabInsertIndexAt(e)
+function fTabInsertIndexAt(e)
 {
   var tabs = document.querySelectorAll('#open-tabs-bar .open-tab');
 
@@ -927,7 +927,7 @@ function tabInsertIndexAt(e)
   return tabs.length;
 }
 
-function placeTabAt(id, index)
+function fPlaceTabAt(id, index)
 {
   var cur = openTabs.indexOf(id);
 
@@ -938,18 +938,18 @@ function placeTabAt(id, index)
   }
 
   openTabs.splice(Math.max(0, Math.min(index, openTabs.length)), 0, id);
-  persistOpenTabs();
-  renderOpenTabs();
+  fPersistOpenTabs();
+  fRenderOpenTabs();
 }
 
 document.addEventListener('dragover', function(e)
 {
-  if (isEmbedContext || !tabDragHasFile(e)) return;
+  if (isEmbedContext || !fTabDragHasFile(e)) return;
 
-  activateTabDragMode();
+  fActivateTabDragMode();
   e.preventDefault();
 
-  var zone = tabDropZoneAt(e);
+  var zone = fTabDropZoneAt(e);
 
   // A drag from another window may be dropped anywhere in this one: the
   // center simply appends a tab. Local drags need a real target.
@@ -962,17 +962,17 @@ document.addEventListener('dragover', function(e)
 
 document.addEventListener('drop', function(e)
 {
-  if (isEmbedContext || !tabDragHasFile(e)) return;
+  if (isEmbedContext || !fTabDragHasFile(e)) return;
 
   e.preventDefault();
 
-  var zone = tabDropZoneAt(e),
-      id   = e.dataTransfer.getData(TAB_DND_MIME) || dragTabId,
+  var zone = fTabDropZoneAt(e),
+      id   = e.dataTransfer.getData(cTabDndMime) || dragTabId,
       src  = dragSource; // null for cross-window drags
 
   if (!zone && !dragTabId) zone = 'append';
 
-  deactivateTabDragMode();
+  fDeactivateTabDragMode();
 
   if (!zone || !id || !files[id]) return;
 
@@ -980,28 +980,28 @@ document.addEventListener('drop', function(e)
 
   // A tab from another window: tell it the tab arrived, so it closes its copy.
   if (!src)
-    acknowledgeTabDrop(e.dataTransfer.getData(TAB_DND_TOKEN_MIME));
+    fAcknowledgeTabDrop(e.dataTransfer.getData(cTabDndTokenMime));
 
   if (zone === 'left' || zone === 'right')
   {
     splitState.side = zone;
-    openInSplit(id, 'rendered');
+    fOpenInSplit(id, 'rendered');
 
     if (src === 'tab')
-      removeTab(id);
+      fRemoveTab(id);
     // src 'split': only the docking side changed; foreign: source cleans up
   }
   else // 'tabbar' / 'append'
   {
-    var index = (zone === 'tabbar') ? tabInsertIndexAt(e) : openTabs.length;
+    var index = (zone === 'tabbar') ? fTabInsertIndexAt(e) : openTabs.length;
 
     if (src === 'tab')
-      placeTabAt(id, index); // reorder within this bar
+      fPlaceTabAt(id, index); // reorder within this bar
     else
     {
-      placeTabAt(id, index);
-      if (src === 'split') closeSplitPane();
-      openFile(id);
+      fPlaceTabAt(id, index);
+      if (src === 'split') fCloseSplitPane();
+      fOpenFile(id);
     }
   }
 }, true);
@@ -1015,7 +1015,7 @@ if (isEmbedContext)
 
   document.addEventListener('dragover', function(e)
   {
-    if (!tabDragHasFile(e)) return;
+    if (!fTabDragHasFile(e)) return;
 
     var now = Date.now();
 
@@ -1030,7 +1030,7 @@ if (isEmbedContext)
 window.addEventListener('message', function(e)
 {
   if (!isEmbedContext && e.data && e.data.lkTabDrag)
-    activateTabDragMode();
+    fActivateTabDragMode();
 });
 
 // Cross-file links inside the split pane's document view open the target in
@@ -1041,58 +1041,58 @@ document.getElementById('split-rendered').addEventListener('click', function(e)
   if (!link) return;
 
   var href = link.getAttribute('href') || '';
-  if (href.indexOf(FILE_LINK_SCHEME) !== 0) return;
+  if (href.indexOf(cFileLinkScheme) !== 0) return;
 
   e.preventDefault();
 
-  var id = decodeURIComponent(href.slice(FILE_LINK_SCHEME.length));
+  var id = decodeURIComponent(href.slice(cFileLinkScheme.length));
   if (files[id])
-    openFile(id);
+    fOpenFile(id);
 });
 
 // Boot path for satellites (?win=) and embeds (?embed=): the full app with
 // the chrome trimmed by a body class, sharing storage with the main window.
-async function initSecondaryContext()
+async function fInitSecondaryContext()
 {
   document.body.classList.add(isEmbedContext ? 'embed-mode' : 'satellite-mode');
-  initTheme();
-  buildSheet();
+  fInitTheme();
+  fBuildSheet();
 
   if (workFolderRoot)
-    await loadWorkFolderTree();
+    await fLoadWorkFolderTree();
   else
-    loadFromStorage();
+    fLoadFromStorage();
 
-  await loadBacklinksIndex();
+  await fLoadBacklinksIndex();
 
   if (isEmbedContext)
   {
     if (files[embedFileId])
-      await openFile(embedFileId);
+      await fOpenFile(embedFileId);
   }
   else
   {
-    loadOpenTabs();
+    fLoadOpenTabs();
 
     var seed = bootParams.get('file');
 
     if (seed && files[seed])
-      await openFile(seed);
+      await fOpenFile(seed);
     else if (openTabs.length && files[openTabs[0]])
-      await openFile(openTabs[0]);
+      await fOpenFile(openTabs[0]);
 
     if (currentFileId && files[currentFileId])
       document.title = files[currentFileId].name || 'Lectern';
 
-    renderSplitPane(); // satellites can hold their own (non-persisted) split
-    registerThisWindow();
+    fRenderSplitPane(); // satellites can hold their own (non-persisted) split
+    fRegisterThisWindow();
   }
 
-  initCrossWindowSync();
+  fInitCrossWindowSync();
 
   // Work-folder workspaces have no storage event to lean on; keep this
   // window's copy of its visible file fresh with a light poll. (The web
-  // cloud workspace additionally live-merges through updateLiveSync.)
+  // cloud workspace additionally live-merges through fUpdateLiveSync.)
   if (workFolderRoot)
   {
     setInterval(async function()
@@ -1106,13 +1106,13 @@ async function initSecondaryContext()
 
       try
       {
-        var content = await Platform.readWorkFile(workFolderRoot, id);
+        var content = await Platform.fReadWorkFile(workFolderRoot, id);
 
         if (content !== f.content)
         {
           f.content = content;
           f.contentLoaded = true;
-          await openFile(id);
+          await fOpenFile(id);
         }
       }
       catch(e) {}

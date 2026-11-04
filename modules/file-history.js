@@ -14,17 +14,17 @@
 // just its line numbers). A version's full text is reconstructed by
 // replaying every entry's hunks in order, starting from ''.
 
-function linesOf(text)
+function fLinesOf(text)
 {
   return (text || '').split('\n');
 }
 
-// Same LCS-based approach as computeWordDiff, but over lines instead of
+// Same LCS-based approach as fComputeWordDiff, but over lines instead of
 // whitespace tokens, then grouped into contiguous add/remove/modify hunks.
-function computeLineHunks(oldText, newText)
+function fComputeLineHunks(oldText, newText)
 {
-  var a = linesOf(oldText),
-      b = linesOf(newText),
+  var a = fLinesOf(oldText),
+      b = fLinesOf(newText),
       n = a.length,
       m = b.length;
 
@@ -101,9 +101,9 @@ function computeLineHunks(oldText, newText)
 }
 
 // Replays one entry's hunks against a base text to produce the next version.
-function applyLineHunks(content, hunks)
+function fApplyLineHunks(content, hunks)
 {
-  var lines = linesOf(content),
+  var lines = fLinesOf(content),
       shift = 0;
 
   hunks.forEach
@@ -124,7 +124,7 @@ function applyLineHunks(content, hunks)
 // entry from the start. Entries from before this format change (which
 // stored a full snapshot as entry.content) are handled as a hard reset of
 // the running text, so old and new-format entries can coexist in one chain.
-function reconstructHistoryContent(file, uptoIndex)
+function fReconstructHistoryContent(file, uptoIndex)
 {
   var content = '';
 
@@ -132,7 +132,7 @@ function reconstructHistoryContent(file, uptoIndex)
   {
     var entry = file.history[i];
 
-    content = entry.hunks ? applyLineHunks(content, entry.hunks) : (entry.content || '');
+    content = entry.hunks ? fApplyLineHunks(content, entry.hunks) : (entry.content || '');
   }
 
   return content;
@@ -141,7 +141,7 @@ function reconstructHistoryContent(file, uptoIndex)
 // Records what changed since the last entry, skipping it if nothing did (so
 // just opening and closing a file without editing it doesn't pollute the
 // history with no-op entries).
-function recordFileHistory(id)
+function fRecordFileHistory(id)
 {
   var file = files[id];
 
@@ -149,7 +149,7 @@ function recordFileHistory(id)
     return;
 
   // Shared files aren't ours: no history sidecar in someone else's workspace.
-  if (id === SHARED_TMP_ID)
+  if (id === cSharedTmpId)
     return;
 
   var content = file.content || '';
@@ -157,30 +157,30 @@ function recordFileHistory(id)
   if (!file.history)
     file.history = [];
 
-  var lastContent = reconstructHistoryContent(file, file.history.length - 1);
+  var lastContent = fReconstructHistoryContent(file, file.history.length - 1);
 
   if (lastContent === content)
     return;
 
-  file.history.push({ timestamp: Date.now(), hunks: computeLineHunks(lastContent, content) });
+  file.history.push({ timestamp: Date.now(), hunks: fComputeLineHunks(lastContent, content) });
 
   if (file.history.length > 50)
   {
     // Drop the two oldest entries and replace them with a single re-based
     // "diff from empty" entry covering the same ground, so the replay chain
     // stays intact instead of losing its anchor at index 0.
-    var mergedContent = reconstructHistoryContent(file, 1);
+    var mergedContent = fReconstructHistoryContent(file, 1);
 
-    file.history.splice(0, 2, { timestamp: file.history[1].timestamp, hunks: computeLineHunks('', mergedContent) });
+    file.history.splice(0, 2, { timestamp: file.history[1].timestamp, hunks: fComputeLineHunks('', mergedContent) });
   }
 
   if (workFolderRoot)
   {
-    Platform.writeWorkFile(workFolderRoot, id + '.history.json', JSON.stringify(file.history))
+    Platform.fWriteWorkFile(workFolderRoot, id + '.history.json', JSON.stringify(file.history))
       .catch(function(e){ console.warn('History sidecar write error', e); });
   }
   else
-    saveToStorage();
+    fSaveToStorage();
 }
 
 window.addEventListener
@@ -189,7 +189,7 @@ window.addEventListener
   function()
   {
     if (currentFileId)
-      recordFileHistory(currentFileId);
+      fRecordFileHistory(currentFileId);
   }
 );
 
@@ -199,17 +199,17 @@ document.addEventListener('click', function(e)
   if (tPop && tPop.style.display !== 'none')
   {
     if (!tPop.contains(e.target) && e.target.id !== 'map-travel-result')
-      closeTravelPopover();
+      fCloseTravelPopover();
   }
   var pPop = document.getElementById('pin-popover');
   if (pPop && pPop.style.display !== 'none')
   {
     if (!pPop.contains(e.target) && !e.target.closest('.map-pin'))
-      closePinPopover();
+      fClosePinPopover();
   }
 });
 
-async function openHistoryModal()
+async function fOpenHistoryModal()
 {
   if (!currentFileId || !files[currentFileId])
     return;
@@ -220,7 +220,7 @@ async function openHistoryModal()
   {
     try
     {
-      var raw = await Platform.readWorkFile(workFolderRoot, currentFileId + '.history.json');
+      var raw = await Platform.fReadWorkFile(workFolderRoot, currentFileId + '.history.json');
       file.history = JSON.parse(raw) || [];
     }
     catch(e)
@@ -231,11 +231,11 @@ async function openHistoryModal()
     file.historyLoaded = true;
   }
 
-  renderHistoryModal();
+  fRenderHistoryModal();
   document.getElementById('history-modal').classList.add('open');
 }
 
-function closeHistoryModal()
+function fCloseHistoryModal()
 {
   document.getElementById('history-modal').classList.remove('open');
 }
@@ -246,13 +246,13 @@ document.getElementById('history-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('history-modal'))
-      closeHistoryModal();
+      fCloseHistoryModal();
   }
 );
 
 // Sheets/Notebook don't read as plain text, so their preview is a short
 // structural summary instead of a text snippet.
-function historyPreviewFor(type, content)
+function fHistoryPreviewFor(type, content)
 {
   content = content || '';
 
@@ -266,7 +266,7 @@ function historyPreviewFor(type, content)
   {
     try
     {
-      var pageCount = parseNotebookContent(content).pages.length;
+      var pageCount = fParseNotebookContent(content).pages.length;
       return pageCount + ' page' + (pageCount === 1 ? '' : 's');
     }
     catch(e)
@@ -279,7 +279,7 @@ function historyPreviewFor(type, content)
   return flat ? (flat.length > 120 ? flat.slice(0, 120) + '…' : flat) : '(empty)';
 }
 
-function renderHistoryModal()
+function fRenderHistoryModal()
 {
   var file = files[currentFileId],
       list = document.getElementById('history-list'),
@@ -299,7 +299,7 @@ function renderHistoryModal()
   {
     var entry = history[i];
 
-    running = entry.hunks ? applyLineHunks(running, entry.hunks) : (entry.content || '');
+    running = entry.hunks ? fApplyLineHunks(running, entry.hunks) : (entry.content || '');
     reconstructed[i] = running;
   }
 
@@ -308,17 +308,17 @@ function renderHistoryModal()
     entry = history[i];
 
     var when = new Date(entry.timestamp).toLocaleString(),
-        preview = historyPreviewFor(file.type, reconstructed[i]),
-        changeSummary = historyChangeSummary(entry);
+        preview = fHistoryPreviewFor(file.type, reconstructed[i]),
+        changeSummary = fHistoryChangeSummary(entry);
 
     html +=  '<div class="history-item">' +
                 '<div class="history-item-info">' +
-                  '<div class="history-item-time">' + escHtml(when) + (changeSummary ? ' <span class="history-item-changes">' + changeSummary + '</span>' : '') + '</div>' +
-                  '<div class="history-item-preview">' + escHtml(preview) + '</div>' +
+                  '<div class="history-item-time">' + fEscHtml(when) + (changeSummary ? ' <span class="history-item-changes">' + changeSummary + '</span>' : '') + '</div>' +
+                  '<div class="history-item-preview">' + fEscHtml(preview) + '</div>' +
                 '</div>' +
                 '<div class="history-item-actions">' +
-                  '<button type="button" class="btn-cancel history-compare-btn" onclick="compareHistoryEntry(' + i + ')">Compare</button>' +
-                  '<button type="button" class="btn-cancel history-restore-btn" onclick="restoreHistoryEntry(' + i + ')">Restore</button>' +
+                  '<button type="button" class="btn-cancel history-compare-btn" onclick="fCompareHistoryEntry(' + i + ')">Compare</button>' +
+                  '<button type="button" class="btn-cancel history-restore-btn" onclick="fRestoreHistoryEntry(' + i + ')">Restore</button>' +
                 '</div>' +
               '</div>';
   }
@@ -329,7 +329,7 @@ function renderHistoryModal()
 // A compact "+N -M line(s)" badge built straight from the stored hunks -
 // entries from before this format change (full-snapshot entries) have no
 // hunks, so they just don't get a badge.
-function historyChangeSummary(entry)
+function fHistoryChangeSummary(entry)
 {
   if (!entry.hunks)
     return '';
@@ -357,7 +357,7 @@ function historyChangeSummary(entry)
 // joining the tokens back together reconstructs the text exactly - the
 // standard tokenization for a word-level (rather than line-level) diff,
 // which reads much better than line diffing on wrapped markdown paragraphs.
-function tokenizeForDiff(text)
+function fTokenizeForDiff(text)
 {
   return (text || '').split(/(\s+)/).filter(function(t){ return t.length > 0; });
 }
@@ -365,10 +365,10 @@ function tokenizeForDiff(text)
 // Classic LCS-based diff over the token arrays. Returns a flat op list
 // (same/removed/added) in document order, or null if the documents are too
 // large for an O(n*m) table to be worth computing.
-function computeWordDiff(oldText, newText)
+function fComputeWordDiff(oldText, newText)
 {
-  var a = tokenizeForDiff(oldText),
-      b = tokenizeForDiff(newText),
+  var a = fTokenizeForDiff(oldText),
+      b = fTokenizeForDiff(newText),
       n = a.length,
       m = b.length;
 
@@ -414,9 +414,9 @@ function computeWordDiff(oldText, newText)
   return ops;
 }
 
-function renderWordDiff(oldText, newText, oldPaneId, newPaneId)
+function fRenderWordDiff(oldText, newText, oldPaneId, newPaneId)
 {
-  var ops = computeWordDiff(oldText, newText),
+  var ops = fComputeWordDiff(oldText, newText),
       oldPane = document.getElementById(oldPaneId || 'diff-old-pane'),
       newPane = document.getElementById(newPaneId || 'diff-new-pane');
 
@@ -432,7 +432,7 @@ function renderWordDiff(oldText, newText, oldPaneId, newPaneId)
 
   ops.forEach(function(op)
   {
-    var escaped = escHtml(op.value);
+    var escaped = fEscHtml(op.value);
 
     if (op.type === 'same')
     {
@@ -449,7 +449,7 @@ function renderWordDiff(oldText, newText, oldPaneId, newPaneId)
   newPane.innerHTML = newHtml || '<em>(empty)</em>';
 }
 
-function compareHistoryEntry(index)
+function fCompareHistoryEntry(index)
 {
   var file = files[currentFileId],
       entry = file && file.history && file.history[index];
@@ -459,8 +459,8 @@ function compareHistoryEntry(index)
 
   historyDiffIndex = index;
 
-  var oldContent = index > 0 ? reconstructHistoryContent(file, index - 1) : '';
-  var newContent = reconstructHistoryContent(file, index);
+  var oldContent = index > 0 ? fReconstructHistoryContent(file, index - 1) : '';
+  var newContent = fReconstructHistoryContent(file, index);
 
   var oldLabel = index > 0
     ? new Date(file.history[index - 1].timestamp).toLocaleString()
@@ -469,13 +469,13 @@ function compareHistoryEntry(index)
   document.getElementById('diff-old-header').textContent = oldLabel;
   document.getElementById('diff-new-header').textContent = new Date(entry.timestamp).toLocaleString();
 
-  renderWordDiff(oldContent, newContent);
+  fRenderWordDiff(oldContent, newContent);
 
-  closeHistoryModal();
+  fCloseHistoryModal();
   document.getElementById('history-diff-modal').classList.add('open');
 }
 
-function closeHistoryDiffModal()
+function fCloseHistoryDiffModal()
 {
   document.getElementById('history-diff-modal').classList.remove('open');
 }
@@ -486,19 +486,19 @@ document.getElementById('history-diff-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('history-diff-modal'))
-      closeHistoryDiffModal();
+      fCloseHistoryDiffModal();
   }
 );
 
-async function restoreFromDiff()
+async function fRestoreFromDiff()
 {
   var index = historyDiffIndex;
 
-  closeHistoryDiffModal();
-  await restoreHistoryEntry(index);
+  fCloseHistoryDiffModal();
+  await fRestoreHistoryEntry(index);
 }
 
-async function restoreHistoryEntry(index)
+async function fRestoreHistoryEntry(index)
 {
   var file = files[currentFileId],
       entry = file && file.history && file.history[index];
@@ -509,53 +509,53 @@ async function restoreHistoryEntry(index)
   if (!confirm('Restore this version? Your current content will be saved to history first, so you can still get back to it.'))
     return;
 
-  var restoredContent = reconstructHistoryContent(file, index);
+  var restoredContent = fReconstructHistoryContent(file, index);
 
-  recordFileHistory(currentFileId);
+  fRecordFileHistory(currentFileId);
   file.content = restoredContent;
 
-  closeHistoryModal();
+  fCloseHistoryModal();
 
   if (file.type === 'doc')
-    loadDocFile(file);
+    fLoadDocFile(file);
   else if (file.type === 'graph')
-    loadGraphFile(file);
+    fLoadGraphFile(file);
   else if (file.type === 'slides')
-    loadSlidesFile(file);
+    fLoadSlidesFile(file);
   else if (file.type === 'notebook')
-    loadNotebookFile(file);
+    fLoadNotebookFile(file);
   else if (file.type === 'glossary')
-    loadGlossaryFile(file);
+    fLoadGlossaryFile(file);
   else if (file.type === 'calendar')
-    loadCalendarFile(file);
+    fLoadCalendarFile(file);
   else if (file.type === 'economy')
-    loadEconomyFile(file);
+    fLoadEconomyFile(file);
   else if (file.type === 'bestiary')
-    loadBestiaryFile(file);
+    fLoadBestiaryFile(file);
   else
-    loadSheetFile(file);
+    fLoadSheetFile(file);
 
   if (workFolderRoot)
   {
-    try { await Platform.writeWorkFile(workFolderRoot, currentFileId, file.content || ''); }
+    try { await Platform.fWriteWorkFile(workFolderRoot, currentFileId, file.content || ''); }
     catch(e) { console.warn('Work folder write error', e); }
   }
   else
-    saveToStorage();
+    fSaveToStorage();
 
-  renderFileList();
+  fRenderFileList();
 }
 
-async function openFile(id)
+async function fOpenFile(id)
 {
   if (!files[id])
     return;
 
-  if (id !== SHARED_TMP_ID)
-    exitSharedMode();
+  if (id !== cSharedTmpId)
+    fExitSharedMode();
 
-  if (currentFileId && currentFileId !== id && currentFileId !== SHARED_TMP_ID)
-    recordFileHistory(currentFileId);
+  if (currentFileId && currentFileId !== id && currentFileId !== cSharedTmpId)
+    fRecordFileHistory(currentFileId);
 
   currentFileId = id;
 
@@ -563,7 +563,7 @@ async function openFile(id)
   {
     try
     {
-      files[id].content       = await Platform.readWorkFile(workFolderRoot, id);
+      files[id].content       = await Platform.fReadWorkFile(workFolderRoot, id);
       files[id].contentLoaded = true;
     }
     catch(e)
@@ -576,10 +576,10 @@ async function openFile(id)
 
   const file = files[id];
 
-  switchAppType(file.type, false);
-  renderFileList();
-  noteTabOpened(id);
-  closeMobileSidebar(); // picking a file dismisses the phone drawer
+  fSwitchAppType(file.type, false);
+  fRenderFileList();
+  fNoteTabOpened(id);
+  fCloseMobileSidebar(); // picking a file dismisses the phone drawer
 
   // Secondary windows are named after what they're showing, and the registry
   // entry follows so other windows' menus stay accurate
@@ -587,49 +587,49 @@ async function openFile(id)
     document.title = file.name;
 
   if (file.type === 'doc')
-    loadDocFile(file);
+    fLoadDocFile(file);
 
   else if (file.type === 'graph')
-    loadGraphFile(file);
+    fLoadGraphFile(file);
 
   else if (file.type === 'slides')
-    loadSlidesFile(file);
+    fLoadSlidesFile(file);
 
   else if (file.type === 'notebook')
-    loadNotebookFile(file);
+    fLoadNotebookFile(file);
 
   else if (file.type === 'glossary')
-    loadGlossaryFile(file);
+    fLoadGlossaryFile(file);
 
   else if (file.type === 'calendar')
-    loadCalendarFile(file);
+    fLoadCalendarFile(file);
 
   else if (file.type === 'economy')
-    loadEconomyFile(file);
+    fLoadEconomyFile(file);
 
   else if (file.type === 'bestiary')
-    loadBestiaryFile(file);
+    fLoadBestiaryFile(file);
 
   else
-    loadSheetFile(file);
+    fLoadSheetFile(file);
 
-  updateCommentsUI();
-  updateLiveSync();
+  fUpdateCommentsUI();
+  fUpdateLiveSync();
 
   // Fire-and-forget: update the shared backlinks index whenever a file is opened
-  updateBacklinksForFile(id);
+  fUpdateBacklinksForFile(id);
 }
 
-function clearActiveEditors()
+function fClearActiveEditors()
 {
   document.getElementById('doc-title-input').value = '';
   document.getElementById('editor').value = '';
   document.getElementById('toolbar-title').innerHTML = '<span>No document open</span>';
-  updatePreview();
-  updateStatus();
+  fUpdatePreview();
+  fUpdateStatus();
 }
 
-async function deleteFile(e, id)
+async function fDeleteFile(e, id)
 {
   e.stopPropagation();
 
@@ -640,8 +640,8 @@ async function deleteFile(e, id)
   {
     try
     {
-      await Platform.deleteWorkEntry(workFolderRoot, id, false);
-      Platform.deleteWorkEntry(workFolderRoot, id + '.history.json', false).catch(function(){});
+      await Platform.fDeleteWorkEntry(workFolderRoot, id, false);
+      Platform.fDeleteWorkEntry(workFolderRoot, id + '.history.json', false).catch(function(){});
     }
     catch(err)
     {
@@ -653,10 +653,10 @@ async function deleteFile(e, id)
     if (currentFileId === id)
     {
       currentFileId = null;
-      clearActiveEditors();
+      fClearActiveEditors();
     }
 
-    await loadWorkFolderTree();
+    await fLoadWorkFolderTree();
     return;
   }
 
@@ -665,15 +665,15 @@ async function deleteFile(e, id)
   if (currentFileId === id)
   {
     currentFileId = null;
-    clearActiveEditors();
+    fClearActiveEditors();
   }
 
-  saveToStorage();
-  pruneOpenTabs();
-  renderFileList();
+  fSaveToStorage();
+  fPruneOpenTabs();
+  fRenderFileList();
 }
 
-async function deleteFolderEntry(e, path)
+async function fDeleteFolderEntry(e, path)
 {
   e.stopPropagation();
 
@@ -682,7 +682,7 @@ async function deleteFolderEntry(e, path)
 
   try
   {
-    await Platform.deleteWorkEntry(workFolderRoot, path, true);
+    await Platform.fDeleteWorkEntry(workFolderRoot, path, true);
   }
   catch(err)
   {
@@ -694,8 +694,8 @@ async function deleteFolderEntry(e, path)
   if (currentFileId && (currentFileId === path || currentFileId.indexOf(path + '/') === 0))
   {
     currentFileId = null;
-    clearActiveEditors();
+    fClearActiveEditors();
   }
 
-  await loadWorkFolderTree();
+  await fLoadWorkFolderTree();
 }

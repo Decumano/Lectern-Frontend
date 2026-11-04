@@ -6,9 +6,9 @@
 
 // ── SHEET CHARTS (Chart.js) ──
 
-var CHART_COLORS = ['#d4a843', '#4a7fa8', '#5a9a6e', '#c0574a', '#9d6fd1', '#d18b3f', '#3fa7b0'];
+var cChartColors = ['#d4a843', '#4a7fa8', '#5a9a6e', '#c0574a', '#9d6fd1', '#d18b3f', '#3fa7b0'];
 
-function configureChartJs()
+function fConfigureChartJs()
 {
   if (typeof Chart === 'undefined')
     return;
@@ -23,32 +23,32 @@ function configureChartJs()
   );
 }
 
-configureChartJs();
+fConfigureChartJs();
 
-function parseChartRange(range)
+function fParseChartRange(range)
 {
   var parts = (range || '').split(':');
 
   if (parts.length !== 2)
     return null;
 
-  var pa = parseName(parts[0].trim()),
-      pb = parseName(parts[1].trim());
+  var pa = fParseName(parts[0].trim()),
+      pb = fParseName(parts[1].trim());
 
   if (!pa || !pb)
     return null;
 
   return  {
-            colStart: Math.min(colIndex(pa.col), colIndex(pb.col)),
-            colEnd: Math.max(colIndex(pa.col), colIndex(pb.col)),
+            colStart: Math.min(fColIndex(pa.col), fColIndex(pb.col)),
+            colEnd: Math.max(fColIndex(pa.col), fColIndex(pb.col)),
             rowStart: Math.min(pa.row, pb.row),
             rowEnd: Math.max(pa.row, pb.row)
           };
 }
 
-function getChartRangeGrid(range)
+function fGetChartRangeGrid(range)
 {
-  var dims = parseChartRange(range);
+  var dims = fParseChartRange(range);
 
   if (!dims)
     return null;
@@ -60,7 +60,7 @@ function getChartRangeGrid(range)
     var row = [];
 
     for (var c = dims.colStart; c <= dims.colEnd; c++)
-      row.push(getDisplayValue(colName(c) + r));
+      row.push(fGetDisplayValue(fColName(c) + r));
 
     grid.push(row);
   }
@@ -72,7 +72,7 @@ function getChartRangeGrid(range)
 // column 1 -> series names, the rest -> the data matrix.
 // Categories from row 1 (across columns), series from column 1 (down rows) -
 // the right shape for a "Quarter columns x Product rows" comparison table.
-function categoricalByRowSeries(grid, firstRow, firstCol)
+function fCategoricalByRowSeries(grid, firstRow, firstCol)
 {
   var rowStart = firstRow ? 1 : 0,
       colStart = firstCol ? 1 : 0,
@@ -99,7 +99,7 @@ function categoricalByRowSeries(grid, firstRow, firstCol)
 // Categories from column 1 (down rows), series from row 1 (across columns) -
 // the right shape for a simple "Month rows x Revenue column(s)" list, which
 // is the more common case for small everyday tables.
-function categoricalByColumnSeries(grid, firstRow, firstCol)
+function fCategoricalByColumnSeries(grid, firstRow, firstCol)
 {
   var rowStart = firstRow ? 1 : 0,
       colStart = firstCol ? 1 : 0,
@@ -127,7 +127,7 @@ function categoricalByColumnSeries(grid, firstRow, firstCol)
 // matches Excel/Sheets' default — a range with more data rows than data
 // columns (e.g. a simple Month/Revenue list) charts each COLUMN as a series,
 // otherwise (e.g. a wide Quarter-by-Product table) each ROW is a series.
-function chartEffectiveOrientation(chartDef, grid)
+function fChartEffectiveOrientation(chartDef, grid)
 {
   if (chartDef.orientation === 'rows' || chartDef.orientation === 'cols')
     return chartDef.orientation;
@@ -138,7 +138,7 @@ function chartEffectiveOrientation(chartDef, grid)
   return (dataRowCount > dataColCount) ? 'cols' : 'rows';
 }
 
-function buildCategoricalChartData(chartDef, grid)
+function fBuildCategoricalChartData(chartDef, grid)
 {
   if (!grid.length || !grid[0].length)
     return { labels: [], datasets: [] };
@@ -149,16 +149,16 @@ function buildCategoricalChartData(chartDef, grid)
   // 'rows': each row is a series (legend from the first column, axis labels
   // from the first row). 'cols': each column is a series (legend from the
   // first row, axis labels from the first column).
-  return  chartEffectiveOrientation(chartDef, grid) === 'cols'
+  return  fChartEffectiveOrientation(chartDef, grid) === 'cols'
           ?
-            categoricalByColumnSeries(grid, firstRow, firstCol)
+            fCategoricalByColumnSeries(grid, firstRow, firstCol)
           :
-            categoricalByRowSeries(grid, firstRow, firstCol);
+            fCategoricalByRowSeries(grid, firstRow, firstCol);
 }
 
 // Scatter wants {x,y} pairs rather than labels+parallel arrays: column 1 is
 // the shared X axis, every other column is its own series plotted against it.
-function buildScatterChartData(chartDef, grid)
+function fBuildScatterChartData(chartDef, grid)
 {
   var firstRow = chartDef.firstRowLabels,
       rowStart = firstRow ? 1 : 0,
@@ -186,17 +186,17 @@ function buildScatterChartData(chartDef, grid)
   return { labels: [], datasets: datasets };
 }
 
-function buildChartData(chartDef)
+function fBuildChartData(chartDef)
 {
-  var grid = getChartRangeGrid(chartDef.range);
+  var grid = fGetChartRangeGrid(chartDef.range);
 
   if (!grid || !grid.length)
     return { labels: [], datasets: [] };
 
   if (chartDef.type === 'scatter')
-    return buildScatterChartData(chartDef, grid);
+    return fBuildScatterChartData(chartDef, grid);
 
-  var data = buildCategoricalChartData(chartDef, grid);
+  var data = fBuildCategoricalChartData(chartDef, grid);
 
   // Pie/doughnut are single-series chart types - if the range has more than
   // one data row, only the first is used rather than silently merging them.
@@ -204,7 +204,7 @@ function buildChartData(chartDef)
     data.datasets = data.datasets.slice(0, 1);
 
   if (chartDef.type === 'percent')
-    data = percentStackDatasets(data, chartDef);
+    data = fPercentStackDatasets(data, chartDef);
 
   return data;
 }
@@ -216,12 +216,12 @@ function buildChartData(chartDef)
 // bar-shaped equivalent of a pie chart; multi-series ranges normalize each
 // category's stack. chartDef.percentTotal, when given, replaces the per-bar
 // sum as the 100% denominator, so bars may then top out below 100%.
-function percentStackDatasets(data, chartDef)
+function fPercentStackDatasets(data, chartDef)
 {
   if (!data.datasets.length)
     return data;
 
-  function pct(v, total)
+  function fPct(v, total)
   {
     return total ? Math.round(((parseFloat(v) || 0) / total) * 1000) / 10 : 0;
   }
@@ -236,7 +236,7 @@ function percentStackDatasets(data, chartDef)
       labels: [ds.label || 'Total'],
       datasets: data.labels.map(function(lab, i)
       {
-        return { label: String(lab), data: [pct(ds.data[i], total)] };
+        return { label: String(lab), data: [fPct(ds.data[i], total)] };
       })
     };
   }
@@ -253,13 +253,13 @@ function percentStackDatasets(data, chartDef)
     {
       return {
         label: ds.label,
-        data: ds.data.map(function(v, j){ return pct(v, categoryTotals[j]); })
+        data: ds.data.map(function(v, j){ return fPct(v, categoryTotals[j]); })
       };
     })
   };
 }
 
-function buildChartScales(chartDef)
+function fBuildChartScales(chartDef)
 {
   var gridColor = 'rgba(255,255,255,0.08)',
       tickColor = '#9e9b94';
@@ -292,20 +292,20 @@ function buildChartScales(chartDef)
           };
 }
 
-function buildChartJsConfig(chartDef)
+function fBuildChartJsConfig(chartDef)
 {
-  var data = buildChartData(chartDef),
+  var data = fBuildChartData(chartDef),
       isPie = (chartDef.type === 'pie' || chartDef.type === 'doughnut'),
       baseType = (chartDef.type === 'combo' || chartDef.type === 'percent') ? 'bar' : chartDef.type;
 
   var datasets = data.datasets.map(function(ds, i)
   {
-    var color = CHART_COLORS[i % CHART_COLORS.length],
+    var color = cChartColors[i % cChartColors.length],
         styled =
         {
           label: ds.label,
           data: ds.data,
-          backgroundColor: isPie ? ds.data.map(function(_, j){ return CHART_COLORS[j % CHART_COLORS.length]; }) : color,
+          backgroundColor: isPie ? ds.data.map(function(_, j){ return cChartColors[j % cChartColors.length]; }) : color,
           borderColor: color,
           borderWidth: (chartDef.type === 'line' || chartDef.type === 'radar') ? 2 : 1
         };
@@ -338,12 +338,12 @@ function buildChartJsConfig(chartDef)
                   ? { callbacks: { label: function(ctx){ return (ctx.dataset.label ? ctx.dataset.label + ': ' : '') + ctx.parsed.y + '%'; } } }
                   : {}
               },
-              scales: isPie ? {} : buildChartScales(chartDef)
+              scales: isPie ? {} : fBuildChartScales(chartDef)
             }
           };
 }
 
-function renderSheetCharts()
+function fRenderSheetCharts()
 {
   var layer = document.getElementById('sheet-charts-layer');
 
@@ -370,20 +370,20 @@ function renderSheetCharts()
     box.style.height = chartDef.height + 'px';
 
     var swapBtn = chartDef.type === 'scatter' ? '' :
-        '<span class="sheet-chart-del" title="Swap legend and axis (rows ↔ columns)" onmousedown="event.stopPropagation()" onclick="toggleChartOrientation(event,\'' + escAttr(chartDef.id) + '\')">' +
+        '<span class="sheet-chart-del" title="Swap legend and axis (rows ↔ columns)" onmousedown="event.stopPropagation()" onclick="fToggleChartOrientation(event,\'' + fEscAttr(chartDef.id) + '\')">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17,3 21,7 17,11"/><line x1="21" y1="7" x2="9" y2="7"/><polyline points="7,13 3,17 7,21"/><line x1="3" y1="17" x2="15" y2="17"/></svg>' +
         '</span>';
 
     box.innerHTML =
-      '<div class="sheet-chart-header" onmousedown="chartBoxMouseDown(event,\'' + escAttr(chartDef.id) + '\')">' +
-        '<span class="sheet-chart-title">' + escHtml(chartDef.title || 'Chart') + '</span>' +
+      '<div class="sheet-chart-header" onmousedown="fChartBoxMouseDown(event,\'' + fEscAttr(chartDef.id) + '\')">' +
+        '<span class="sheet-chart-title">' + fEscHtml(chartDef.title || 'Chart') + '</span>' +
         swapBtn +
-        '<span class="sheet-chart-del" onmousedown="event.stopPropagation()" onclick="deleteChart(event,\'' + escAttr(chartDef.id) + '\')">' +
+        '<span class="sheet-chart-del" onmousedown="event.stopPropagation()" onclick="fDeleteChart(event,\'' + fEscAttr(chartDef.id) + '\')">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
         '</span>' +
       '</div>' +
       '<div class="sheet-chart-canvas-wrap"><canvas></canvas></div>' +
-      '<div class="sheet-chart-resize-handle" onmousedown="chartResizeMouseDown(event,\'' + escAttr(chartDef.id) + '\')"></div>';
+      '<div class="sheet-chart-resize-handle" onmousedown="fChartResizeMouseDown(event,\'' + fEscAttr(chartDef.id) + '\')"></div>';
 
     layer.appendChild(box);
 
@@ -391,11 +391,11 @@ function renderSheetCharts()
       return;
 
     var canvas = box.querySelector('canvas');
-    sheetChartInstances[chartDef.id] = new Chart(canvas.getContext('2d'), buildChartJsConfig(chartDef));
+    sheetChartInstances[chartDef.id] = new Chart(canvas.getContext('2d'), fBuildChartJsConfig(chartDef));
   });
 }
 
-function refreshSheetCharts()
+function fRefreshSheetCharts()
 {
   sheetCharts.forEach(function(chartDef)
   {
@@ -404,7 +404,7 @@ function refreshSheetCharts()
     if (!chart)
       return;
 
-    var data = buildChartData(chartDef);
+    var data = fBuildChartData(chartDef);
 
     chart.data.labels = data.labels;
 
@@ -421,7 +421,7 @@ function refreshSheetCharts()
   });
 }
 
-function openChartModal()
+function fOpenChartModal()
 {
   newChartType = 'bar';
 
@@ -430,8 +430,8 @@ function openChartModal()
     card.classList.toggle('selected', card.dataset.type === 'bar');
   });
 
-  var box = selectionAnchor ? getSelectionBoundingBox() : null,
-      prefill = box ? (colName(box.colStart) + box.rowStart + ':' + colName(box.colEnd) + box.rowEnd) : '';
+  var box = selectionAnchor ? fGetSelectionBoundingBox() : null,
+      prefill = box ? (fColName(box.colStart) + box.rowStart + ':' + fColName(box.colEnd) + box.rowEnd) : '';
 
   document.getElementById('chart-range-input').value = prefill;
   document.getElementById('chart-title-input').value = '';
@@ -444,12 +444,12 @@ function openChartModal()
   document.getElementById('chart-modal').classList.add('open');
 }
 
-function closeChartModal()
+function fCloseChartModal()
 {
   document.getElementById('chart-modal').classList.remove('open');
 }
 
-function selectChartType(type, el)
+function fSelectChartType(type, el)
 {
   newChartType = type;
 
@@ -467,21 +467,21 @@ document.getElementById('chart-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('chart-modal'))
-      closeChartModal();
+      fCloseChartModal();
   }
 );
 
-function createChart()
+function fCreateChart()
 {
   var range = document.getElementById('chart-range-input').value.trim();
 
-  if (!range || !parseChartRange(range))
+  if (!range || !fParseChartRange(range))
   {
     alert('Enter a valid range, e.g. A1:C5');
     return;
   }
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
   var offset = (sheetCharts.length % 4) * 30;
 
@@ -507,15 +507,15 @@ function createChart()
     }
   );
 
-  closeChartModal();
-  renderSheetCharts();
-  saveSheetToFile();
+  fCloseChartModal();
+  fRenderSheetCharts();
+  fSaveSheetToFile();
 }
 
 // Flips which table direction a chart uses as its legend (Excel's "Switch
 // Row/Column"). An 'auto' chart resolves to what it's currently showing
 // first, so the click always visibly flips it.
-function toggleChartOrientation(e, chartId)
+function fToggleChartOrientation(e, chartId)
 {
   e.stopPropagation();
 
@@ -523,18 +523,18 @@ function toggleChartOrientation(e, chartId)
   if (!chartDef)
     return;
 
-  var grid = getChartRangeGrid(chartDef.range);
+  var grid = fGetChartRangeGrid(chartDef.range);
   if (!grid || !grid.length || !grid[0].length)
     return;
 
-  sheetSnapshotForUndo();
-  chartDef.orientation = chartEffectiveOrientation(chartDef, grid) === 'rows' ? 'cols' : 'rows';
+  fSheetSnapshotForUndo();
+  chartDef.orientation = fChartEffectiveOrientation(chartDef, grid) === 'rows' ? 'cols' : 'rows';
 
-  renderSheetCharts();
-  saveSheetToFile();
+  fRenderSheetCharts();
+  fSaveSheetToFile();
 }
 
-function deleteChart(e, chartId)
+function fDeleteChart(e, chartId)
 {
   e.stopPropagation();
 
@@ -546,7 +546,7 @@ function deleteChart(e, chartId)
   if (idx === -1)
     return;
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
   sheetCharts.splice(idx, 1);
 
   if (sheetChartInstances[chartId])
@@ -560,10 +560,10 @@ function deleteChart(e, chartId)
   if (box)
     box.remove();
 
-  saveSheetToFile();
+  fSaveSheetToFile();
 }
 
-function chartBoxMouseDown(e, chartId)
+function fChartBoxMouseDown(e, chartId)
 {
   e.preventDefault();
 
@@ -572,11 +572,11 @@ function chartBoxMouseDown(e, chartId)
   if (!chartDef)
     return;
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
   sheetChartDrag = { kind: 'move', id: chartId, startX: e.clientX, startY: e.clientY, origX: chartDef.x, origY: chartDef.y };
 }
 
-function chartResizeMouseDown(e, chartId)
+function fChartResizeMouseDown(e, chartId)
 {
   e.preventDefault();
   e.stopPropagation();
@@ -586,7 +586,7 @@ function chartResizeMouseDown(e, chartId)
   if (!chartDef)
     return;
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
   sheetChartDrag = { kind: 'resize', id: chartId, startX: e.clientX, startY: e.clientY, origWidth: chartDef.width, origHeight: chartDef.height };
 }
 
@@ -644,7 +644,7 @@ document.addEventListener
       return;
 
     sheetChartDrag = null;
-    saveSheetToFile();
+    fSaveSheetToFile();
   }
 );
 
@@ -655,10 +655,10 @@ document.addEventListener
   'mouseup',
   function()
   {
-    if (!sheetSaveDeferred || sheetDragActive())
+    if (!sheetSaveDeferred || fSheetDragActive())
       return;
 
     sheetSaveDeferred = false;
-    saveSheetToFile();
+    fSaveSheetToFile();
   }
 );

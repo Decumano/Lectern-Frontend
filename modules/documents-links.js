@@ -7,21 +7,21 @@
 // ── CROSS-FILE LINKS (Docs only) ──
 // Written as ordinary markdown links whose target uses a custom scheme -
 // [text](lorekeep://file/<id>) - so a click handler in the preview can tell
-// them apart from real URLs and route to openFile() instead of navigating.
+// them apart from real URLs and route to fOpenFile() instead of navigating.
 // The id is URL-encoded since Work Folder ids are relative paths (can
 // contain "/") and could in principle contain other URL-unsafe characters.
-var FILE_LINK_SCHEME = 'lorekeep://file/';
+var cFileLinkScheme = 'lorekeep://file/';
 
-function openFileLinkModal()
+function fOpenFileLinkModal()
 {
   document.getElementById('file-link-search').value = '';
-  renderFileLinkList();
+  fRenderFileLinkList();
   document.getElementById('file-link-modal').classList.add('open');
   document.getElementById('file-link-search').focus();
 
   // In Work Folder mode, eagerly pre-load content for embeddable files so the
   // Embed button works immediately when clicked (content is otherwise only
-  // loaded on explicit openFile).
+  // loaded on explicit fOpenFile).
   if (workFolderRoot)
   {
     Object.keys(files).forEach(function(id)
@@ -29,7 +29,7 @@ function openFileLinkModal()
       var f = files[id];
       if ((f.type === 'sheet' || f.type === 'graph') && !f.contentLoaded)
       {
-        Platform.readWorkFile(workFolderRoot, id)
+        Platform.fReadWorkFile(workFolderRoot, id)
           .then(function(c){ f.content = c; f.contentLoaded = true; })
           .catch(function(){});
       }
@@ -37,7 +37,7 @@ function openFileLinkModal()
   }
 }
 
-function closeFileLinkModal()
+function fCloseFileLinkModal()
 {
   document.getElementById('file-link-modal').classList.remove('open');
 }
@@ -48,7 +48,7 @@ document.getElementById('file-link-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('file-link-modal'))
-      closeFileLinkModal();
+      fCloseFileLinkModal();
   }
 );
 
@@ -56,53 +56,53 @@ document.getElementById('file-link-modal').addEventListener
 // Everything starts expanded: the point of the tree is browsing by location.
 var fileLinkCollapsed = new Set();
 
-function toggleFileLinkFolder(path)
+function fToggleFileLinkFolder(path)
 {
   if (fileLinkCollapsed.has(path))
     fileLinkCollapsed.delete(path);
   else
     fileLinkCollapsed.add(path);
 
-  renderFileLinkList();
+  fRenderFileLinkList();
 }
 
-function fileLinkRowHtml(id, f, depth, subtitle)
+function fFileLinkRowHtml(id, f, depth, subtitle)
 {
   var canEmbed = (f.type === 'graph' || f.type === 'sheet');
 
-  return  '<div class="file-link-item" style="margin-left:' + (depth * 16) + 'px" onclick="chooseFileLink(\'' + escAttr(id) + '\')">' +
-            '<span class="file-icon">' + fileTypeIcon(f.type) + '</span>' +
-            '<span class="file-link-item-name">' + escHtml(f.name) +
-              (subtitle ? '<span class="file-link-item-path">' + escHtml(subtitle) + '</span>' : '') +
+  return  '<div class="file-link-item" style="margin-left:' + (depth * 16) + 'px" onclick="fChooseFileLink(\'' + fEscAttr(id) + '\')">' +
+            '<span class="file-icon">' + fFileTypeIcon(f.type) + '</span>' +
+            '<span class="file-link-item-name">' + fEscHtml(f.name) +
+              (subtitle ? '<span class="file-link-item-path">' + fEscHtml(subtitle) + '</span>' : '') +
             '</span>' +
-            (canEmbed ? '<button class="file-link-embed-btn" onclick="event.stopPropagation();chooseFileEmbed(\'' + escAttr(id) + '\')">Embed</button>' : '') +
+            (canEmbed ? '<button class="file-link-embed-btn" onclick="event.stopPropagation();fChooseFileEmbed(\'' + fEscAttr(id) + '\')">Embed</button>' : '') +
           '</div>';
 }
 
 // Mirrors the sidebar's folder tree so files can be found by where they
 // live, not just by name. Searching flattens the tree (matches from any
 // folder) but keeps each hit's folder path visible as a subtitle.
-function renderFileLinkList()
+function fRenderFileLinkList()
 {
   var query = document.getElementById('file-link-search').value.trim().toLowerCase(),
       list = document.getElementById('file-link-list'),
       ids = Object.keys(files).filter(function(id)
       {
-        return id !== SHARED_TMP_ID && id !== currentFileId; // no self-links
+        return id !== cSharedTmpId && id !== currentFileId; // no self-links
       });
 
-  function byName(a, b) { return files[a].name.localeCompare(files[b].name); }
+  function fByName(a, b) { return files[a].name.localeCompare(files[b].name); }
 
   if (query)
   {
     var matches = ids.filter(function(id) { return files[id].name.toLowerCase().indexOf(query) !== -1; })
-                     .sort(byName);
+                     .sort(fByName);
 
     list.innerHTML = matches.length
                       ?
                         matches.map(function(id)
                         {
-                          return fileLinkRowHtml(id, files[id], 0, files[id].folder ? files[id].folder + '/' : '');
+                          return fFileLinkRowHtml(id, files[id], 0, files[id].folder ? files[id].folder + '/' : '');
                         }).join('')
                       :
                         '<div class="history-empty">No matching files.</div>';
@@ -115,7 +115,7 @@ function renderFileLinkList()
     var flat = ids.sort(function(a, b) { return (files[b].modified || 0) - (files[a].modified || 0); });
 
     list.innerHTML = flat.length
-                      ? flat.map(function(id) { return fileLinkRowHtml(id, files[id], 0, ''); }).join('')
+                      ? flat.map(function(id) { return fFileLinkRowHtml(id, files[id], 0, ''); }).join('')
                       : '<div class="history-empty">No other files yet.</div>';
     return;
   }
@@ -135,7 +135,7 @@ function renderFileLinkList()
     (childFolders[parent] = childFolders[parent] || []).push(path);
   });
 
-  function renderLevel(parentPath, depth)
+  function fRenderLevel(parentPath, depth)
   {
     var html = '';
 
@@ -147,98 +147,98 @@ function renderFileLinkList()
     {
       var collapsed = fileLinkCollapsed.has(path);
 
-      html += '<div class="file-link-folder" style="margin-left:' + (depth * 16) + 'px" onclick="toggleFileLinkFolder(\'' + escAttr(path) + '\')">' +
-                '<span class="folder-caret' + (collapsed ? '' : ' expanded') + '">' + CHEVRON_ICON + '</span>' +
-                '<span class="file-icon">' + FOLDER_ICON + '</span>' +
-                '<span class="file-link-item-name">' + escHtml(folders[path].name) + '</span>' +
+      html += '<div class="file-link-folder" style="margin-left:' + (depth * 16) + 'px" onclick="fToggleFileLinkFolder(\'' + fEscAttr(path) + '\')">' +
+                '<span class="folder-caret' + (collapsed ? '' : ' expanded') + '">' + cChevronIcon + '</span>' +
+                '<span class="file-icon">' + cFolderIcon + '</span>' +
+                '<span class="file-link-item-name">' + fEscHtml(folders[path].name) + '</span>' +
               '</div>';
 
       if (!collapsed)
-        html += renderLevel(path, depth + 1);
+        html += fRenderLevel(path, depth + 1);
     });
 
-    (byFolder[parentPath] || []).slice().sort(byName).forEach(function(id)
+    (byFolder[parentPath] || []).slice().sort(fByName).forEach(function(id)
     {
-      html += fileLinkRowHtml(id, files[id], depth, '');
+      html += fFileLinkRowHtml(id, files[id], depth, '');
     });
 
     return html;
   }
 
-  list.innerHTML = renderLevel('', 0) || '<div class="history-empty">No other files yet.</div>';
+  list.innerHTML = fRenderLevel('', 0) || '<div class="history-empty">No other files yet.</div>';
 }
 
-function chooseFileLink(fileId)
+function fChooseFileLink(fileId)
 {
-  closeFileLinkModal();
-  insertFileLink(fileId);
+  fCloseFileLinkModal();
+  fInsertFileLink(fileId);
 }
 
-function insertFileLink(fileId)
+function fInsertFileLink(fileId)
 {
   var target = files[fileId];
 
   if (!target)
     return;
 
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
       selectionEnd = editor.selectionEnd,
       selection = editor.value.slice(selectionStart, selectionEnd),
       linkText = selection || target.name,
-      markdown = '[' + linkText + '](' + FILE_LINK_SCHEME + encodeURIComponent(fileId) + ')';
+      markdown = '[' + linkText + '](' + cFileLinkScheme + encodeURIComponent(fileId) + ')';
 
   editor.value = editor.value.slice(0, selectionStart) + markdown + editor.value.slice(selectionEnd);
   editor.selectionStart = editor.selectionEnd = selectionStart + markdown.length;
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
-async function chooseFileEmbed(fileId)
+async function fChooseFileEmbed(fileId)
 {
-  closeFileLinkModal();
+  fCloseFileLinkModal();
 
   // In Work Folder mode, ensure content is loaded before embedding — file
-  // content is lazy-loaded only on openFile, so an unvisited sheet would
+  // content is lazy-loaded only on fOpenFile, so an unvisited sheet would
   // otherwise embed with undefined content and show "No charts in: …".
   var f = files[fileId];
   if (f && workFolderRoot && !f.contentLoaded)
   {
     try
     {
-      f.content = await Platform.readWorkFile(workFolderRoot, fileId);
+      f.content = await Platform.fReadWorkFile(workFolderRoot, fileId);
       f.contentLoaded = true;
     }
     catch(e) { console.warn('Could not load file content for embed', e); }
   }
 
-  insertFileEmbed(fileId);
+  fInsertFileEmbed(fileId);
 }
 
-function insertFileEmbed(fileId)
+function fInsertFileEmbed(fileId)
 {
   var target = files[fileId];
 
   if (!target)
     return;
 
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
-      markdown = '![' + (target.name || '') + '](' + FILE_LINK_SCHEME + encodeURIComponent(fileId) + ')';
+      markdown = '![' + (target.name || '') + '](' + cFileLinkScheme + encodeURIComponent(fileId) + ')';
 
   editor.value = editor.value.slice(0, selectionStart) + markdown + editor.value.slice(selectionStart);
   editor.selectionStart = editor.selectionEnd = selectionStart + markdown.length;
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
-function parseSheetChartsFromContent(content)
+function fParseSheetChartsFromContent(content)
 {
   var lines = (content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n'),
       dataStart = 0;
@@ -262,7 +262,7 @@ function parseSheetChartsFromContent(content)
   catch(e) { return []; }
 }
 
-function parseSheetCellsForEmbed(content)
+function fParseSheetCellsForEmbed(content)
 {
   var cells = {},
       lines = (content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n'),
@@ -302,47 +302,47 @@ function parseSheetCellsForEmbed(content)
   return cells;
 }
 
-function getChartRangeGridFromCells(range, cells)
+function fGetChartRangeGridFromCells(range, cells)
 {
-  var dims = parseChartRange(range);
+  var dims = fParseChartRange(range);
   if (!dims) return null;
   var grid = [];
   for (var r = dims.rowStart; r <= dims.rowEnd; r++)
   {
     var row = [];
     for (var c = dims.colStart; c <= dims.colEnd; c++)
-      row.push(cells[colName(c) + r] || '');
+      row.push(cells[fColName(c) + r] || '');
     grid.push(row);
   }
   return grid;
 }
 
-function buildChartDataFromCells(chartDef, cells)
+function fBuildChartDataFromCells(chartDef, cells)
 {
-  var grid = getChartRangeGridFromCells(chartDef.range, cells);
+  var grid = fGetChartRangeGridFromCells(chartDef.range, cells);
   if (!grid || !grid.length) return { labels: [], datasets: [] };
-  if (chartDef.type === 'scatter') return buildScatterChartData(chartDef, grid);
-  var data = buildCategoricalChartData(chartDef, grid);
+  if (chartDef.type === 'scatter') return fBuildScatterChartData(chartDef, grid);
+  var data = fBuildCategoricalChartData(chartDef, grid);
   if (chartDef.type === 'pie' || chartDef.type === 'doughnut') data.datasets = data.datasets.slice(0, 1);
   if (chartDef.type === 'percent')
-    data = percentStackDatasets(data, chartDef);
+    data = fPercentStackDatasets(data, chartDef);
   return data;
 }
 
-function buildChartJsConfigFromCells(chartDef, cells)
+function fBuildChartJsConfigFromCells(chartDef, cells)
 {
-  var data = buildChartDataFromCells(chartDef, cells),
+  var data = fBuildChartDataFromCells(chartDef, cells),
       isPie = (chartDef.type === 'pie' || chartDef.type === 'doughnut'),
       baseType = (chartDef.type === 'combo' || chartDef.type === 'percent') ? 'bar' : chartDef.type;
 
   var datasets = data.datasets.map(function(ds, i)
   {
-    var color = CHART_COLORS[i % CHART_COLORS.length],
+    var color = cChartColors[i % cChartColors.length],
         styled =
         {
           label: ds.label,
           data: ds.data,
-          backgroundColor: isPie ? ds.data.map(function(_, j){ return CHART_COLORS[j % CHART_COLORS.length]; }) : color,
+          backgroundColor: isPie ? ds.data.map(function(_, j){ return cChartColors[j % cChartColors.length]; }) : color,
           borderColor: color,
           borderWidth: (chartDef.type === 'line' || chartDef.type === 'radar') ? 2 : 1
         };
@@ -371,12 +371,12 @@ function buildChartJsConfigFromCells(chartDef, cells)
                 title: { display: !!chartDef.title, text: chartDef.title, color: '#f0ede6' },
                 legend: { display: datasets.length > 1 || isPie, labels: { color: '#9e9b94' } }
               },
-              scales: isPie ? {} : buildChartScales(chartDef)
+              scales: isPie ? {} : fBuildChartScales(chartDef)
             }
           };
 }
 
-function renderEmbeddedSheetCharts(container)
+function fRenderEmbeddedSheetCharts(container)
 {
   if (typeof Chart === 'undefined') return;
 
@@ -407,12 +407,12 @@ document.getElementById('preview-content').addEventListener
 
     var href = link.getAttribute('href') || '';
 
-    if (href.indexOf(FILE_LINK_SCHEME) !== 0)
+    if (href.indexOf(cFileLinkScheme) !== 0)
       return;
 
     e.preventDefault();
 
-    var id = decodeURIComponent(href.slice(FILE_LINK_SCHEME.length));
+    var id = decodeURIComponent(href.slice(cFileLinkScheme.length));
 
     if (!files[id])
     {
@@ -420,11 +420,11 @@ document.getElementById('preview-content').addEventListener
       return;
     }
 
-    openFile(id);
+    fOpenFile(id);
   }
 );
 
-function toggleDocCheckbox(idx)
+function fToggleDocCheckbox(idx)
 {
   var editor = document.getElementById('editor'),
       count = 0,
@@ -441,9 +441,9 @@ function toggleDocCheckbox(idx)
 
   if (newText !== editor.value)
   {
-    docTextUndo.forceSnapshot();
+    docTextUndo.fForceSnapshot();
     editor.value = newText;
-    onEditorChange();
+    fOnEditorChange();
   }
 }
 
@@ -454,7 +454,7 @@ document.getElementById('preview-content').addEventListener
   {
     if (!e.target.classList.contains('preview-checkbox'))
       return;
-    toggleDocCheckbox(parseInt(e.target.getAttribute('data-idx'), 10));
+    fToggleDocCheckbox(parseInt(e.target.getAttribute('data-idx'), 10));
   }
 );
 
@@ -462,17 +462,17 @@ document.getElementById('preview-content').addEventListener
 // the opening and closing line - :: for left, ::: for right, ;; for center,
 // ;;; for justify. Anything else (currently just font="...") still uses the
 // older ":::keyword ... :::" form, unchanged.
-var ALIGN_BLOCK_SYMBOLS = { left: '::', right: ':::', center: ';;', justify: ';;;' };
+var cAlignBlockSymbols = { left: '::', right: ':::', center: ';;', justify: ';;;' };
 
-function wrapBlock(align)
+function fWrapBlock(align)
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
       selectionEnd = editor.selectionEnd,
       selection = editor.value.slice(selectionStart, selectionEnd) || 'Text',
-      symbol = ALIGN_BLOCK_SYMBOLS[align];
+      symbol = cAlignBlockSymbols[align];
 
   var block = '\n' + symbol + '\n' + selection + '\n' + symbol + '\n';
 
@@ -480,15 +480,15 @@ function wrapBlock(align)
   editor.selectionStart = editor.selectionEnd = selectionStart + block.length;
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
 // Font blocks use their own bare-symbol scheme (see fontSymbolBlock above) -
 // || followed directly by the font name, no "font=" keyword, no quotes,
 // closed by a bare ||.
-function wrapFontBlock(fontName)
+function fWrapFontBlock(fontName)
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
@@ -501,12 +501,12 @@ function wrapFontBlock(fontName)
   editor.selectionStart = editor.selectionEnd = selectionStart + block.length;
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
-function insertTOC()
+function fInsertTOC()
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
@@ -517,7 +517,7 @@ function insertTOC()
   editor.selectionStart = editor.selectionEnd = lineStart + marker.length;
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
 // ── FONT PICKER ──
@@ -526,7 +526,7 @@ function insertTOC()
 // gesture and a one-time permission grant), falling back to a static list
 // of the fonts that ship with Windows when that API is unavailable, denied,
 // or fails for any other reason.
-var FALLBACK_FONT_LIST =
+var cFallbackFontList =
 [
   'Arial', 'Arial Black', 'Bahnschrift', 'Calibri', 'Cambria', 'Candara', 'Comic Sans MS',
   'Consolas', 'Constantia', 'Corbel', 'Courier New', 'Ebrima', 'Franklin Gothic Medium',
@@ -543,7 +543,7 @@ var FALLBACK_FONT_LIST =
 var cachedFontList = null,
     fontPickerSelection = null;
 
-async function getAvailableFonts()
+async function fGetAvailableFonts()
 {
   if (cachedFontList)
     return cachedFontList;
@@ -582,9 +582,9 @@ async function getAvailableFonts()
     }
   }
 
-  var baseNames = (names && names.length) ? names : FALLBACK_FONT_LIST.slice();
+  var baseNames = (names && names.length) ? names : cFallbackFontList.slice();
 
-  if (customFontsCache === null) await refreshCustomFonts();
+  if (customFontsCache === null) await fRefreshCustomFonts();
   var customNames = (customFontsCache || []).map(function(f){ return f.familyName; });
 
   // Custom (uploaded, always-renders-correctly) fonts first, then whatever
@@ -603,7 +603,7 @@ async function getAvailableFonts()
 // Changes the font of the current selection, akin to LaTeX's \fontspec/\setfont commands.
 // A selection spanning multiple paragraphs becomes a ":::" block (own font for the whole passage);
 // a single-line/inline selection becomes a "[text]{font="..."}" span (own font for that phrase only).
-async function applyFont()
+async function fApplyFont()
 {
   var editor = document.getElementById('editor');
 
@@ -614,11 +614,11 @@ async function applyFont()
   document.getElementById('font-picker-modal').classList.add('open');
   document.getElementById('font-picker-search').focus();
 
-  fontPickerSelection.fonts = await getAvailableFonts();
-  renderFontPickerList();
+  fontPickerSelection.fonts = await fGetAvailableFonts();
+  fRenderFontPickerList();
 }
 
-function closeFontPickerModal()
+function fCloseFontPickerModal()
 {
   document.getElementById('font-picker-modal').classList.remove('open');
 }
@@ -629,11 +629,11 @@ document.getElementById('font-picker-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('font-picker-modal'))
-      closeFontPickerModal();
+      fCloseFontPickerModal();
   }
 );
 
-function renderFontPickerList()
+function fRenderFontPickerList()
 {
   var query = document.getElementById('font-picker-search').value.trim().toLowerCase(),
       list = document.getElementById('font-picker-list'),
@@ -648,15 +648,15 @@ function renderFontPickerList()
 
   list.innerHTML = matches.map(function(f)
   {
-    return  '<div class="font-picker-item" style="font-family:' + escHtml(cssFontFamilyValue(f)) + ';" onclick="chooseFontFromPicker(\'' + escAttr(f) + '\')">' +
-              escHtml(f) +
+    return  '<div class="font-picker-item" style="font-family:' + fEscHtml(fCssFontFamilyValue(f)) + ';" onclick="fChooseFontFromPicker(\'' + fEscAttr(f) + '\')">' +
+              fEscHtml(f) +
             '</div>';
   }).join('');
 }
 
-function chooseFontFromPicker(fontName)
+function fChooseFontFromPicker(fontName)
 {
-  closeFontPickerModal();
+  fCloseFontPickerModal();
 
   var editor = document.getElementById('editor'),
       selectionStart = fontPickerSelection.selectionStart,
@@ -667,13 +667,13 @@ function chooseFontFromPicker(fontName)
   editor.selectionEnd = selectionEnd;
 
   if (selection && !/\n[ \t]*\n/.test(selection))
-    wrapSelectedText('[', ']{font="' + fontName + '"}');
+    fWrapSelectedText('[', ']{font="' + fontName + '"}');
 
   else
-    wrapFontBlock(fontName);
+    fWrapFontBlock(fontName);
 }
 
-function setView(newView)
+function fSetView(newView)
 {
   editorView = newView;
 
@@ -691,10 +691,10 @@ function setView(newView)
   );
 
   if (newView !== 'write')
-    updatePreview();
+    fUpdatePreview();
 
-  if (typeof frIsOpen === 'function' && frIsOpen())
-    frRender(true);
+  if (typeof fFrIsOpen === 'function' && fFrIsOpen())
+    fFrRender(true);
 }
 
 document.getElementById('editor').addEventListener('dblclick', function()

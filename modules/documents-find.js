@@ -18,15 +18,15 @@
 
 var frState = { matches: [], index: -1, previewMarks: [], previewIndexOverride: undefined };
 
-function frPanel() { return document.getElementById('find-replace-panel'); }
-function frIsOpen() { var p = frPanel(); return !!(p && p.classList.contains('open')); }
-function frWriteVisible() { return editorView !== 'preview'; }
-function frPreviewVisible() { return editorView === 'split' || editorView === 'preview'; }
-function frPreviewOnly() { return editorView === 'preview'; }
+function fFrPanel() { return document.getElementById('find-replace-panel'); }
+function fFrIsOpen() { var p = fFrPanel(); return !!(p && p.classList.contains('open')); }
+function fFrWriteVisible() { return editorView !== 'preview'; }
+function fFrPreviewVisible() { return editorView === 'split' || editorView === 'preview'; }
+function fFrPreviewOnly() { return editorView === 'preview'; }
 
-function openFindReplace()
+function fOpenFindReplace()
 {
-  var panel = frPanel(),
+  var panel = fFrPanel(),
       editor = document.getElementById('editor');
 
   if (!panel || !editor)
@@ -43,18 +43,18 @@ function openFindReplace()
 
   findInp.focus();
   findInp.select();
-  frRefresh(true);
+  fFrRefresh(true);
 }
 
-function closeFindReplace()
+function fCloseFindReplace()
 {
-  var panel = frPanel();
+  var panel = fFrPanel();
   if (panel) panel.classList.remove('open');
 
   var editor = document.getElementById('editor'),
       m = frState.matches[frState.index];
 
-  frClearMarks();
+  fFrClearMarks();
   frState.matches = [];
   frState.index = -1;
   frState.previewIndexOverride = undefined;
@@ -63,7 +63,7 @@ function closeFindReplace()
   // Leave the caret on the match that was being looked at, without letting
   // focus() scroll the textarea back to wherever its caret used to be.
   editor.focus({ preventScroll: true });
-  if (m && frWriteVisible())
+  if (m && fFrWriteVisible())
   {
     var top = editor.scrollTop;
     editor.setSelectionRange(m.start, m.end);
@@ -71,15 +71,15 @@ function closeFindReplace()
   }
 }
 
-function toggleFindReplace()
+function fToggleFindReplace()
 {
-  if (frIsOpen())
-    closeFindReplace();
+  if (fFrIsOpen())
+    fCloseFindReplace();
   else
-    openFindReplace();
+    fOpenFindReplace();
 }
 
-function frQuery()
+function fFrQuery()
 {
   return  {
             find: document.getElementById('fr-find').value,
@@ -88,7 +88,7 @@ function frQuery()
 }
 
 // Every match of the query in `text`, as [{start, end}], non-overlapping.
-function frFindAll(text, q)
+function fFrFindAll(text, q)
 {
   var out = [];
   if (!q.find) return out;
@@ -106,27 +106,27 @@ function frFindAll(text, q)
   return out;
 }
 
-function frCountMatches()
+function fFrCountMatches()
 {
-  return frFindAll(document.getElementById('editor').value, frQuery()).length;
+  return fFrFindAll(document.getElementById('editor').value, fFrQuery()).length;
 }
 
 // Kept for the inline handlers in index.html: typing in the find box or
 // toggling case re-runs the search and jumps to the nearest match.
-function frUpdateCount()
+function fFrUpdateCount()
 {
-  frRefresh(true);
+  fFrRefresh(true);
 }
 
 // Recomputes the matches. With `jump`, moves to the first match at or after
 // the editor caret (incremental search, as browsers do) and scrolls to it;
 // otherwise stays as close to the current match as the new list allows.
-function frRefresh(jump)
+function fFrRefresh(jump)
 {
   var editor = document.getElementById('editor'),
       previous = frState.matches[frState.index];
 
-  frState.matches = frFindAll(editor.value, frQuery());
+  frState.matches = fFrFindAll(editor.value, fFrQuery());
   frState.previewIndexOverride = undefined;
 
   if (!frState.matches.length)
@@ -139,19 +139,19 @@ function frRefresh(jump)
     frState.index = idx === -1 ? 0 : idx;
   }
 
-  frRender(jump);
+  fFrRender(jump);
 }
 
-function frRender(scroll)
+function fFrRender(scroll)
 {
-  var q = frQuery(),
+  var q = fFrQuery(),
       countEl = document.getElementById('fr-count');
 
-  frRenderPreviewMarks();
+  fFrRenderPreviewMarks();
 
-  var previewOnly = frPreviewOnly(),
+  var previewOnly = fFrPreviewOnly(),
       total = previewOnly ? frState.previewMarks.length : frState.matches.length,
-      current = previewOnly ? frPreviewIndex() : frState.index;
+      current = previewOnly ? fFrPreviewIndex() : frState.index;
 
   if (!q.find)
     countEl.textContent = '';
@@ -163,28 +163,28 @@ function frRender(scroll)
   countEl.classList.toggle('fr-none', !!q.find && !total);
 
   if (scroll)
-    frScrollToCurrent();
+    fFrScrollToCurrent();
   else
-    frPositionEditorMark();
+    fFrPositionEditorMark();
 }
 
-function frStep(delta)
+function fFrStep(delta)
 {
-  var q = frQuery();
+  var q = fFrQuery();
   if (!q.find)
     return;
 
   // Re-read the matches: the document may have changed under the open panel.
-  frState.matches = frFindAll(document.getElementById('editor').value, q);
+  frState.matches = fFrFindAll(document.getElementById('editor').value, q);
 
-  if (frPreviewOnly() && frState.previewMarks.length)
+  if (fFrPreviewOnly() && frState.previewMarks.length)
   {
     // Preview-only: walk the highlights the reader can see, and keep the
     // source index in step so Replace acts on the same occurrence.
     var pn = frState.previewMarks.length,
-        pi = (Math.max(0, frPreviewIndex()) + delta + pn) % pn;
+        pi = (Math.max(0, fFrPreviewIndex()) + delta + pn) % pn;
 
-    frState.index = frSourceIndexForPreview(pi);
+    frState.index = fFrSourceIndexForPreview(pi);
     frState.previewIndexOverride = pi;
   }
   else if (frState.matches.length)
@@ -196,11 +196,11 @@ function frStep(delta)
   else
     frState.index = -1;
 
-  frRender(true);
+  fFrRender(true);
 }
 
-function frFindNext() { frStep(1); }
-function frFindPrev() { frStep(-1); }
+function fFrFindNext() { fFrStep(1); }
+function fFrFindPrev() { fFrStep(-1); }
 
 // ── Editor side: exact geometry of a range inside the textarea ──
 // A textarea can't report where a character is drawn, so a hidden mirror
@@ -210,7 +210,7 @@ function frFindPrev() { frStep(-1); }
 // wrapped paragraph above the match it always landed short of it.
 var frMirror = null;
 
-function frRangeRects(editor, start, end)
+function fFrRangeRects(editor, start, end)
 {
   if (!frMirror)
   {
@@ -263,7 +263,7 @@ function frRangeRects(editor, start, end)
   });
 }
 
-function frMarkLayer()
+function fFrMarkLayer()
 {
   var layer = document.getElementById('fr-editor-marks');
 
@@ -278,18 +278,18 @@ function frMarkLayer()
 }
 
 // Draws the current match over the textarea, clipped to its visible area.
-function frPositionEditorMark()
+function fFrPositionEditorMark()
 {
-  var layer = frMarkLayer(),
+  var layer = fFrMarkLayer(),
       m = frState.matches[frState.index],
       editor = document.getElementById('editor');
 
   layer.innerHTML = '';
 
-  if (!m || !frIsOpen() || !frWriteVisible() || !editor.offsetParent)
+  if (!m || !fFrIsOpen() || !fFrWriteVisible() || !editor.offsetParent)
     return;
 
-  var rects = frRangeRects(editor, m.start, m.end),
+  var rects = fFrRangeRects(editor, m.start, m.end),
       ox = editor.offsetLeft - editor.scrollLeft,
       oy = editor.offsetTop - editor.scrollTop,
       clipTop = editor.offsetTop,
@@ -313,10 +313,10 @@ function frPositionEditorMark()
   });
 }
 
-function frScrollEditorTo(m)
+function fFrScrollEditorTo(m)
 {
   var editor = document.getElementById('editor'),
-      rects = frRangeRects(editor, m.start, m.end);
+      rects = fFrRangeRects(editor, m.start, m.end);
 
   if (!rects.length)
     return;
@@ -338,15 +338,15 @@ function frScrollEditorTo(m)
   editor.scrollTop = keep;
 }
 
-function frScrollToCurrent()
+function fFrScrollToCurrent()
 {
   var m = frState.matches[frState.index];
 
-  if (m && frWriteVisible())
-    frScrollEditorTo(m);
+  if (m && fFrWriteVisible())
+    fFrScrollEditorTo(m);
 
-  frPositionEditorMark();
-  frScrollPreviewToCurrent();
+  fFrPositionEditorMark();
+  fFrScrollPreviewToCurrent();
 }
 
 // ── Preview side: highlight matches in the rendered document ──
@@ -354,7 +354,7 @@ function frScrollToCurrent()
 // it reads ("**bold** text" matches "bold text"), including across inline
 // formatting. Rendered math and diagrams are skipped.
 
-function frClearPreviewMarks()
+function fFrClearPreviewMarks()
 {
   var content = document.getElementById('preview-content');
   frState.previewMarks = [];
@@ -369,21 +369,21 @@ function frClearPreviewMarks()
   });
 }
 
-function frClearMarks()
+function fFrClearMarks()
 {
-  frClearPreviewMarks();
+  fFrClearPreviewMarks();
   var layer = document.getElementById('fr-editor-marks');
   if (layer) layer.innerHTML = '';
 }
 
-function frRenderPreviewMarks()
+function fFrRenderPreviewMarks()
 {
-  frClearPreviewMarks();
+  fFrClearPreviewMarks();
 
-  var q = frQuery(),
+  var q = fFrQuery(),
       content = document.getElementById('preview-content');
 
-  if (!q.find || !content || !frIsOpen() || !frPreviewVisible())
+  if (!q.find || !content || !fFrIsOpen() || !fFrPreviewVisible())
     return;
 
   var walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT,
@@ -407,7 +407,7 @@ function frRenderPreviewMarks()
     text += node.nodeValue;
   }
 
-  var matches = frFindAll(text, q),
+  var matches = fFrFindAll(text, q),
       pieces = [],
       ni = 0;
 
@@ -448,7 +448,7 @@ function frRenderPreviewMarks()
 
   frState.previewMarks = marks;
 
-  var cur = marks[frPreviewIndex()];
+  var cur = marks[fFrPreviewIndex()];
   if (cur) cur.forEach(function(mk){ mk.classList.add('fr-current'); });
 }
 
@@ -456,7 +456,7 @@ function frRenderPreviewMarks()
 // two lists usually line up one to one; when they don't (Markdown syntax that
 // hides or adds text), map by relative position so it stays near the right
 // place.
-function frPreviewIndex()
+function fFrPreviewIndex()
 {
   var pn = frState.previewMarks.length,
       sn = frState.matches.length,
@@ -470,7 +470,7 @@ function frPreviewIndex()
   return Math.min(pn - 1, Math.round(frState.index * (pn - 1) / (sn - 1)));
 }
 
-function frSourceIndexForPreview(pi)
+function fFrSourceIndexForPreview(pi)
 {
   var pn = frState.previewMarks.length,
       sn = frState.matches.length;
@@ -481,12 +481,12 @@ function frSourceIndexForPreview(pi)
   return Math.min(sn - 1, Math.round(pi * (sn - 1) / (pn - 1)));
 }
 
-function frScrollPreviewToCurrent()
+function fFrScrollPreviewToCurrent()
 {
-  var marks = frState.previewMarks[frPreviewIndex()],
+  var marks = frState.previewMarks[fFrPreviewIndex()],
       pane = document.getElementById('preview-pane');
 
-  if (!marks || !marks.length || !pane || !frPreviewVisible())
+  if (!marks || !marks.length || !pane || !fFrPreviewVisible())
     return;
 
   var paneRect = pane.getBoundingClientRect(),
@@ -501,39 +501,39 @@ function frScrollPreviewToCurrent()
 }
 
 // The preview is rebuilt from scratch on every edit; put the highlights back.
-function frAfterPreviewRender()
+function fFrAfterPreviewRender()
 {
-  if (frIsOpen())
-    frRenderPreviewMarks();
+  if (fFrIsOpen())
+    fFrRenderPreviewMarks();
 }
 
-function frReplaceOne()
+function fFrReplaceOne()
 {
-  var q = frQuery();
+  var q = fFrQuery();
   if (!q.find) return;
 
   var editor = document.getElementById('editor');
 
-  frState.matches = frFindAll(editor.value, q);
+  frState.matches = fFrFindAll(editor.value, q);
   var m = frState.matches[frState.index];
 
   // Nothing current yet: the first press just lands on a match.
   if (!m)
   {
-    frFindNext();
+    fFrFindNext();
     return;
   }
 
   var replaceWith = document.getElementById('fr-replace').value;
 
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
   editor.value = editor.value.slice(0, m.start) + replaceWith + editor.value.slice(m.end);
   editor.setSelectionRange(m.start + replaceWith.length, m.start + replaceWith.length);
-  onEditorChange();
+  fOnEditorChange();
 
   // Land on the next match after the replacement (never inside it, so
   // replacing "a" with "aa" doesn't loop on its own output).
-  frState.matches = frFindAll(editor.value, q);
+  frState.matches = fFrFindAll(editor.value, q);
   frState.previewIndexOverride = undefined;
 
   if (!frState.matches.length)
@@ -546,18 +546,18 @@ function frReplaceOne()
     frState.index = idx === -1 ? 0 : idx;
   }
 
-  frRender(true);
+  fFrRender(true);
 }
 
-function frReplaceAll()
+function fFrReplaceAll()
 {
-  var q = frQuery();
-  if (!q.find || !frCountMatches()) return;
+  var q = fFrQuery();
+  if (!q.find || !fFrCountMatches()) return;
 
   var editor = document.getElementById('editor'),
       replaceWith = document.getElementById('fr-replace').value;
 
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   if (q.cs)
     editor.value = editor.value.split(q.find).join(replaceWith);
@@ -568,22 +568,22 @@ function frReplaceAll()
     editor.value = editor.value.replace(pattern, function(){ return replaceWith; });
   }
 
-  onEditorChange();
-  frRefresh(false);
+  fOnEditorChange();
+  fFrRefresh(false);
 }
 
-function frKey(keyEvent)
+function fFrKey(keyEvent)
 {
   if (keyEvent.key === 'Enter')
   {
     keyEvent.preventDefault();
-    if (keyEvent.target.id === 'fr-replace') frReplaceOne();
-    else if (keyEvent.shiftKey) frFindPrev();
-    else frFindNext();
+    if (keyEvent.target.id === 'fr-replace') fFrReplaceOne();
+    else if (keyEvent.shiftKey) fFrFindPrev();
+    else fFrFindNext();
   }
 
   if (keyEvent.key === 'Escape')
-    closeFindReplace();
+    fCloseFindReplace();
 }
 
 // Ctrl/Cmd+F and Ctrl/Cmd+H inside the doc editor or the preview open the
@@ -595,42 +595,42 @@ function frKey(keyEvent)
 
   if (!editor) return;
 
-  function openKeys(e)
+  function fOpenKeys(e)
   {
     if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F' || e.key === 'h' || e.key === 'H'))
     {
       e.preventDefault();
-      openFindReplace();
+      fOpenFindReplace();
     }
   }
 
-  editor.addEventListener('keydown', openKeys);
+  editor.addEventListener('keydown', fOpenKeys);
 
   if (previewPane)
   {
     // Focusable, so the shortcut also works while reading in preview view.
     if (!previewPane.hasAttribute('tabindex')) previewPane.setAttribute('tabindex', '-1');
-    previewPane.addEventListener('keydown', openKeys);
+    previewPane.addEventListener('keydown', fOpenKeys);
   }
 
   document.addEventListener('keydown', function(e)
   {
-    if (e.key === 'F3' && frIsOpen())
+    if (e.key === 'F3' && fFrIsOpen())
     {
       e.preventDefault();
-      if (e.shiftKey) frFindPrev(); else frFindNext();
+      if (e.shiftKey) fFrFindPrev(); else fFrFindNext();
     }
   });
 
   // The marker is drawn in pane coordinates; follow the text when it moves.
-  editor.addEventListener('scroll', function(){ if (frIsOpen()) frPositionEditorMark(); });
-  editor.addEventListener('input', function(){ if (frIsOpen()) frRefresh(false); });
-  window.addEventListener('resize', function(){ if (frIsOpen()) frPositionEditorMark(); });
+  editor.addEventListener('scroll', function(){ if (fFrIsOpen()) fFrPositionEditorMark(); });
+  editor.addEventListener('input', function(){ if (fFrIsOpen()) fFrRefresh(false); });
+  window.addEventListener('resize', function(){ if (fFrIsOpen()) fFrPositionEditorMark(); });
 })();
 
-function wrapSelectedText(before, after)
+function fWrapSelectedText(before, after)
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
@@ -642,12 +642,12 @@ function wrapSelectedText(before, after)
   editor.selectionEnd = selectionEnd + after.length;
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
-function insertLine(prefix)
+function fInsertLine(prefix)
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
@@ -657,21 +657,21 @@ function insertLine(prefix)
   editor.selectionStart = editor.selectionEnd = lineStart + prefix.length + (selectionStart - lineStart);
 
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
-function applyHeading(prefix)
+function fApplyHeading(prefix)
 {
     if (!prefix)
       return;
 
-    insertLine(prefix);
+    fInsertLine(prefix);
     document.getElementById('heading-sel').value = '';
 }
 
-function insertCodeBlock()
+function fInsertCodeBlock()
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
@@ -680,10 +680,10 @@ function insertCodeBlock()
   editor.value = editor.value.slice(0, selectionStart) + '\n```\n' + editor.value.slice(selectionStart, selectionEnd) + '\n```\n' + editor.value.slice(selectionEnd);
   editor.selectionStart = editor.selectionEnd = selectionStart + 5;
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
-function openTableModal()
+function fOpenTableModal()
 {
   document.getElementById('table-modal').classList.add('open');
   document.getElementById('table-rows').value = 2;
@@ -699,14 +699,14 @@ function openTableModal()
   );
 }
 
-function closeTableModal()
+function fCloseTableModal()
 {
   document.getElementById('table-modal').classList.remove('open');
 }
 
-function createTable()
+function fCreateTable()
 {
-  docTextUndo.forceSnapshot();
+  docTextUndo.fForceSnapshot();
 
   var rows = Math.max(1, Math.min(50, parseInt(document.getElementById('table-rows').value, 10) || 1)),
       cols = Math.max(1, Math.min(20, parseInt(document.getElementById('table-cols').value, 10) || 1)),
@@ -741,9 +741,9 @@ function createTable()
   editor.value = editor.value.slice(0, selectionStart) + table + editor.value.slice(selectionStart);
   editor.selectionStart = editor.selectionEnd = selectionStart + table.length;
 
-  closeTableModal();
+  fCloseTableModal();
   editor.focus();
-  onEditorChange();
+  fOnEditorChange();
 }
 
 document.getElementById('table-modal').addEventListener
@@ -752,16 +752,16 @@ document.getElementById('table-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('table-modal'))
-      closeTableModal();
+      fCloseTableModal();
   }
 );
 
-function insertLink()
+function fInsertLink()
 {
   var url = prompt('URL:', 'https://');
 
   if (!url)
     return;
 
-  wrapSelectedText('[', ']('+url+')');
+  fWrapSelectedText('[', ']('+url+')');
 }

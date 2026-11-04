@@ -31,9 +31,9 @@ document.addEventListener
       isFillDragging = false;
 
       if (fillRange)
-        performFill();
+        fPerformFill();
 
-      clearFillPreview();
+      fClearFillPreview();
       fillRange = null;
       fillSourceBox = null;
     }
@@ -59,7 +59,7 @@ document.addEventListener
       return;
 
     copyEvent.preventDefault();
-    copyEvent.clipboardData.setData('text/plain', buildRangeTSV(selectionAnchor, selectionEnd));
+    copyEvent.clipboardData.setData('text/plain', fBuildRangeTSV(selectionAnchor, selectionEnd));
   }
 );
 
@@ -88,7 +88,7 @@ document.addEventListener
       return;
 
     pasteEvent.preventDefault();
-    pasteTSVAt(selectionAnchor, text);
+    fPasteTSVAt(selectionAnchor, text);
   }
 );
 
@@ -112,12 +112,12 @@ document.addEventListener
     if (!e.shiftKey && e.key.toLowerCase() === 'z')
     {
       e.preventDefault();
-      sheetUndo();
+      fSheetUndo();
     }
     else if (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))
     {
       e.preventDefault();
-      sheetRedo();
+      fSheetRedo();
     }
   }
 );
@@ -125,14 +125,14 @@ document.addEventListener
 // Writes tab/newline-delimited clipboard text (the format every major
 // spreadsheet - Excel, Google Sheets, OnlyOffice - puts on the clipboard for
 // a copied range) into the grid starting at anchorRef, growing right/down.
-function pasteTSVAt(anchorRef, text)
+function fPasteTSVAt(anchorRef, text)
 {
-  var anchor = parseName(anchorRef);
+  var anchor = fParseName(anchorRef);
 
   if (!anchor)
     return;
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
   var rows = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
@@ -141,7 +141,7 @@ function pasteTSVAt(anchorRef, text)
   if (rows.length > 1 && rows[rows.length - 1] === '')
     rows.pop();
 
-  var startCol = colIndex(anchor.col),
+  var startCol = fColIndex(anchor.col),
       startRow = anchor.row,
       lastRef = anchorRef;
 
@@ -157,12 +157,12 @@ function pasteTSVAt(anchorRef, text)
               row = startRow + r;
 
           // Pasted blocks push the grid outward instead of being clipped.
-          ensureGridFits(row, col);
+          fEnsureGridFits(row, col);
 
           if (col >= COLS || row > ROWS)
             return;
 
-          var ref = colName(col) + row;
+          var ref = fColName(col) + row;
 
           sheetData[ref] = cellText;
           lastRef = ref;
@@ -171,7 +171,7 @@ function pasteTSVAt(anchorRef, text)
 
           if (inp)
           {
-            inp.value = cellText.startsWith('=') ? evalCell(ref, cellText) : cellText;
+            inp.value = cellText.startsWith('=') ? fEvalCell(ref, cellText) : cellText;
             inp.classList.toggle('formula-result', cellText.startsWith('='));
           }
         }
@@ -179,33 +179,33 @@ function pasteTSVAt(anchorRef, text)
     }
   );
 
-  // evaluateFormulas recalculates every formula cell on the sheet (not just
+  // fEvaluateFormulas recalculates every formula cell on the sheet (not just
   // the pasted ones) - needed since other formulas may reference cells that
   // just changed - and also refreshes any charts built from this range.
-  evaluateFormulas();
-  saveSheetToFile();
+  fEvaluateFormulas();
+  fSaveSheetToFile();
 
-  selectCell(anchorRef);
+  fSelectCell(anchorRef);
   selectionEnd = lastRef;
-  renderRangeSelection();
+  fRenderRangeSelection();
 }
 
-function getDisplayValue(ref)
+function fGetDisplayValue(ref)
 {
   var val = sheetData[ref] || '';
-  return val.startsWith('=') ? evalCell(ref, val) : val;
+  return val.startsWith('=') ? fEvalCell(ref, val) : val;
 }
 
-function buildRangeTSV(anchorRef, endRef)
+function fBuildRangeTSV(anchorRef, endRef)
 {
-  var anchor = parseName(anchorRef),
-      end = parseName(endRef);
+  var anchor = fParseName(anchorRef),
+      end = fParseName(endRef);
 
   if (!anchor || !end)
     return '';
 
-  var anchorCol = colIndex(anchor.col),
-      endCol = colIndex(end.col),
+  var anchorCol = fColIndex(anchor.col),
+      endCol = fColIndex(end.col),
       rowStart = Math.min(anchor.row, end.row),
       rowEnd = Math.max(anchor.row, end.row),
       colStart = Math.min(anchorCol, endCol),
@@ -217,7 +217,7 @@ function buildRangeTSV(anchorRef, endRef)
     var cells = [];
 
     for (var c = colStart; c <= colEnd; c++)
-      cells.push(getDisplayValue(colName(c) + r));
+      cells.push(fGetDisplayValue(fColName(c) + r));
 
     rows.push(cells.join('\t'));
   }
@@ -225,7 +225,7 @@ function buildRangeTSV(anchorRef, endRef)
   return rows.join('\n');
 }
 
-function buildSheet()
+function fBuildSheet()
 {
   var head = document.getElementById('sheet-head');
 
@@ -234,8 +234,8 @@ function buildSheet()
                         '</th>';
 
   for (var i = 0; i < COLS; i++)
-    tableHeadNames +=   '<th class="col-header" id="colh-' + i + '" onmousedown="colHeaderMouseDown(event,' + i + ')">' +
-                          colName(i) +
+    tableHeadNames +=   '<th class="col-header" id="colh-' + i + '" onmousedown="fColHeaderMouseDown(event,' + i + ')">' +
+                          fColName(i) +
                         '</th>';
 
   head.innerHTML = tableHeadNames +
@@ -247,26 +247,26 @@ function buildSheet()
   for (var i = 1; i <= ROWS; i++)
   {
     html += '<tr>' +
-              '<th class="row-header" id="rowh-' + i + '" onmousedown="rowHeaderMouseDown(event,' + i + ')">' +
+              '<th class="row-header" id="rowh-' + i + '" onmousedown="fRowHeaderMouseDown(event,' + i + ')">' +
                 i +
               '</th>';
 
     for (var j = 0; j < COLS; j++)
-      html += sheetCellHtml(colName(j) + i);
+      html += fSheetCellHtml(fColName(j) + i);
 
     html += '</tr>';
   }
 
   document.getElementById('sheet-body').innerHTML = html;
 
-  paintBucketSwatch();
-  paintTextSwatch();
+  fPaintBucketSwatch();
+  fPaintTextSwatch();
 }
 
-function sheetCellHtml(ref)
+function fSheetCellHtml(ref)
 {
-  return '<td id="cell-' + ref + '" onmousedown="cellMouseDown(event,\'' + ref + '\')" onmouseenter="cellMouseEnter(\'' + ref + '\')" ondblclick="cellDblClick(\'' + ref + '\')">'+
-           '<input class="cell-input" id="inp-' + ref + '" value="" readonly onkeydown="cellKey(event, \'' + ref + '\')" onfocus="onCellFocus(\'' + ref + '\')" oninput="onCellInput(\'' + ref + '\')" onblur="onCellBlur(\'' + ref + '\')">'+
+  return '<td id="cell-' + ref + '" onmousedown="fCellMouseDown(event,\'' + ref + '\')" onmouseenter="fCellMouseEnter(\'' + ref + '\')" ondblclick="fCellDblClick(\'' + ref + '\')">'+
+           '<input class="cell-input" id="inp-' + ref + '" value="" readonly onkeydown="fCellKey(event, \'' + ref + '\')" onfocus="fOnCellFocus(\'' + ref + '\')" oninput="fOnCellInput(\'' + ref + '\')" onblur="fOnCellBlur(\'' + ref + '\')">'+
          '</td>';
 }
 
@@ -275,13 +275,13 @@ function sheetCellHtml(ref)
 // an edge, more rows/columns are appended (chunked, to keep DOM churn low).
 // Columns run past Z into two-letter names, up to ZZ.
 
-var MAX_SHEET_COLS = 702; // "ZZ"
-var GROW_ROW_CHUNK = 12;
-var GROW_COL_CHUNK = 4;
+var cMaxSheetCols = 702; // "ZZ"
+var cGrowRowChunk = 12;
+var cGrowColChunk = 4;
 
-function growSheetGrid(targetRows, targetCols)
+function fGrowSheetGrid(targetRows, targetCols)
 {
-  targetCols = Math.min(targetCols, MAX_SHEET_COLS);
+  targetCols = Math.min(targetCols, cMaxSheetCols);
   if (targetRows <= ROWS && targetCols <= COLS)
     return;
 
@@ -305,15 +305,15 @@ function growSheetGrid(targetRows, targetCols)
       var th = document.createElement('th');
       th.className = 'col-header';
       th.id = 'colh-' + j;
-      th.setAttribute('onmousedown', 'colHeaderMouseDown(event,' + j + ')');
-      th.textContent = colName(j);
+      th.setAttribute('onmousedown', 'fColHeaderMouseDown(event,' + j + ')');
+      th.textContent = fColName(j);
       headRow.appendChild(th);
     }
     for (var r = 0; r < body.rows.length; r++)
     {
       var rowNum = r + 1, cells = '';
       for (var jj = COLS; jj < targetCols; jj++)
-        cells += sheetCellHtml(colName(jj) + rowNum);
+        cells += fSheetCellHtml(fColName(jj) + rowNum);
       body.rows[r].insertAdjacentHTML('beforeend', cells);
     }
     COLS = targetCols;
@@ -324,9 +324,9 @@ function growSheetGrid(targetRows, targetCols)
     var html = '';
     for (var i = ROWS + 1; i <= targetRows; i++)
     {
-      html += '<tr><th class="row-header" id="rowh-' + i + '" onmousedown="rowHeaderMouseDown(event,' + i + ')">' + i + '</th>';
+      html += '<tr><th class="row-header" id="rowh-' + i + '" onmousedown="fRowHeaderMouseDown(event,' + i + ')">' + i + '</th>';
       for (var j2 = 0; j2 < COLS; j2++)
-        html += sheetCellHtml(colName(j2) + i);
+        html += fSheetCellHtml(fColName(j2) + i);
       html += '</tr>';
     }
     body.insertAdjacentHTML('beforeend', html);
@@ -336,47 +336,47 @@ function growSheetGrid(targetRows, targetCols)
 
 /// Grows the grid so (row, col) sits comfortably inside it — being within a
 /// couple of cells of an edge already triggers the next chunk.
-function ensureGridFits(row, col)
+function fEnsureGridFits(row, col)
 {
   var targetRows = ROWS, targetCols = COLS;
-  while (row > targetRows - 3) targetRows += GROW_ROW_CHUNK;
-  while (col > targetCols - 3 && targetCols < MAX_SHEET_COLS) targetCols += GROW_COL_CHUNK;
-  growSheetGrid(targetRows, targetCols);
+  while (row > targetRows - 3) targetRows += cGrowRowChunk;
+  while (col > targetCols - 3 && targetCols < cMaxSheetCols) targetCols += cGrowColChunk;
+  fGrowSheetGrid(targetRows, targetCols);
 }
 
-function ensureGridFitsData(data)
+function fEnsureGridFitsData(data)
 {
   var maxRow = 0, maxCol = 0;
   Object.keys(data || {}).forEach(function(ref)
   {
-    var p = parseName(ref);
+    var p = fParseName(ref);
     if (!p) return;
     if (p.row > maxRow) maxRow = p.row;
-    var ci = colIndex(p.col);
+    var ci = fColIndex(p.col);
     if (ci > maxCol) maxCol = ci;
   });
-  if (maxRow || maxCol) ensureGridFits(maxRow, maxCol);
+  if (maxRow || maxCol) fEnsureGridFits(maxRow, maxCol);
 }
 
 // Bijective base-26 column names: 0..25 = A..Z, 26 = AA, 27 = AB, … 701 = ZZ.
-function colName(i)
+function fColName(i)
 {
     if (i < 26)
       return String.fromCharCode(65 + i);
     return String.fromCharCode(65 + Math.floor(i / 26) - 1) + String.fromCharCode(65 + (i % 26));
 }
 
-function colIndex(name)
+function fColIndex(name)
 {
     if (name.length === 1)
       return name.charCodeAt(0) - 65;
     return (name.charCodeAt(0) - 65 + 1) * 26 + (name.charCodeAt(1) - 65);
 }
 
-function parseName(cellReference)
+function fParseName(cellReference)
 {
     // '$' (absolute-reference markers, e.g. $A$1) carry no meaning for lookups,
-    // only for how shiftFormulaRefs treats them during a fill-drag.
+    // only for how fShiftFormulaRefs treats them during a fill-drag.
     var matched = cellReference.match(/^\$?([A-Z]+)\$?(\d+)$/);
 
     if(!matched)
@@ -388,7 +388,7 @@ function parseName(cellReference)
     };
 }
 
-function selectCell(name)
+function fSelectCell(name)
 {
   document.querySelectorAll('#sheet-body td.active').forEach
   (
@@ -406,18 +406,18 @@ function selectCell(name)
     }
   );
 
-  var parsedName = parseName(name);
+  var parsedName = fParseName(name);
 
   if(!parsedName)
     return;
 
   activeCell = {
     row: parsedName.row,
-    col: colIndex(parsedName.col)
+    col: fColIndex(parsedName.col)
   };
 
   // Selection moving near an edge pulls more rows/columns into existence.
-  ensureGridFits(activeCell.row, activeCell.col);
+  fEnsureGridFits(activeCell.row, activeCell.col);
 
   selectionAnchor = name;
   selectionEnd = name;
@@ -430,14 +430,14 @@ function selectCell(name)
   document.getElementById('cell-ref').value = name;
   document.getElementById('formula-bar').value = sheetData[name] || '';
 
-  refreshFillHandle();
-  updateHeaderHighlights();
-  refreshRefHighlights();
+  fRefreshFillHandle();
+  fUpdateHeaderHighlights();
+  fRefreshRefHighlights();
 }
 
 // Marks the row/column header cells spanning the current selection, so the
 // margins always show where you are.
-function updateHeaderHighlights()
+function fUpdateHeaderHighlights()
 {
   document.querySelectorAll('#sheet-grid th.hl').forEach
   (
@@ -450,7 +450,7 @@ function updateHeaderHighlights()
   if (!selectionAnchor)
     return;
 
-  var box = getSelectionBoundingBox();
+  var box = fGetSelectionBoundingBox();
   if (!box)
     return;
 
@@ -467,7 +467,7 @@ function updateHeaderHighlights()
   }
 }
 
-function cellMouseDown(mouseEvent, name)
+function fCellMouseDown(mouseEvent, name)
 {
   if (mouseEvent.button !== 0)
     return;
@@ -500,20 +500,20 @@ function cellMouseDown(mouseEvent, name)
     var caretPos = insertAt + refText.length,
         backRef = ctx.ref;
 
-    switchSheetPage(ctx.pageIdx);
+    fSwitchSheetPage(ctx.pageIdx);
 
     if (ctx.viaBar)
     {
-      // Resume in the formula bar: selectCell repopulates it from
+      // Resume in the formula bar: fSelectCell repopulates it from
       // sheetData (which now holds the formula with the inserted ref).
-      selectCell(backRef);
+      fSelectCell(backRef);
       var backBar = document.getElementById('formula-bar');
       backBar.focus();
       backBar.setSelectionRange(caretPos, caretPos);
     }
     else
     {
-      enterEditMode(backRef);
+      fEnterEditMode(backRef);
       var backInp = document.getElementById('inp-' + backRef);
       if (backInp) backInp.setSelectionRange(caretPos, caretPos);
     }
@@ -535,7 +535,7 @@ function cellMouseDown(mouseEvent, name)
     formulaInsertStart = editingInput ? editingInput.selectionStart : 0;
     formulaInsertLength = 0;
 
-    insertFormulaRef(name, name);
+    fInsertFormulaRef(name, name);
     return;
   }
 
@@ -555,30 +555,30 @@ function cellMouseDown(mouseEvent, name)
     formulaInsertStart = formulaBar.selectionStart;
     formulaInsertLength = 0;
 
-    insertFormulaRef(name, name);
+    fInsertFormulaRef(name, name);
     return;
   }
 
   isDragging = true;
-  selectCell(name);
+  fSelectCell(name);
 }
 
 // Clicking a column letter or row number in the margins: while a formula is
 // being typed it inserts the whole-column/row range (A:A / 4:4) at the caret,
-// mirroring cellMouseDown's cell picker; otherwise it selects the whole
+// mirroring fCellMouseDown's cell picker; otherwise it selects the whole
 // column or row.
-function colHeaderMouseDown(mouseEvent, col)
+function fColHeaderMouseDown(mouseEvent, col)
 {
-  var letter = colName(col);
-  headerMouseDown(mouseEvent, letter + ':' + letter, letter + '1', letter + ROWS);
+  var letter = fColName(col);
+  fHeaderMouseDown(mouseEvent, letter + ':' + letter, letter + '1', letter + ROWS);
 }
 
-function rowHeaderMouseDown(mouseEvent, row)
+function fRowHeaderMouseDown(mouseEvent, row)
 {
-  headerMouseDown(mouseEvent, row + ':' + row, 'A' + row, colName(COLS - 1) + row);
+  fHeaderMouseDown(mouseEvent, row + ':' + row, 'A' + row, fColName(COLS - 1) + row);
 }
 
-function headerMouseDown(mouseEvent, rangeText, selAnchor, selEnd)
+function fHeaderMouseDown(mouseEvent, rangeText, selAnchor, selEnd)
 {
   if (mouseEvent.button !== 0)
     return;
@@ -592,7 +592,7 @@ function headerMouseDown(mouseEvent, rangeText, selAnchor, selEnd)
     refDragViaBar = false;
     formulaInsertStart = editingInput ? editingInput.selectionStart : 0;
     formulaInsertLength = 0;
-    insertFormulaText(rangeText);
+    fInsertFormulaText(rangeText);
     formulaInsertStart = null;
     formulaInsertLength = 0;
     if (editingInput) editingInput.focus();
@@ -608,7 +608,7 @@ function headerMouseDown(mouseEvent, rangeText, selAnchor, selEnd)
     refDragViaBar = true;
     formulaInsertStart = formulaBar.selectionStart;
     formulaInsertLength = 0;
-    insertFormulaText(rangeText);
+    fInsertFormulaText(rangeText);
     refDragViaBar = false;
     formulaInsertStart = null;
     formulaInsertLength = 0;
@@ -617,23 +617,23 @@ function headerMouseDown(mouseEvent, rangeText, selAnchor, selEnd)
   }
 
   // Otherwise: select the whole row/column.
-  selectCell(selAnchor);
+  fSelectCell(selAnchor);
   selectionEnd = selEnd;
-  renderRangeSelection();
+  fRenderRangeSelection();
 }
 
-function cellMouseEnter(name)
+function fCellMouseEnter(name)
 {
   if (isFillDragging)
   {
-    updateFillPreview(name);
+    fUpdateFillPreview(name);
     return;
   }
 
   if (isRefDragging)
   {
     selectionEnd = name;
-    insertFormulaRef(selectionAnchor, name);
+    fInsertFormulaRef(selectionAnchor, name);
     return;
   }
 
@@ -641,16 +641,16 @@ function cellMouseEnter(name)
     return;
 
   selectionEnd = name;
-  renderRangeSelection();
+  fRenderRangeSelection();
 }
 
-function insertFormulaRef(anchorRef, endRef)
+function fInsertFormulaRef(anchorRef, endRef)
 {
   var refText = (anchorRef === endRef) ? anchorRef : (anchorRef + ':' + endRef);
-  insertFormulaText(refText);
+  fInsertFormulaText(refText);
 }
 
-function insertFormulaText(refText)
+function fInsertFormulaText(refText)
 {
   // The picker serves two editing surfaces: the in-cell input, or the
   // formula bar (refDragViaBar) — same insertion logic either way.
@@ -679,14 +679,14 @@ function insertFormulaText(refText)
     if (cellInp) cellInp.value = inp.value;
   }
 
-  evaluateFormulas(targetRef);
-  saveSheetToFile();
+  fEvaluateFormulas(targetRef);
+  fSaveSheetToFile();
 
-  renderRangeSelection();
-  refreshRefHighlights();
+  fRenderRangeSelection();
+  fRefreshRefHighlights();
 }
 
-function renderRangeSelection()
+function fRenderRangeSelection()
 {
   document.querySelectorAll('#sheet-body td.selected').forEach
   (
@@ -698,18 +698,18 @@ function renderRangeSelection()
 
   if (!selectionAnchor || !selectionEnd || selectionAnchor === selectionEnd)
   {
-    updateHeaderHighlights();
+    fUpdateHeaderHighlights();
     return;
   }
 
-  var anchor = parseName(selectionAnchor),
-      end = parseName(selectionEnd);
+  var anchor = fParseName(selectionAnchor),
+      end = fParseName(selectionEnd);
 
   if (!anchor || !end)
     return;
 
-  var anchorCol = colIndex(anchor.col),
-      endCol = colIndex(end.col),
+  var anchorCol = fColIndex(anchor.col),
+      endCol = fColIndex(end.col),
       rowStart = Math.min(anchor.row, end.row),
       rowEnd = Math.max(anchor.row, end.row),
       colStart = Math.min(anchorCol, endCol),
@@ -718,7 +718,7 @@ function renderRangeSelection()
   for (var r = rowStart; r <= rowEnd; r++)
     for (var c = colStart; c <= colEnd; c++)
     {
-      var cellRef = colName(c) + r,
+      var cellRef = fColName(c) + r,
           td = document.getElementById('cell-' + cellRef);
 
       if (td && cellRef !== selectionAnchor)
@@ -727,26 +727,26 @@ function renderRangeSelection()
 
   document.getElementById('cell-ref').value = selectionAnchor + ':' + selectionEnd;
 
-  refreshFillHandle();
-  updateHeaderHighlights();
+  fRefreshFillHandle();
+  fUpdateHeaderHighlights();
 }
 
 // ── FILL HANDLE (drag-fill, like Excel/Sheets) ──
-function refreshFillHandle()
+function fRefreshFillHandle()
 {
   if (editingCell)
-    removeFillHandle();
+    fRemoveFillHandle();
   else
-    updateFillHandlePosition();
+    fUpdateFillHandlePosition();
 }
 
-function updateFillHandlePosition()
+function fUpdateFillHandlePosition()
 {
   var endRef = selectionEnd || selectionAnchor;
 
   if (!endRef)
   {
-    removeFillHandle();
+    fRemoveFillHandle();
     return;
   }
 
@@ -754,7 +754,7 @@ function updateFillHandlePosition()
 
   if (!td)
   {
-    removeFillHandle();
+    fRemoveFillHandle();
     return;
   }
 
@@ -765,13 +765,13 @@ function updateFillHandlePosition()
     handle = document.createElement('div');
     handle.id = 'fill-handle';
     handle.className = 'fill-handle';
-    handle.addEventListener('mousedown', fillHandleMouseDown);
+    handle.addEventListener('mousedown', fFillHandleMouseDown);
   }
 
   td.appendChild(handle);
 }
 
-function removeFillHandle()
+function fRemoveFillHandle()
 {
   var handle = document.getElementById('fill-handle');
 
@@ -787,14 +787,14 @@ function removeFillHandle()
 // as you go. Only box edges/handles take pointer events, so the cells inside
 // stay clickable.
 
-var REF_BOX_COLORS = ['#4a7fa8', '#c0574a', '#5a9a6e', '#9d6fd1', '#d18b3f', '#3fa7b0', '#d4a843'];
+var cRefBoxColors = ['#4a7fa8', '#c0574a', '#5a9a6e', '#9d6fd1', '#d18b3f', '#3fa7b0', '#d4a843'];
 
 var refHighlights = [];  // tokens of the highlighted formula, in text order
 var refBoxDrag = null;   // active box drag: {index, mode, src, lastRow, lastCol, anchorRow, anchorCol}
 
 // Where the highlighted formula lives right now: the in-cell edit, the
 // formula bar, or (fallback) the selected cell's stored value.
-function refHighlightSource()
+function fRefHighlightSource()
 {
   if (editingCell)
   {
@@ -813,27 +813,27 @@ function refHighlightSource()
   return null;
 }
 
-function refSourceText(src)
+function fRefSourceText(src)
 {
   return src.inp ? src.inp.value : (sheetData[src.ref] || '');
 }
 
 // Classifies one matched reference and normalizes it into a grid box
 // (r1<=r2, c1<=c2). d holds the '$' markers so moving/resizing keeps them.
-function refTokenInfo(text)
+function fRefTokenInfo(text)
 {
   var m;
 
   if ((m = text.match(/^(\$?)([A-Z]{1,2})(\$?)(\d+):(\$?)([A-Z]{1,2})(\$?)(\d+)$/)))
   {
-    var ca = colIndex(m[2]), cb = colIndex(m[6]), ra = +m[4], rb = +m[8];
+    var ca = fColIndex(m[2]), cb = fColIndex(m[6]), ra = +m[4], rb = +m[8];
     return { kind: 'range', c1: Math.min(ca, cb), c2: Math.max(ca, cb),
              r1: Math.min(ra, rb), r2: Math.max(ra, rb), d: [m[1], m[3], m[5], m[7]] };
   }
 
   if ((m = text.match(/^(\$?)([A-Z]{1,2}):(\$?)([A-Z]{1,2})$/)))
   {
-    var cc = colIndex(m[2]), cd = colIndex(m[4]);
+    var cc = fColIndex(m[2]), cd = fColIndex(m[4]);
     return { kind: 'col', c1: Math.min(cc, cd), c2: Math.max(cc, cd), d: [m[1], m[3]] };
   }
 
@@ -845,27 +845,27 @@ function refTokenInfo(text)
   }
 
   if ((m = text.match(/^(\$?)([A-Z]{1,2})(\$?)(\d+)$/)))
-    return { kind: 'cell', c1: colIndex(m[2]), c2: colIndex(m[2]), r1: +m[4], r2: +m[4], d: [m[1], m[3]] };
+    return { kind: 'cell', c1: fColIndex(m[2]), c2: fColIndex(m[2]), r1: +m[4], r2: +m[4], d: [m[1], m[3]] };
 
   return null;
 }
 
-function refTokenText(tok)
+function fRefTokenText(tok)
 {
   var d = tok.d;
 
-  if (tok.kind === 'cell') return d[0] + colName(tok.c1) + d[1] + tok.r1;
-  if (tok.kind === 'col')  return d[0] + colName(tok.c1) + ':' + d[1] + colName(tok.c2);
+  if (tok.kind === 'cell') return d[0] + fColName(tok.c1) + d[1] + tok.r1;
+  if (tok.kind === 'col')  return d[0] + fColName(tok.c1) + ':' + d[1] + fColName(tok.c2);
   if (tok.kind === 'row')  return d[0] + tok.r1 + ':' + d[1] + tok.r2;
 
-  return d[0] + colName(tok.c1) + d[1] + tok.r1 + ':' + d[2] + colName(tok.c2) + d[3] + tok.r2;
+  return d[0] + fColName(tok.c1) + d[1] + tok.r1 + ':' + d[2] + fColName(tok.c2) + d[3] + tok.r2;
 }
 
 // Parses cell refs (A3), ranges (A1:B3) and whole-column/row ranges (A:A,
 // 4:4) out of a formula's text, with their offsets, so each can later be
 // replaced in place. Quoted strings and cross-tab [Tab](A1) links are masked
 // (same length, so offsets hold) to keep their contents from reading as refs.
-function parseFormulaRefTokens(text)
+function fParseFormulaRefTokens(text)
 {
   if (!text || !text.startsWith('='))
     return [];
@@ -880,7 +880,7 @@ function parseFormulaRefTokens(text)
 
   while ((m = re.exec(masked)))
   {
-    var info = refTokenInfo(m[0]);
+    var info = fRefTokenInfo(m[0]);
     if (!info) continue;
 
     info.start = m.index;
@@ -894,7 +894,7 @@ function parseFormulaRefTokens(text)
 
 // Pixel geometry of a token's box, relative to the ref layer (which sits at
 // the grid's content origin). Whole-column/row boxes span the current grid.
-function refBoxGeometry(tok)
+function fRefBoxGeometry(tok)
 {
   var r1 = tok.kind === 'col' ? 1 : tok.r1,
       r2 = tok.kind === 'col' ? ROWS : Math.min(tok.r2, ROWS),
@@ -905,8 +905,8 @@ function refBoxGeometry(tok)
     return null;
 
   var layer = document.getElementById('sheet-ref-layer'),
-      tdA = document.getElementById('cell-' + colName(c1) + r1),
-      tdB = document.getElementById('cell-' + colName(c2) + r2);
+      tdA = document.getElementById('cell-' + fColName(c1) + r1),
+      tdB = document.getElementById('cell-' + fColName(c2) + r2);
 
   // Cells hidden by a merge report zero size; skip rather than draw a
   // zero-anchored box.
@@ -921,13 +921,13 @@ function refBoxGeometry(tok)
            width: rb.right - ra.left, height: rb.bottom - ra.top };
 }
 
-function buildRefBoxElement(tok, index)
+function fBuildRefBoxElement(tok, index)
 {
-  var geo = refBoxGeometry(tok);
+  var geo = fRefBoxGeometry(tok);
   if (!geo)
     return null;
 
-  var color = REF_BOX_COLORS[index % REF_BOX_COLORS.length],
+  var color = cRefBoxColors[index % cRefBoxColors.length],
       box = document.createElement('div');
 
   box.className = 'ref-box';
@@ -942,7 +942,7 @@ function buildRefBoxElement(tok, index)
   {
     var edge = document.createElement('div');
     edge.className = 'ref-box-edge ' + side;
-    edge.addEventListener('mousedown', function(e){ startRefBoxDrag(e, index, 'move'); });
+    edge.addEventListener('mousedown', function(e){ fStartRefBoxDrag(e, index, 'move'); });
     box.appendChild(edge);
   });
 
@@ -951,14 +951,14 @@ function buildRefBoxElement(tok, index)
     var handle = document.createElement('div');
     handle.className = 'ref-box-size';
     handle.style.background = color;
-    handle.addEventListener('mousedown', function(e){ startRefBoxDrag(e, index, 'resize'); });
+    handle.addEventListener('mousedown', function(e){ fStartRefBoxDrag(e, index, 'resize'); });
     box.appendChild(handle);
   }
 
   return box;
 }
 
-function refreshRefHighlights()
+function fRefreshRefHighlights()
 {
   var layer = document.getElementById('sheet-ref-layer');
   if (!layer)
@@ -967,22 +967,22 @@ function refreshRefHighlights()
   layer.innerHTML = '';
   refHighlights = [];
 
-  var src = refHighlightSource();
+  var src = fRefHighlightSource();
   if (!src)
     return;
 
-  refHighlights = parseFormulaRefTokens(refSourceText(src));
+  refHighlights = fParseFormulaRefTokens(fRefSourceText(src));
 
   refHighlights.forEach(function(tok, i)
   {
-    var el = buildRefBoxElement(tok, i);
+    var el = fBuildRefBoxElement(tok, i);
     if (el) layer.appendChild(el);
   });
 }
 
 // The grid cell under a viewport point, looked up through whatever element
 // is there (usually the cell's own input).
-function sheetCellFromPoint(x, y)
+function fSheetCellFromPoint(x, y)
 {
   var el = document.elementFromPoint(x, y);
 
@@ -990,8 +990,8 @@ function sheetCellFromPoint(x, y)
   {
     if (el.id && el.id.indexOf('cell-') === 0)
     {
-      var p = parseName(el.id.slice(5));
-      if (p) return { row: p.row, col: colIndex(p.col) };
+      var p = fParseName(el.id.slice(5));
+      if (p) return { row: p.row, col: fColIndex(p.col) };
     }
     el = el.parentElement;
   }
@@ -999,12 +999,12 @@ function sheetCellFromPoint(x, y)
   return null;
 }
 
-function startRefBoxDrag(mouseEvent, index, mode)
+function fStartRefBoxDrag(mouseEvent, index, mode)
 {
   if (mouseEvent.button !== 0)
     return;
 
-  var src = refHighlightSource(),
+  var src = fRefHighlightSource(),
       tok = refHighlights[index];
 
   if (!src || !tok)
@@ -1017,9 +1017,9 @@ function startRefBoxDrag(mouseEvent, index, mode)
   // Dragging on a committed (not-being-edited) formula rewrites it in place,
   // so it gets its own undo step; an active edit already snapshotted.
   if (!src.editing)
-    sheetSnapshotForUndo();
+    fSheetSnapshotForUndo();
 
-  var cell = sheetCellFromPoint(mouseEvent.clientX, mouseEvent.clientY);
+  var cell = fSheetCellFromPoint(mouseEvent.clientX, mouseEvent.clientY);
 
   refBoxDrag = {
     index: index,
@@ -1037,11 +1037,11 @@ function startRefBoxDrag(mouseEvent, index, mode)
 
 // Writes the (moved/resized) token back into the formula text and refreshes
 // everything that mirrors it.
-function applyRefTokenEdit(tok)
+function fApplyRefTokenEdit(tok)
 {
   var src = refBoxDrag.src,
-      text = refSourceText(src),
-      newText = refTokenText(tok),
+      text = fRefSourceText(src),
+      newText = fRefTokenText(tok),
       full = text.slice(0, tok.start) + newText + text.slice(tok.end);
 
   if (src.inp)
@@ -1063,11 +1063,11 @@ function applyRefTokenEdit(tok)
   if (!src.editing)
     document.getElementById('formula-bar').value = full;
 
-  evaluateFormulas(src.editing ? src.ref : undefined);
-  saveSheetToFile();
+  fEvaluateFormulas(src.editing ? src.ref : undefined);
+  fSaveSheetToFile();
 
   // Re-parse: offsets after the replaced token have shifted.
-  refreshRefHighlights();
+  fRefreshRefHighlights();
 }
 
 document.addEventListener
@@ -1078,7 +1078,7 @@ document.addEventListener
     if (!refBoxDrag)
       return;
 
-    var cell = sheetCellFromPoint(mouseEvent.clientX, mouseEvent.clientY);
+    var cell = fSheetCellFromPoint(mouseEvent.clientX, mouseEvent.clientY);
     if (!cell)
       return;
 
@@ -1136,7 +1136,7 @@ document.addEventListener
     refBoxDrag.lastCol = cell.col;
 
     if (changed)
-      applyRefTokenEdit(tok);
+      fApplyRefTokenEdit(tok);
   }
 );
 
@@ -1166,20 +1166,20 @@ document.addEventListener
 // faster. Each scroll step retargets the drag, since the grid moved under a
 // pointer that didn't.
 
-var AUTOSCROLL_ZONE = 24; // px inside the visible cells where scrolling kicks in
-var AUTOSCROLL_MAX = 28;  // px per frame at (or past) the very edge
+var cAutoscrollZone = 24; // px inside the visible cells where scrolling kicks in
+var cAutoscrollMax = 28;  // px per frame at (or past) the very edge
 // A drag only scrolls once the pointer has travelled this far from where the
 // button went down. Without it, the hand jitter of a double-click on a cell
 // near an edge scrolled the grid between the two clicks, so the second click
 // — and the edit it starts — landed on a different cell.
-var AUTOSCROLL_ARM_DISTANCE = 6;
+var cAutoscrollArmDistance = 6;
 
 var autoScrollMouse = null;
 var autoScrollRaf = null;
 var autoScrollOrigin = null;
 var autoScrollArmed = false;
 
-function sheetDragActive()
+function fSheetDragActive()
 {
   return isDragging || isRefDragging || isFillDragging || !!refBoxDrag || !!sheetChartDrag;
 }
@@ -1202,7 +1202,7 @@ document.addEventListener
   'mousemove',
   function(mouseEvent)
   {
-    if (!sheetDragActive())
+    if (!fSheetDragActive())
     {
       autoScrollMouse = null;
       autoScrollArmed = false;
@@ -1214,8 +1214,8 @@ document.addEventListener
       var ox = autoScrollOrigin ? autoScrollOrigin.x : mouseEvent.clientX,
           oy = autoScrollOrigin ? autoScrollOrigin.y : mouseEvent.clientY;
 
-      if (Math.abs(mouseEvent.clientX - ox) < AUTOSCROLL_ARM_DISTANCE &&
-          Math.abs(mouseEvent.clientY - oy) < AUTOSCROLL_ARM_DISTANCE)
+      if (Math.abs(mouseEvent.clientX - ox) < cAutoscrollArmDistance &&
+          Math.abs(mouseEvent.clientY - oy) < cAutoscrollArmDistance)
         return;
 
       autoScrollArmed = true;
@@ -1224,34 +1224,34 @@ document.addEventListener
     autoScrollMouse = { x: mouseEvent.clientX, y: mouseEvent.clientY };
 
     if (!autoScrollRaf)
-      autoScrollRaf = requestAnimationFrame(autoScrollStep);
+      autoScrollRaf = requestAnimationFrame(fAutoScrollStep);
   }
 );
 
-function autoScrollSpeed(pos, lo, hi)
+function fAutoScrollSpeed(pos, lo, hi)
 {
   var depth;
 
-  if (pos < lo + AUTOSCROLL_ZONE)
+  if (pos < lo + cAutoscrollZone)
   {
-    depth = Math.min(1, (lo + AUTOSCROLL_ZONE - pos) / AUTOSCROLL_ZONE);
-    return -Math.ceil(depth * AUTOSCROLL_MAX);
+    depth = Math.min(1, (lo + cAutoscrollZone - pos) / cAutoscrollZone);
+    return -Math.ceil(depth * cAutoscrollMax);
   }
 
-  if (pos > hi - AUTOSCROLL_ZONE)
+  if (pos > hi - cAutoscrollZone)
   {
-    depth = Math.min(1, (pos - (hi - AUTOSCROLL_ZONE)) / AUTOSCROLL_ZONE);
-    return Math.ceil(depth * AUTOSCROLL_MAX);
+    depth = Math.min(1, (pos - (hi - cAutoscrollZone)) / cAutoscrollZone);
+    return Math.ceil(depth * cAutoscrollMax);
   }
 
   return 0;
 }
 
-function autoScrollStep()
+function fAutoScrollStep()
 {
   autoScrollRaf = null;
 
-  if (!sheetDragActive() || !autoScrollMouse)
+  if (!fSheetDragActive() || !autoScrollMouse)
     return;
 
   var container = document.getElementById('sheet-container');
@@ -1269,8 +1269,8 @@ function autoScrollStep()
       left = rect.left + container.clientLeft + (corner ? corner.offsetWidth : 0),
       bottom = rect.top + container.clientTop + container.clientHeight,
       right = rect.left + container.clientLeft + container.clientWidth,
-      dx = autoScrollSpeed(autoScrollMouse.x, left, right),
-      dy = autoScrollSpeed(autoScrollMouse.y, top, bottom);
+      dx = fAutoScrollSpeed(autoScrollMouse.x, left, right),
+      dy = fAutoScrollSpeed(autoScrollMouse.y, top, bottom);
 
   if (dx || dy)
   {
@@ -1284,17 +1284,17 @@ function autoScrollStep()
         movedY = container.scrollTop - beforeTop;
 
     if (movedX || movedY)
-      retargetDragAtPointer(movedX, movedY);
+      fRetargetDragAtPointer(movedX, movedY);
   }
 
   // The retarget above can dispatch a synthetic mousemove, whose listener
   // already scheduled the next step — guard so each frame runs this once,
   // not an ever-doubling number of times.
   if (!autoScrollRaf)
-    autoScrollRaf = requestAnimationFrame(autoScrollStep);
+    autoScrollRaf = requestAnimationFrame(fAutoScrollStep);
 }
 
-function retargetDragAtPointer(dx, dy)
+function fRetargetDragAtPointer(dx, dy)
 {
   // Chart moves/resizes are anchored to viewport coordinates; the content
   // shifted under the stationary pointer, so shift the anchor with it.
@@ -1321,16 +1321,16 @@ function retargetDragAtPointer(dx, dy)
   }
 
   // Selection, formula-ref picking, and fill drags track the hovered cell.
-  var cell = sheetCellFromPoint(autoScrollMouse.x, autoScrollMouse.y);
+  var cell = fSheetCellFromPoint(autoScrollMouse.x, autoScrollMouse.y);
 
   if (cell && (isDragging || isRefDragging || isFillDragging))
-    cellMouseEnter(colName(cell.col) + cell.row);
+    fCellMouseEnter(fColName(cell.col) + cell.row);
 }
 
-function getSelectionBoundingBox()
+function fGetSelectionBoundingBox()
 {
-  var anchor = parseName(selectionAnchor),
-      end = parseName(selectionEnd || selectionAnchor);
+  var anchor = fParseName(selectionAnchor),
+      end = fParseName(selectionEnd || selectionAnchor);
 
   if (!anchor)
     return null;
@@ -1338,8 +1338,8 @@ function getSelectionBoundingBox()
   if (!end)
     end = anchor;
 
-  var anchorCol = colIndex(anchor.col),
-      endCol = colIndex(end.col);
+  var anchorCol = fColIndex(anchor.col),
+      endCol = fColIndex(end.col);
 
   return  {
             rowStart: Math.min(anchor.row, end.row),
@@ -1349,24 +1349,24 @@ function getSelectionBoundingBox()
           };
 }
 
-function fillHandleMouseDown(mouseEvent)
+function fFillHandleMouseDown(mouseEvent)
 {
   mouseEvent.preventDefault();
   mouseEvent.stopPropagation();
 
-  fillSourceBox = getSelectionBoundingBox();
+  fillSourceBox = fGetSelectionBoundingBox();
   isFillDragging = true;
   fillRange = null;
 }
 
-function updateFillPreview(targetRef)
+function fUpdateFillPreview(targetRef)
 {
-  var target = parseName(targetRef);
+  var target = fParseName(targetRef);
 
   if (!target || !fillSourceBox)
     return;
 
-  var targetCol = colIndex(target.col),
+  var targetCol = fColIndex(target.col),
       box = fillSourceBox,
       vDist =   target.row < box.rowStart
                 ?
@@ -1394,12 +1394,12 @@ function updateFillPreview(targetRef)
                   :
                     { rowStart: box.rowStart, rowEnd: box.rowEnd, colStart: targetCol, colEnd: box.colStart - 1 };
 
-  renderFillPreview();
+  fRenderFillPreview();
 }
 
-function renderFillPreview()
+function fRenderFillPreview()
 {
-  clearFillPreview();
+  fClearFillPreview();
 
   if (!fillRange)
     return;
@@ -1407,14 +1407,14 @@ function renderFillPreview()
   for (var r = fillRange.rowStart; r <= fillRange.rowEnd; r++)
     for (var c = fillRange.colStart; c <= fillRange.colEnd; c++)
     {
-      var td = document.getElementById('cell-' + colName(c) + r);
+      var td = document.getElementById('cell-' + fColName(c) + r);
 
       if (td)
         td.classList.add('fill-preview');
     }
 }
 
-function clearFillPreview()
+function fClearFillPreview()
 {
   document.querySelectorAll('#sheet-body td.fill-preview').forEach
   (
@@ -1428,31 +1428,31 @@ function clearFillPreview()
 // Shifts every cell reference in a formula by a row/column delta - the same
 // relative-reference adjustment Excel/Sheets apply when you drag-fill. A '$'
 // before the column or row (e.g. $A$1, A$1, $A1) locks that axis in place.
-function shiftFormulaRefs(formulaText, rowDelta, colDelta)
+function fShiftFormulaRefs(formulaText, rowDelta, colDelta)
 {
   return formulaText.replace
   (
     /(?<![A-Za-z])(\$?)([A-Z]{1,2})(\$?)(\d+)/g,
     function(match, colAbs, col, rowAbs, row)
     {
-      var newCol = colAbs ? colIndex(col) : colIndex(col) + colDelta,
+      var newCol = colAbs ? fColIndex(col) : fColIndex(col) + colDelta,
           newRow = rowAbs ? parseInt(row, 10) : parseInt(row, 10) + rowDelta;
 
       if (newCol < 0 || newCol >= COLS || newRow < 1 || newRow > ROWS)
         return match;
 
-      return colAbs + colName(newCol) + rowAbs + newRow;
+      return colAbs + fColName(newCol) + rowAbs + newRow;
     }
   );
 }
 
-// Optional companion to shiftFormulaRefs: when the "increment numbers on
+// Optional companion to fShiftFormulaRefs: when the "increment numbers on
 // fill" toggle is on, plain top-level numeric literals in the formula shift
 // by the same delta, so =A1+1 filled down becomes =A2+2, =A3+3, etc. Numbers
 // inside a function call's parens (ROUND(A1,2)'s 2, LOG10(100)'s 100) are
 // left alone, since those are arguments, not series values - and so are
 // cell-reference/function-name digits (A1, LOG10), which are never "bare".
-function shiftFormulaLiterals(formulaText, delta)
+function fShiftFormulaLiterals(formulaText, delta)
 {
   if (!delta)
     return formulaText;
@@ -1499,12 +1499,12 @@ function shiftFormulaLiterals(formulaText, delta)
   return result;
 }
 
-function toggleIncrementLiterals(checked)
+function fToggleIncrementLiterals(checked)
 {
   incrementLiteralsOnFill = checked;
 }
 
-function refreshCellDisplay(ref)
+function fRefreshCellDisplay(ref)
 {
   var inp = document.getElementById('inp-' + ref),
       v = sheetData[ref] || '';
@@ -1512,13 +1512,13 @@ function refreshCellDisplay(ref)
   if (!inp)
     return;
 
-  inp.value = v.startsWith('=') ? evalCell(ref, v) : v;
+  inp.value = v.startsWith('=') ? fEvalCell(ref, v) : v;
   inp.classList.toggle('formula-result', v.startsWith('='));
 }
 
-function performFill()
+function fPerformFill()
 {
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
   var box = fillSourceBox,
       range = fillRange,
@@ -1533,41 +1533,41 @@ function performFill()
       // repeats across the filled region, same as Excel/Sheets.
       var srcRow = box.rowStart + (((r - box.rowStart) % srcRows) + srcRows) % srcRows,
           srcCol = box.colStart + (((c - box.colStart) % srcCols) + srcCols) % srcCols,
-          srcRef = colName(srcCol) + srcRow,
-          destRef = colName(c) + r,
+          srcRef = fColName(srcCol) + srcRow,
+          destRef = fColName(c) + r,
           srcVal = sheetData[srcRef] || '',
           destVal = srcVal;
 
       if (srcVal.startsWith('='))
       {
-        destVal = shiftFormulaRefs(srcVal, r - srcRow, c - srcCol);
+        destVal = fShiftFormulaRefs(srcVal, r - srcRow, c - srcCol);
 
         if (incrementLiteralsOnFill)
-          destVal = shiftFormulaLiterals(destVal, (r - srcRow) + (c - srcCol));
+          destVal = fShiftFormulaLiterals(destVal, (r - srcRow) + (c - srcCol));
       }
 
       sheetData[destRef] = destVal;
 
-      refreshCellDisplay(destRef);
+      fRefreshCellDisplay(destRef);
     }
   }
 
-  selectionAnchor = colName(Math.min(box.colStart, range.colStart)) + Math.min(box.rowStart, range.rowStart);
-  selectionEnd = colName(Math.max(box.colEnd, range.colEnd)) + Math.max(box.rowEnd, range.rowEnd);
+  selectionAnchor = fColName(Math.min(box.colStart, range.colStart)) + Math.min(box.rowStart, range.rowStart);
+  selectionEnd = fColName(Math.max(box.colEnd, range.colEnd)) + Math.max(box.rowEnd, range.rowEnd);
 
-  renderRangeSelection();
-  evaluateFormulas();
-  saveSheetToFile();
+  fRenderRangeSelection();
+  fEvaluateFormulas();
+  fSaveSheetToFile();
 }
 
-function enterEditMode(name, freshValue)
+function fEnterEditMode(name, freshValue)
 {
   var inp = document.getElementById('inp-' + name);
 
   if (!inp)
     return;
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
   editingCell = name;
   inp.readOnly = false;
@@ -1581,13 +1581,13 @@ function enterEditMode(name, freshValue)
     sheetData[name] = freshValue;
   }
 
-  selectCell(name);
+  fSelectCell(name);
   inp.focus();
 }
 
-function cellDblClick(name)
+function fCellDblClick(name)
 {
-  enterEditMode(name);
+  fEnterEditMode(name);
 
   var inp = document.getElementById('inp-' + name),
       caretPos = inp.value.length;
@@ -1595,7 +1595,7 @@ function cellDblClick(name)
   inp.setSelectionRange(caretPos, caretPos);
 }
 
-function isTypingKey(keyEvent)
+function fIsTypingKey(keyEvent)
 {
   return  keyEvent.key.length === 1 &&
           !keyEvent.ctrlKey &&

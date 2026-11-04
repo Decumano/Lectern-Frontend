@@ -15,7 +15,7 @@
 
 var spellPrefs = { enabled: true, lang: '' };
 
-var SPELL_LANGS = [
+var cSpellLangs = [
   ['',      'System default'],
   ['en-US', 'English (US)'],
   ['en-GB', 'English (UK)'],
@@ -41,7 +41,7 @@ var SPELL_LANGS = [
   ['uk-UA', 'Українська']
 ];
 
-function spellApplyTo(el)
+function fSpellApplyTo(el)
 {
   if (!el)
     return;
@@ -54,7 +54,7 @@ function spellApplyTo(el)
     el.removeAttribute('lang');
 }
 
-function isSpellcheckable(el)
+function fIsSpellcheckable(el)
 {
   if (!el || !el.tagName)
     return false;
@@ -66,7 +66,7 @@ function isSpellcheckable(el)
          el.isContentEditable;
 }
 
-function applySpellcheckPrefs()
+function fApplySpellcheckPrefs()
 {
   // The document language doubles as the fallback hint for fields the
   // delegate hasn't touched yet.
@@ -76,16 +76,16 @@ function applySpellcheckPrefs()
     document.documentElement.setAttribute('lang', navigator.language || 'en');
 
   document.querySelectorAll('textarea, input[type="text"], input:not([type]), input[type="search"], [contenteditable="true"]')
-    .forEach(spellApplyTo);
+    .forEach(fSpellApplyTo);
 }
 
 document.addEventListener('focusin', function(e)
 {
-  if (isSpellcheckable(e.target))
-    spellApplyTo(e.target);
+  if (fIsSpellcheckable(e.target))
+    fSpellApplyTo(e.target);
 });
 
-function onSpellPrefsChange()
+function fOnSpellPrefsChange()
 {
   var enabledEl = document.getElementById('settings-spell-enabled'),
       langEl    = document.getElementById('settings-spell-lang');
@@ -93,11 +93,11 @@ function onSpellPrefsChange()
   spellPrefs.enabled = !!(enabledEl && enabledEl.checked);
   spellPrefs.lang    = langEl ? langEl.value : '';
 
-  saveSettings();
-  applySpellcheckPrefs();
+  fSaveSettings();
+  fApplySpellcheckPrefs();
 }
 
-var DOC_TEMPLATES =
+var cDocTemplates =
 {
   character: '{type: Character, status: Active, faction: Unknown, race: Unknown}\n\n#character\n\n## Background\n\n## Personality\n\n## Relationships\n\n## Notes\n',
   faction:   '{type: Faction, status: Active, alignment: Neutral, size: Unknown}\n\n#faction\n\n## Overview\n\n## Goals\n\n## Members\n\n## Rivals\n',
@@ -106,7 +106,7 @@ var DOC_TEMPLATES =
   region:    '{type: Region, climate: Unknown, culture: Unknown, status: Active, ruler: Unknown}\n\n#region\n\n## Overview\n\n## Climate & Geography\n\n## Culture & Society\n\n## Political Status\n\n## Key NPCs\n\n## Linked Events\n\n## Notes\n'
 };
 
-function defaultContentForType(type, name)
+function fDefaultContentForType(type, name)
 {
   if (type === 'sheet')
     return '---\ntype: spreadsheet\n---\n\n';
@@ -115,10 +115,10 @@ function defaultContentForType(type, name)
     return '<!-- type: graph -->\n\n```mermaid\ngraph TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Continue]\n    B -->|No| D[Stop]\n```\n';
 
   if (type === 'notebook')
-    return serializeNotebookData(defaultNotebookData());
+    return fSerializeNotebookData(fDefaultNotebookData());
 
   if (type === 'slides')
-    return defaultSlidesContent();
+    return fDefaultSlidesContent();
 
   // The JSON-backed apps embed a display title; seed it with the name the
   // user gave the file so the first save doesn't rename the file to a
@@ -151,19 +151,19 @@ function defaultContentForType(type, name)
   return '';
 }
 
-function createFile(name, type, content)
+function fCreateFile(name, type, content)
 {
   const fileId = 'f_' + Date.now();
 
   if (content === undefined)
-    content = defaultContentForType(type, name);
+    content = fDefaultContentForType(type, name);
 
   files[fileId] =
   {
     name, type, content, modified: Date.now()
   };
 
-  saveToStorage();
+  fSaveToStorage();
 
   return fileId;
 }
@@ -171,7 +171,7 @@ function createFile(name, type, content)
 // Strips characters that are illegal in filenames on Windows (a superset of
 // what's illegal on macOS/Linux), so a display name can double as a real
 // on-disk filename without surprising the user when they open the folder.
-function sanitizeFileName(name)
+function fSanitizeFileName(name)
 {
   return String(name || '')
           .trim()
@@ -183,7 +183,7 @@ function sanitizeFileName(name)
 // Finds a rel_path that isn't already taken by another file, suffixing " (2)",
 // " (3)", etc. on collision - except a candidate matching excludeRelPath itself
 // is always accepted, so re-saving a file under its own current name is a no-op.
-function uniqueRelPath(folder, baseName, ext, excludeRelPath)
+function fUniqueRelPath(folder, baseName, ext, excludeRelPath)
 {
   var prefix = folder ? folder + '/' : '',
       candidate = prefix + baseName + '.' + ext,
@@ -198,7 +198,7 @@ function uniqueRelPath(folder, baseName, ext, excludeRelPath)
   return candidate;
 }
 
-function uniqueFolderRelPath(parent, baseName, excludeRelPath)
+function fUniqueFolderRelPath(parent, baseName, excludeRelPath)
 {
   var prefix = parent ? parent + '/' : '',
       candidate = prefix + baseName,
@@ -213,7 +213,7 @@ function uniqueFolderRelPath(parent, baseName, excludeRelPath)
   return candidate;
 }
 
-function fileTypeIcon(type)
+function fFileTypeIcon(type)
 {
   if (type === 'sheet')
     return  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
@@ -290,7 +290,7 @@ function fileTypeIcon(type)
           '</svg>';
 }
 
-function fileExtensionFor(type)
+function fFileExtensionFor(type)
 {
   if (type === 'sheet')    return 'mds';
   if (type === 'notebook') return 'mdn';
@@ -303,45 +303,45 @@ function fileExtensionFor(type)
   return 'mdp';
 }
 
-var FOLDER_ICON =  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+var cFolderIcon =  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
                       '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>'+
                     '</svg>';
 
-var EMPTY_FILE_LIST_HTML =  '<div style="padding: 20px 12px; text-align: center; color: var(--text3); font-size: 12px;">' +
+var cEmptyFileListHtml =  '<div style="padding: 20px 12px; text-align: center; color: var(--text3); font-size: 12px;">' +
                               'No files yet.<br>Click <strong style="color:var(--accent)">+ New</strong> to start.' +
                             '</div>';
 
-var CHEVRON_ICON =  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">'+
+var cChevronIcon =  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">'+
                        '<polyline points="9,6 15,12 9,18"/>'+
                      '</svg>';
 
-function fileRowHtml(id, f, depth)
+function fFileRowHtml(id, f, depth)
 {
   const active = (id === currentFileId),
-        icon = fileTypeIcon(f.type),
+        icon = fFileTypeIcon(f.type),
         date = new Date(f.modified).toLocaleDateString(undefined,{month:'short',day:'numeric'}),
         indent = depth ? (' style="padding-left:' + (12 + depth * 16) + 'px;"') : '',
-        safeId = escAttr(id);
+        safeId = fEscAttr(id);
 
-  const tagChips = fileTagsOf(f).map(function(t){
-    return '<span class="file-tag" onclick="event.stopPropagation();sidebarTagFilter(\'' + escAttr(t) + '\')">#' + escHtml(t) + '</span>';
+  const tagChips = fFileTagsOf(f).map(function(t){
+    return '<span class="file-tag" onclick="event.stopPropagation();fSidebarTagFilter(\'' + fEscAttr(t) + '\')">#' + fEscHtml(t) + '</span>';
   }).join('');
 
-  return  '<div class="file-item ' + (active?'active':'') + '"' + indent + ' data-id="' + escHtml(id) + '"' +
-            ' draggable="true" ondragstart="handleDragStart(event,\'' + safeId + '\')" ondragend="handleDragEnd(event)"' +
-            ' onclick="openFile(\'' + safeId + '\')" oncontextmenu="openContextMenu(event,\'file\',\'' + safeId + '\')">' +
+  return  '<div class="file-item ' + (active?'active':'') + '"' + indent + ' data-id="' + fEscHtml(id) + '"' +
+            ' draggable="true" ondragstart="fHandleDragStart(event,\'' + safeId + '\')" ondragend="fHandleDragEnd(event)"' +
+            ' onclick="fOpenFile(\'' + safeId + '\')" oncontextmenu="fOpenContextMenu(event,\'file\',\'' + safeId + '\')">' +
             '<span class="file-icon">' +
               icon +
             '</span>' +
             '<div class="file-info">'+
-              '<div class="file-name" ondblclick="startInlineRename(event,this,\'' + safeId + '\')">' +
-                escHtml(f.name) +
+              '<div class="file-name" ondblclick="fStartInlineRename(event,this,\'' + safeId + '\')">' +
+                fEscHtml(f.name) +
               '</div>'+
               '<div class="file-meta">' +
                 date + tagChips +
               '</div>'+
             '</div>'+
-            '<span class="file-del" onclick="deleteFile(event,\'' + safeId + '\')">'+
+            '<span class="file-del" onclick="fDeleteFile(event,\'' + safeId + '\')">'+
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">'+
                 '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'+
               '</svg>'+
@@ -349,24 +349,24 @@ function fileRowHtml(id, f, depth)
           '</div>';
 }
 
-function folderRowHtml(path, depth)
+function fFolderRowHtml(path, depth)
 {
   const expanded = expandedFolders.has(path),
         indent = 12 + depth * 16,
-        safePath = escAttr(path);
+        safePath = fEscAttr(path);
 
-  return  '<div class="folder-item" style="padding-left:' + indent + 'px;" data-id="' + escHtml(path) + '"' +
-            ' draggable="true" ondragstart="handleDragStart(event,\'' + safePath + '\')" ondragend="handleDragEnd(event)"' +
-            ' ondragenter="handleDragEnter(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,\'' + safePath + '\')"' +
-            ' onclick="toggleFolderExpanded(\'' + safePath + '\')" oncontextmenu="openContextMenu(event,\'folder\',\'' + safePath + '\')">' +
-            '<span class="folder-caret ' + (expanded ? 'expanded' : '') + '">' + CHEVRON_ICON + '</span>' +
-            '<span class="file-icon">' + FOLDER_ICON + '</span>' +
+  return  '<div class="folder-item" style="padding-left:' + indent + 'px;" data-id="' + fEscHtml(path) + '"' +
+            ' draggable="true" ondragstart="fHandleDragStart(event,\'' + safePath + '\')" ondragend="fHandleDragEnd(event)"' +
+            ' ondragenter="fHandleDragEnter(event)" ondragover="fHandleDragOver(event)" ondragleave="fHandleDragLeave(event)" ondrop="fHandleDrop(event,\'' + safePath + '\')"' +
+            ' onclick="fToggleFolderExpanded(\'' + safePath + '\')" oncontextmenu="fOpenContextMenu(event,\'folder\',\'' + safePath + '\')">' +
+            '<span class="folder-caret ' + (expanded ? 'expanded' : '') + '">' + cChevronIcon + '</span>' +
+            '<span class="file-icon">' + cFolderIcon + '</span>' +
             '<div class="file-info">'+
-              '<div class="file-name" ondblclick="startInlineRename(event,this,\'' + safePath + '\')">' +
-                escHtml(folders[path].name) +
+              '<div class="file-name" ondblclick="fStartInlineRename(event,this,\'' + safePath + '\')">' +
+                fEscHtml(folders[path].name) +
               '</div>'+
             '</div>'+
-            '<span class="file-del" onclick="deleteFolderEntry(event,\'' + safePath + '\')">'+
+            '<span class="file-del" onclick="fDeleteFolderEntry(event,\'' + safePath + '\')">'+
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">'+
                 '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'+
               '</svg>'+
@@ -374,7 +374,7 @@ function folderRowHtml(path, depth)
           '</div>';
 }
 
-function renderFileList()
+function fRenderFileList()
 {
   const fileList = document.getElementById('file-list');
 
@@ -392,21 +392,21 @@ function renderFileList()
   const filesOfType = Object.entries(files).filter(function(entry)
   {
     var f = entry[1];
-    if (entry[0] === SHARED_TMP_ID) return false; // shared files live in their own sidebar section
+    if (entry[0] === cSharedTmpId) return false; // shared files live in their own sidebar section
     if (f.type !== currentAppType) return false;
     if (_tagQ)
     {
-      if (fileTagsOf(f).some(function(t){ return t.toLowerCase() === _tagQ; })) return true;
+      if (fFileTagsOf(f).some(function(t){ return t.toLowerCase() === _tagQ; })) return true;
       return !!(f.content && f.content.toLowerCase().indexOf('#' + _tagQ) !== -1);
     }
     if (!_searchQ) return true;
     if (f.name.toLowerCase().indexOf(_searchQ) !== -1) return true;
-    if (fileTagsOf(f).some(function(t){ return t.toLowerCase().indexOf(_searchQ) !== -1; })) return true;
+    if (fFileTagsOf(f).some(function(t){ return t.toLowerCase().indexOf(_searchQ) !== -1; })) return true;
     if (f.content && f.content.toLowerCase().indexOf(_searchQ) !== -1) return true;
     return false;
   });
 
-  renderOpenTabs(); // names/active state shown in the tab bar change on the same events
+  fRenderOpenTabs(); // names/active state shown in the tab bar change on the same events
 
   if (Object.keys(folders).length === 0)
   {
@@ -414,9 +414,9 @@ function renderFileList()
 
     fileList.innerHTML = filesOfType.length
                           ?
-                            filesOfType.map(([id, f]) => fileRowHtml(id, f, 0)).join('')
+                            filesOfType.map(([id, f]) => fFileRowHtml(id, f, 0)).join('')
                           :
-                            EMPTY_FILE_LIST_HTML;
+                            cEmptyFileListHtml;
     return;
   }
 
@@ -436,7 +436,7 @@ function renderFileList()
     (childFolders[parent] = childFolders[parent] || []).push(path);
   });
 
-  function renderLevel(parentPath, depth)
+  function fRenderLevel(parentPath, depth)
   {
     let html = '';
 
@@ -447,10 +447,10 @@ function renderFileList()
 
     subFolders.forEach(function(path)
     {
-      html += folderRowHtml(path, depth);
+      html += fFolderRowHtml(path, depth);
 
       if (expandedFolders.has(path))
-        html += renderLevel(path, depth + 1);
+        html += fRenderLevel(path, depth + 1);
     });
 
     const filesHere = (byFolder[parentPath] || []).slice().sort(function(a, b)
@@ -460,36 +460,36 @@ function renderFileList()
 
     filesHere.forEach(function(entry)
     {
-      html += fileRowHtml(entry[0], entry[1], depth);
+      html += fFileRowHtml(entry[0], entry[1], depth);
     });
 
     return html;
   }
 
-  fileList.innerHTML = renderLevel('', 0) || EMPTY_FILE_LIST_HTML;
+  fileList.innerHTML = fRenderLevel('', 0) || cEmptyFileListHtml;
 }
 
-function onSidebarSearch(value)
+function fOnSidebarSearch(value)
 {
   sidebarSearch = value;
-  onGlobalSearch(value);
+  fOnGlobalSearch(value);
 }
 
-function filterByTag(tag)
+function fFilterByTag(tag)
 {
   if (currentAppType !== 'doc')
-    switchAppType('doc');
+    fSwitchAppType('doc');
   sidebarSearch = '#' + tag;
   var inp = document.getElementById('sidebar-search');
   if (inp) inp.value = sidebarSearch;
-  renderFileList();
+  fRenderFileList();
 }
 
 // Tag chip on a sidebar file row: filter the current app's list by that tag.
-function sidebarTagFilter(tag)
+function fSidebarTagFilter(tag)
 {
   sidebarSearch = '#' + tag;
   var inp = document.getElementById('sidebar-search');
   if (inp) inp.value = sidebarSearch;
-  onGlobalSearch(sidebarSearch);
+  fOnGlobalSearch(sidebarSearch);
 }

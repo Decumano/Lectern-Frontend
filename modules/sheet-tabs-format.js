@@ -6,7 +6,7 @@
 
 // ── SHEET TABS (pages) ──
 
-function renderSheetPageTabs()
+function fRenderSheetPageTabs()
 {
   var bar = document.getElementById('sheet-tabs');
   if (!bar) return;
@@ -15,20 +15,20 @@ function renderSheetPageTabs()
   {
     // mousedown-default is prevented so a mid-formula edit keeps focus while
     // the user switches tabs to pick a cell from another page.
-    return '<div class="sheet-tab' + (i === sheetPageIdx ? ' active' : '') + '" onmousedown="event.preventDefault()" onclick="switchSheetPage(' + i + ')" ondblclick="renameSheetPage(' + i + ')" title="Double-click to rename">' +
-      escHtml(p.name) +
-      (sheetPages.length > 1 ? '<button class="sheet-tab-del" onclick="deleteSheetPage(event,' + i + ')" title="Delete tab">×</button>' : '') +
+    return '<div class="sheet-tab' + (i === sheetPageIdx ? ' active' : '') + '" onmousedown="event.preventDefault()" onclick="fSwitchSheetPage(' + i + ')" ondblclick="fRenameSheetPage(' + i + ')" title="Double-click to rename">' +
+      fEscHtml(p.name) +
+      (sheetPages.length > 1 ? '<button class="sheet-tab-del" onclick="fDeleteSheetPage(event,' + i + ')" title="Delete tab">×</button>' : '') +
     '</div>';
   }).join('') +
-  '<button class="sheet-tab-add" onclick="addSheetPage()" title="New tab">+</button>' +
+  '<button class="sheet-tab-add" onclick="fAddSheetPage()" title="New tab">+</button>' +
   '<span class="sheet-tab-hint">' +
     (formulaPickCtx
-      ? 'Click a cell to insert it into the formula on “' + escHtml(sheetPages[formulaPickCtx.pageIdx].name) + '”'
+      ? 'Click a cell to insert it into the formula on “' + fEscHtml(sheetPages[formulaPickCtx.pageIdx].name) + '”'
       : 'Reference other tabs in formulas: [Tab name](A1)') +
   '</span>';
 }
 
-function aliasActiveSheetPage()
+function fAliasActiveSheetPage()
 {
   var page = sheetPages[sheetPageIdx];
   if (!page.colors) page.colors = {};
@@ -38,16 +38,16 @@ function aliasActiveSheetPage()
   sheetColors = page.colors;
   sheetTextColors = page.textColors;
   sheetMerges = page.merges;
-  clearEvalCache();
+  fClearEvalCache();
 }
 
-function switchSheetPage(i)
+function fSwitchSheetPage(i)
 {
   if (i === sheetPageIdx || !sheetPages[i]) return;
 
   // Leaving a tab mid-edit: keep the typed value, and if it's a formula,
   // arm pick mode so a cell click on the destination tab inserts a
-  // [Tab name](REF) reference and returns here (see cellMouseDown). The tab
+  // [Tab name](REF) reference and returns here (see fCellMouseDown). The tab
   // buttons prevent mousedown-default, so the editing input hasn't blurred.
   var pickCtx = null;
   if (editingCell)
@@ -76,66 +76,66 @@ function switchSheetPage(i)
   }
 
   sheetPageIdx = i;
-  aliasActiveSheetPage();
+  fAliasActiveSheetPage();
   formulaPickCtx = pickCtx;
   // Undo snapshots belong to the page they were taken on; restoring one onto
   // a different page would corrupt it, so the stacks reset per page.
   sheetUndoStack = [];
   sheetRedoStack = [];
 
-  renderSheetPageTabs();
-  ensureGridFitsData(sheetData);
-  refreshAllCellDisplays();
-  selectCell('A1');
-  renderSheetCharts();
+  fRenderSheetPageTabs();
+  fEnsureGridFitsData(sheetData);
+  fRefreshAllCellDisplays();
+  fSelectCell('A1');
+  fRenderSheetCharts();
 }
 
-function uniqueSheetPageName(base, excludeIdx)
+function fUniqueSheetPageName(base, excludeIdx)
 {
   var name = base, n = 2;
-  function taken(candidate)
+  function fTaken(candidate)
   {
     return sheetPages.some(function(p, i){ return i !== excludeIdx && p.name.trim().toLowerCase() === candidate.trim().toLowerCase(); });
   }
-  while (taken(name)) name = base + ' ' + n++;
+  while (fTaken(name)) name = base + ' ' + n++;
   return name;
 }
 
-function addSheetPage()
+function fAddSheetPage()
 {
-  var page = { name: uniqueSheetPageName('Sheet ' + (sheetPages.length + 1), -1), data: {}, colors: {}, textColors: {}, merges: {} };
+  var page = { name: fUniqueSheetPageName('Sheet ' + (sheetPages.length + 1), -1), data: {}, colors: {}, textColors: {}, merges: {} };
   sheetPages.push(page);
-  switchSheetPage(sheetPages.length - 1);
-  saveSheetToFile();
+  fSwitchSheetPage(sheetPages.length - 1);
+  fSaveSheetToFile();
 }
 
-function renameSheetPage(i)
+function fRenameSheetPage(i)
 {
   var page = sheetPages[i];
   if (!page) return;
 
-  openDataModal
+  fOpenDataModal
   (
     'Rename tab',
-    '<label class="field-label">Tab name<input class="modal-input" id="sheet-tab-name" value="' + escAttr(page.name) + '"></label>' +
-    '<div style="color:var(--text3);font-size:12px;margin-top:8px">Formulas on other tabs reference this one by name — e.g. [' + escHtml(page.name) + '](A1) — and don\'t update automatically when it changes.</div>',
+    '<label class="field-label">Tab name<input class="modal-input" id="sheet-tab-name" value="' + fEscAttr(page.name) + '"></label>' +
+    '<div style="color:var(--text3);font-size:12px;margin-top:8px">Formulas on other tabs reference this one by name — e.g. [' + fEscHtml(page.name) + '](A1) — and don\'t update automatically when it changes.</div>',
     function()
     {
       var name = document.getElementById('sheet-tab-name').value.trim();
       if (!name) return;
       var oldName = page.name;
-      page.name = uniqueSheetPageName(name, i);
+      page.name = fUniqueSheetPageName(name, i);
       // Charts follow their tab through renames.
       sheetCharts.forEach(function(c){ if (c.page === oldName) c.page = page.name; });
-      closeDataModal();
-      renderSheetPageTabs();
-      refreshAllCellDisplays(); // refs to the old name now show #REF
-      saveSheetToFile();
+      fCloseDataModal();
+      fRenderSheetPageTabs();
+      fRefreshAllCellDisplays(); // refs to the old name now show #REF
+      fSaveSheetToFile();
     }
   );
 }
 
-function deleteSheetPage(e, i)
+function fDeleteSheetPage(e, i)
 {
   e.stopPropagation();
   if (sheetPages.length <= 1) return;
@@ -145,19 +145,19 @@ function deleteSheetPage(e, i)
   if (sheetPageIdx >= sheetPages.length) sheetPageIdx = sheetPages.length - 1;
   else if (i < sheetPageIdx) sheetPageIdx--;
 
-  aliasActiveSheetPage();
+  fAliasActiveSheetPage();
   sheetCharts = sheetCharts.filter(function(c){ return !c.page || sheetPages.some(function(p){ return p.name === c.page; }); });
   sheetUndoStack = [];
   sheetRedoStack = [];
 
-  renderSheetPageTabs();
-  refreshAllCellDisplays();
-  selectCell('A1');
-  renderSheetCharts();
-  saveSheetToFile();
+  fRenderSheetPageTabs();
+  fRefreshAllCellDisplays();
+  fSelectCell('A1');
+  fRenderSheetCharts();
+  fSaveSheetToFile();
 }
 
-function loadSheetFile(f)
+function fLoadSheetFile(f)
 {
   sheetData = {};
   sheetPages = [];
@@ -232,7 +232,7 @@ function loadSheetFile(f)
       }
 
       var ref = line.slice(0, refEnd),
-          stripped = stripCellSuffixes(line.slice(refEnd + 1)),
+          stripped = fStripCellSuffixes(line.slice(refEnd + 1)),
           rest = stripped.rest,
           formulaEnd = rest.indexOf('=');
 
@@ -251,27 +251,27 @@ function loadSheetFile(f)
     sheetPages = [{ name: 'Sheet 1', data: {}, colors: {}, textColors: {}, merges: {} }];
 
   sheetPageIdx = 0;
-  aliasActiveSheetPage();
+  fAliasActiveSheetPage();
 
   // Charts made before per-tab charts existed carry no page name; pin them
   // to the first tab so they don't float over every page.
   sheetCharts.forEach(function(c){ if (!c.page) c.page = sheetPages[0].name; });
 
-  renderSheetPageTabs();
-  ensureGridFitsData(sheetData);
-  refreshAllCellDisplays();
-  selectCell('A1');
-  renderSheetCharts();
+  fRenderSheetPageTabs();
+  fEnsureGridFitsData(sheetData);
+  fRefreshAllCellDisplays();
+  fSelectCell('A1');
+  fRenderSheetCharts();
 }
 
-function refreshAllCellDisplays()
+function fRefreshAllCellDisplays()
 {
-  clearEvalCache();
+  fClearEvalCache();
 
   for (var i = 1; i <= ROWS; i++)
     for (var j = 0; j < COLS; j++)
     {
-      var ref = colName(j) + i,
+      var ref = fColName(j) + i,
           v = sheetData[ref] || '',
           inp = document.getElementById('inp-' + ref);
 
@@ -279,7 +279,7 @@ function refreshAllCellDisplays()
       {
         inp.value = v.startsWith('=')
                     ?
-                      evalCell(ref, v)
+                      fEvalCell(ref, v)
                     :
                       v;
 
@@ -287,7 +287,7 @@ function refreshAllCellDisplays()
       }
     }
 
-  applyCellDecorations();
+  fApplyCellDecorations();
 }
 
 // ── CELL DECORATIONS (background colors + merged cells) ──
@@ -296,7 +296,7 @@ function refreshAllCellDisplays()
 // switch / undo / unmerge can cheaply reset exactly those cells.
 var decoratedCellRefs = [];
 
-function applyCellDecorations()
+function fApplyCellDecorations()
 {
   decoratedCellRefs.forEach(function(ref)
   {
@@ -336,20 +336,20 @@ function applyCellDecorations()
     // The merge is rendered as the bounding rectangle of anchor + covered
     // cells (colspan/rowspan on the anchor, everything else hidden), so even
     // a hand-written non-rectangular list ends up displayable.
-    var pa = parseName(anchor);
+    var pa = fParseName(anchor);
     if (!pa) return;
     var minRow = pa.row, maxRow = pa.row,
-        minCol = colIndex(pa.col), maxCol = colIndex(pa.col);
+        minCol = fColIndex(pa.col), maxCol = fColIndex(pa.col);
 
     covered.forEach(function(ref)
     {
-      var pc = parseName(ref);
+      var pc = fParseName(ref);
       if (!pc) return;
       minRow = Math.min(minRow, pc.row); maxRow = Math.max(maxRow, pc.row);
-      minCol = Math.min(minCol, colIndex(pc.col)); maxCol = Math.max(maxCol, colIndex(pc.col));
+      minCol = Math.min(minCol, fColIndex(pc.col)); maxCol = Math.max(maxCol, fColIndex(pc.col));
     });
 
-    ensureGridFits(maxRow, maxCol);
+    fEnsureGridFits(maxRow, maxCol);
 
     var anchorTd = document.getElementById('cell-' + anchor);
     if (!anchorTd) return;
@@ -361,7 +361,7 @@ function applyCellDecorations()
     for (var r = minRow; r <= maxRow; r++)
       for (var c = minCol; c <= maxCol; c++)
       {
-        var ref = colName(c) + r;
+        var ref = fColName(c) + r;
         if (ref === anchor) continue;
         var td = document.getElementById('cell-' + ref);
         if (td)
@@ -375,47 +375,47 @@ function applyCellDecorations()
 
 // Applies (or clears, with null) a background color to every cell in the
 // current selection rectangle.
-function applyCellColor(color)
+function fApplyCellColor(color)
 {
   if (!selectionAnchor) return;
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
-  var box = getSelectionBoundingBox();
+  var box = fGetSelectionBoundingBox();
   for (var r = box.rowStart; r <= box.rowEnd; r++)
     for (var c = box.colStart; c <= box.colEnd; c++)
     {
-      var ref = colName(c) + r;
+      var ref = fColName(c) + r;
       if (color) sheetColors[ref] = color;
       else delete sheetColors[ref];
     }
 
-  applyCellDecorations();
-  saveSheetToFile();
+  fApplyCellDecorations();
+  fSaveSheetToFile();
 }
 
-function clearCellColor() { applyCellColor(null); }
+function fClearCellColor() { fApplyCellColor(null); }
 
 // Applies (or clears, with null) a text color to every cell in the current
-// selection rectangle — same shape as applyCellColor, different map.
-function applyCellTextColor(color)
+// selection rectangle — same shape as fApplyCellColor, different map.
+function fApplyCellTextColor(color)
 {
   if (!selectionAnchor) return;
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
-  var box = getSelectionBoundingBox();
+  var box = fGetSelectionBoundingBox();
   for (var r = box.rowStart; r <= box.rowEnd; r++)
     for (var c = box.colStart; c <= box.colEnd; c++)
     {
-      var ref = colName(c) + r;
+      var ref = fColName(c) + r;
       if (color) sheetTextColors[ref] = color;
       else delete sheetTextColors[ref];
     }
 
-  applyCellDecorations();
-  saveSheetToFile();
+  fApplyCellDecorations();
+  fSaveSheetToFile();
 }
 
-function clearCellTextColor() { applyCellTextColor(null); }
+function fClearCellTextColor() { fApplyCellTextColor(null); }
 
 // ── Bucket split-button ──
 // The bucket itself paints the current selection with the last-chosen color;
@@ -428,7 +428,7 @@ var currentCellColor = (function()
   catch(e) { return '#3a5a40'; }
 })();
 
-function paintBucketSwatch()
+function fPaintBucketSwatch()
 {
   var sw = document.getElementById('bucket-swatch');
   if (sw) sw.style.background = currentCellColor;
@@ -436,17 +436,17 @@ function paintBucketSwatch()
   if (inp) inp.value = currentCellColor;
 }
 
-function applyBucketColor()
+function fApplyBucketColor()
 {
-  applyCellColor(currentCellColor);
+  fApplyCellColor(currentCellColor);
 }
 
-function onBucketColorChosen(color)
+function fOnBucketColorChosen(color)
 {
   currentCellColor = color;
   try { localStorage.setItem('lk_bucket_color', color); } catch(e) {}
-  paintBucketSwatch();
-  applyCellColor(color);
+  fPaintBucketSwatch();
+  fApplyCellColor(color);
 }
 
 // ── Text-color split-button ──
@@ -459,7 +459,7 @@ var currentTextColor = (function()
   catch(e) { return '#d4a843'; }
 })();
 
-function paintTextSwatch()
+function fPaintTextSwatch()
 {
   var sw = document.getElementById('text-swatch');
   if (sw) sw.style.background = currentTextColor;
@@ -467,37 +467,37 @@ function paintTextSwatch()
   if (inp) inp.value = currentTextColor;
 }
 
-function applyTextColor()
+function fApplyTextColor()
 {
-  applyCellTextColor(currentTextColor);
+  fApplyCellTextColor(currentTextColor);
 }
 
-function onTextColorChosen(color)
+function fOnTextColorChosen(color)
 {
   currentTextColor = color;
   try { localStorage.setItem('lk_text_color', color); } catch(e) {}
-  paintTextSwatch();
-  applyCellTextColor(color);
+  fPaintTextSwatch();
+  fApplyCellTextColor(color);
 }
 
 // Merges the selected rectangle into one big cell (top-left becomes the
 // anchor), or splits it back apart when the selection sits on an existing
 // merge.
-function toggleMergeSelection()
+function fToggleMergeSelection()
 {
   if (!selectionAnchor) return;
 
-  var box = getSelectionBoundingBox();
+  var box = fGetSelectionBoundingBox();
 
   // Unmerge: any existing anchor inside the selection wins.
   var existing = Object.keys(sheetMerges).find(function(anchor)
   {
-    var pa = parseName(anchor);
+    var pa = fParseName(anchor);
     return pa && pa.row >= box.rowStart && pa.row <= box.rowEnd &&
-           colIndex(pa.col) >= box.colStart && colIndex(pa.col) <= box.colEnd;
+           fColIndex(pa.col) >= box.colStart && fColIndex(pa.col) <= box.colEnd;
   });
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
   if (existing)
   {
@@ -508,25 +508,25 @@ function toggleMergeSelection()
     if (box.rowStart === box.rowEnd && box.colStart === box.colEnd)
       return; // a single cell has nothing to merge with
 
-    var anchor = colName(box.colStart) + box.rowStart,
+    var anchor = fColName(box.colStart) + box.rowStart,
         covered = [];
 
     for (var r = box.rowStart; r <= box.rowEnd; r++)
       for (var c = box.colStart; c <= box.colEnd; c++)
       {
-        var ref = colName(c) + r;
+        var ref = fColName(c) + r;
         if (ref !== anchor) covered.push(ref);
       }
 
     sheetMerges[anchor] = covered;
   }
 
-  applyCellDecorations();
-  saveSheetToFile();
-  selectCell(existing || (colName(box.colStart) + box.rowStart));
+  fApplyCellDecorations();
+  fSaveSheetToFile();
+  fSelectCell(existing || (fColName(box.colStart) + box.rowStart));
 }
 
-function sheetSnapshotForUndo()
+function fSheetSnapshotForUndo()
 {
   sheetUndoStack.push({ data: JSON.parse(JSON.stringify(sheetData)), charts: JSON.parse(JSON.stringify(sheetCharts)), colors: JSON.parse(JSON.stringify(sheetColors)), textColors: JSON.parse(JSON.stringify(sheetTextColors)), merges: JSON.parse(JSON.stringify(sheetMerges)) });
   sheetRedoStack = [];
@@ -535,7 +535,7 @@ function sheetSnapshotForUndo()
     sheetUndoStack.shift();
 }
 
-function sheetRestoreSnapshot(fromStack, toStack)
+function fSheetRestoreSnapshot(fromStack, toStack)
 {
   if (!fromStack.length)
     return;
@@ -554,7 +554,7 @@ function sheetRestoreSnapshot(fromStack, toStack)
   snapPage.textColors = sheetTextColors;
   snapPage.merges = sheetMerges;
   sheetCharts = snap.charts;
-  ensureGridFitsData(sheetData);
+  fEnsureGridFitsData(sheetData);
 
   // Mid-edit cell state belongs to whatever was being typed, which the
   // snapshot doesn't track - drop back to read-only rather than leaving a
@@ -569,21 +569,21 @@ function sheetRestoreSnapshot(fromStack, toStack)
     editingCell = null;
   }
 
-  refreshAllCellDisplays();
-  renderSheetCharts();
-  evaluateFormulas();
-  saveSheetToFile();
-  refreshRefHighlights();
+  fRefreshAllCellDisplays();
+  fRenderSheetCharts();
+  fEvaluateFormulas();
+  fSaveSheetToFile();
+  fRefreshRefHighlights();
 }
 
-function sheetUndo()
+function fSheetUndo()
 {
-  sheetRestoreSnapshot(sheetUndoStack, sheetRedoStack);
+  fSheetRestoreSnapshot(sheetUndoStack, sheetRedoStack);
 }
 
-function sheetRedo()
+function fSheetRedo()
 {
-  sheetRestoreSnapshot(sheetRedoStack, sheetUndoStack);
+  fSheetRestoreSnapshot(sheetRedoStack, sheetUndoStack);
 }
 
 // Serializing + persisting on every step of a drag (ref-box moves, fill
@@ -597,14 +597,14 @@ var sheetSaveDeferred = false;
 var sheetPersistTimer = null;
 var sheetPersistId = null;
 
-function scheduleSheetPersist(id)
+function fScheduleSheetPersist(id)
 {
   sheetPersistId = id;
   clearTimeout(sheetPersistTimer);
   sheetPersistTimer = setTimeout(function()
   {
     sheetPersistTimer = null;
-    persistFileEntry(id);
+    fPersistFileEntry(id);
   }, 400);
 }
 
@@ -614,11 +614,11 @@ window.addEventListener('beforeunload', function()
   {
     clearTimeout(sheetPersistTimer);
     sheetPersistTimer = null;
-    persistFileEntry(sheetPersistId);
+    fPersistFileEntry(sheetPersistId);
   }
 });
 
-function saveSheetToFile()
+function fSaveSheetToFile()
 {
   // The grid is always live even when no spreadsheet is open, so without the
   // type check an empty sheet would serialize itself over whatever file
@@ -626,7 +626,7 @@ function saveSheetToFile()
   if (!currentFileId || !files[currentFileId] || files[currentFileId].type !== 'sheet')
     return;
 
-  if (sheetDragActive())
+  if (fSheetDragActive())
   {
     sheetSaveDeferred = true;
     return;
@@ -653,20 +653,20 @@ function saveSheetToFile()
     Object.keys(merges).forEach(function(ref){ if (merges[ref] && merges[ref].length) cellKeys[ref] = true; });
 
     // Alias the page in once for the whole loop (rather than per formula via
-    // evalCellOnPage) so the eval cache holds across its cells.
+    // fEvalCellOnPage) so the eval cache holds across its cells.
     var savedData = sheetData;
     sheetData = page.data;
-    if (savedData !== page.data) clearEvalCache();
+    if (savedData !== page.data) fClearEvalCache();
 
     Object.keys(cellKeys)
-      .map(function(ref){ return { ref: ref, at: parseName(ref) }; })
+      .map(function(ref){ return { ref: ref, at: fParseName(ref) }; })
       .filter(function(c){ return !!c.at; })
-      .sort(function(a, b){ return a.at.row - b.at.row || colIndex(a.at.col) - colIndex(b.at.col); })
+      .sort(function(a, b){ return a.at.row - b.at.row || fColIndex(a.at.col) - fColIndex(b.at.col); })
       .forEach(function(c)
       {
         var val = page.data[c.ref] || '';
         var cellLine = val.startsWith('=')
-                       ? c.ref + '=' + val.slice(1) + '=' + evalCell(c.ref, val)
+                       ? c.ref + '=' + val.slice(1) + '=' + fEvalCell(c.ref, val)
                        : c.ref + '=' + val;
         if (merges[c.ref] && merges[c.ref].length) cellLine += ':' + merges[c.ref].join(',');
         if (colors[c.ref]) cellLine += ';' + colors[c.ref];
@@ -675,7 +675,7 @@ function saveSheetToFile()
       });
 
     sheetData = savedData;
-    if (savedData !== page.data) clearEvalCache();
+    if (savedData !== page.data) fClearEvalCache();
   });
 
   if (sheetCharts.length)
@@ -684,5 +684,5 @@ function saveSheetToFile()
   files[currentFileId].content = out;
   files[currentFileId].modified = Date.now();
 
-  scheduleSheetPersist(currentFileId);
+  fScheduleSheetPersist(currentFileId);
 }

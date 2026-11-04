@@ -5,7 +5,7 @@
 // scope, exactly as when this was a single file.
 
 // ── MODAL ──
-function openNewModal()
+function fOpenNewModal()
 {
   newFileType = currentAppType;
   newDocTemplate = 'blank';
@@ -24,7 +24,7 @@ function openNewModal()
   // Re-read the template store every time: another device may have synced
   // new templates since the last look.
   customTemplates = null;
-  loadCustomTemplates().then(renderDocTemplateRow);
+  fLoadCustomTemplates().then(fRenderDocTemplateRow);
 
   setTimeout
   (
@@ -44,12 +44,12 @@ function openNewModal()
   );
 }
 
-function closeNewModal()
+function fCloseNewModal()
 {
   document.getElementById('new-modal').classList.remove('open');
 }
 
-function selectNewType(type, el)
+function fSelectNewType(type, el)
 {
   newFileType = type;
 
@@ -67,7 +67,7 @@ function selectNewType(type, el)
   if (tplRow) tplRow.style.display = (type === 'doc') ? '' : 'none';
 }
 
-function selectDocTemplate(tpl, el)
+function fSelectDocTemplate(tpl, el)
 {
   newDocTemplate = tpl;
   document.querySelectorAll('.doc-tpl-card').forEach(function(c) { c.classList.remove('selected'); });
@@ -83,14 +83,14 @@ function selectDocTemplate(tpl, el)
 var customTemplates = null; // { name: content }, lazily loaded
 var customTplKeys = [];     // sorted names; template ids are 'custom:<index>'
 
-async function loadCustomTemplates()
+async function fLoadCustomTemplates()
 {
   if (customTemplates !== null)
     return customTemplates;
 
   if (workFolderRoot)
   {
-    try { customTemplates = JSON.parse(await Platform.readWorkFile(workFolderRoot, '_lktpl.json')) || {}; }
+    try { customTemplates = JSON.parse(await Platform.fReadWorkFile(workFolderRoot, '_lktpl.json')) || {}; }
     catch(e) { customTemplates = {}; }
   }
   else
@@ -101,11 +101,11 @@ async function loadCustomTemplates()
   return customTemplates;
 }
 
-async function persistCustomTemplates()
+async function fPersistCustomTemplates()
 {
   if (workFolderRoot)
   {
-    try { await Platform.writeWorkFile(workFolderRoot, '_lktpl.json', JSON.stringify(customTemplates, null, 2)); }
+    try { await Platform.fWriteWorkFile(workFolderRoot, '_lktpl.json', JSON.stringify(customTemplates, null, 2)); }
     catch(e) { console.warn('Template store write error', e); }
   }
   else
@@ -115,7 +115,7 @@ async function persistCustomTemplates()
   }
 }
 
-function renderDocTemplateRow()
+function fRenderDocTemplateRow()
 {
   var grid = document.querySelector('#doc-template-row .doc-tpl-grid');
   if (!grid) return;
@@ -130,24 +130,24 @@ function renderDocTemplateRow()
     card.dataset.tpl = 'custom:' + i;
     card.title = name;
     card.appendChild(document.createTextNode(name));
-    card.onclick = function(){ selectDocTemplate('custom:' + i, card); };
+    card.onclick = function(){ fSelectDocTemplate('custom:' + i, card); };
 
     var del = document.createElement('button');
     del.className = 'doc-tpl-del';
     del.title = 'Delete this template';
     del.textContent = '×';
-    del.onclick = function(ev){ deleteCustomTemplate(ev, name); };
+    del.onclick = function(ev){ fDeleteCustomTemplate(ev, name); };
     card.appendChild(del);
 
     grid.appendChild(card);
   });
 }
 
-async function deleteCustomTemplate(ev, name)
+async function fDeleteCustomTemplate(ev, name)
 {
   ev.stopPropagation();
   delete customTemplates[name];
-  await persistCustomTemplates();
+  await fPersistCustomTemplates();
 
   // If the deleted template was selected, fall back to Blank.
   if (newDocTemplate.indexOf('custom:') === 0 && customTplKeys[parseInt(newDocTemplate.slice(7), 10)] === name)
@@ -158,18 +158,18 @@ async function deleteCustomTemplate(ev, name)
       c.classList.toggle('selected', c.dataset.tpl === 'blank');
     });
   }
-  renderDocTemplateRow();
+  fRenderDocTemplateRow();
 }
 
-function customTemplateContent(tplId)
+function fCustomTemplateContent(tplId)
 {
   var name = customTplKeys[parseInt(tplId.slice(7), 10)];
   return name !== undefined ? (customTemplates || {})[name] : undefined;
 }
 
-function handleFileMenuSaveTemplate()
+function fHandleFileMenuSaveTemplate()
 {
-  closeFileMenu();
+  fCloseFileMenu();
 
   var f = currentFileId && files[currentFileId];
   if (!f || f.type !== 'doc')
@@ -178,52 +178,52 @@ function handleFileMenuSaveTemplate()
     return;
   }
 
-  openDataModal
+  fOpenDataModal
   (
     'Save as template',
-    '<label class="field-label">Template name<input class="modal-input" id="tpl-name" value="' + escAttr(f.name || 'My template') + '"></label>' +
-    '<div style="color:var(--text3);font-size:12px;margin-top:8px">The current contents of &ldquo;' + escHtml(f.name) + '&rdquo; will appear as a template choice in the New File dialog. Saving under an existing name replaces that template.</div>',
+    '<label class="field-label">Template name<input class="modal-input" id="tpl-name" value="' + fEscAttr(f.name || 'My template') + '"></label>' +
+    '<div style="color:var(--text3);font-size:12px;margin-top:8px">The current contents of &ldquo;' + fEscHtml(f.name) + '&rdquo; will appear as a template choice in the New File dialog. Saving under an existing name replaces that template.</div>',
     async function()
     {
       var name = document.getElementById('tpl-name').value.trim();
       if (!name) return;
-      await loadCustomTemplates();
+      await fLoadCustomTemplates();
       customTemplates[name] = f.content || '';
-      await persistCustomTemplates();
-      closeDataModal();
+      await fPersistCustomTemplates();
+      fCloseDataModal();
     }
   );
 }
 
-async function createNewFile()
+async function fCreateNewFile()
 {
   var name = document.getElementById('new-name').value.trim() || 'Untitled';
   var tplContent;
   if (newFileType === 'doc' && newDocTemplate !== 'blank')
   {
     tplContent = newDocTemplate.indexOf('custom:') === 0
-                 ? customTemplateContent(newDocTemplate)
-                 : (DOC_TEMPLATES[newDocTemplate] || undefined);
+                 ? fCustomTemplateContent(newDocTemplate)
+                 : (cDocTemplates[newDocTemplate] || undefined);
   }
 
-  closeNewModal();
+  fCloseNewModal();
 
   if (workFolderRoot)
   {
-    var workId = await createWorkFile(name, newFileType, tplContent);
+    var workId = await fCreateWorkFile(name, newFileType, tplContent);
 
     if (!workId)
       return;
 
-    switchAppType(newFileType);
-    await openFile(workId);
+    fSwitchAppType(newFileType);
+    await fOpenFile(workId);
     return;
   }
 
-  var id = createFile(name, newFileType, tplContent);
+  var id = fCreateFile(name, newFileType, tplContent);
 
-  switchAppType(newFileType);
-  openFile(id);
+  fSwitchAppType(newFileType);
+  fOpenFile(id);
 }
 
 document.getElementById('new-modal').addEventListener
@@ -232,12 +232,12 @@ document.getElementById('new-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('new-modal'))
-      closeNewModal();
+      fCloseNewModal();
   }
 );
 
 // ── EXPORT / IMPORT ──
-async function exportCurrent()
+async function fExportCurrent()
 {
   if (!currentFileId)
   {
@@ -246,13 +246,13 @@ async function exportCurrent()
   }
 
   var f = files[currentFileId],
-      ext = fileExtensionFor(f.type);
+      ext = fFileExtensionFor(f.type);
 
   var fileName = f.name.replace(/\s+/g,'_') + '.' + ext;
 
   try
   {
-    var saved = await Platform.saveFile(fileName, f.content);
+    var saved = await Platform.fSaveFile(fileName, f.content);
 
     if (!saved)
       return;
@@ -264,7 +264,7 @@ async function exportCurrent()
   }
 }
 
-function toggleFileMenu(clickEvent)
+function fToggleFileMenu(clickEvent)
 {
   clickEvent.stopPropagation();
 
@@ -287,7 +287,7 @@ function toggleFileMenu(clickEvent)
   }
 }
 
-function toggleExportAsSubmenu(clickEvent)
+function fToggleExportAsSubmenu(clickEvent)
 {
   clickEvent.stopPropagation();
 
@@ -297,7 +297,7 @@ function toggleExportAsSubmenu(clickEvent)
     submenu.classList.toggle('open');
 }
 
-function closeFileMenu()
+function fCloseFileMenu()
 {
   var menu = document.getElementById('file-menu'),
       submenu = document.getElementById('export-as-submenu');
@@ -322,45 +322,45 @@ document.addEventListener
     if (menu.contains(clickEvent.target) || clickEvent.target.closest('#file-menu-btn'))
       return;
 
-    closeFileMenu();
+    fCloseFileMenu();
   }
 );
 
-function handleFileMenuExport()
+function fHandleFileMenuExport()
 {
-  closeFileMenu();
-  exportCurrent();
+  fCloseFileMenu();
+  fExportCurrent();
 }
 
-function handleFileMenuExportAs(format)
+function fHandleFileMenuExportAs(format)
 {
-  closeFileMenu();
-  exportCurrentAs(format);
+  fCloseFileMenu();
+  fExportCurrentAs(format);
 }
 
-function handleFileMenuImport()
+function fHandleFileMenuImport()
 {
-  closeFileMenu();
-  triggerImport();
+  fCloseFileMenu();
+  fTriggerImport();
 }
 
-function handleFileMenuSettings()
+function fHandleFileMenuSettings()
 {
-  closeFileMenu();
-  openSettingsModal();
+  fCloseFileMenu();
+  fOpenSettingsModal();
 }
 
 // ── ENABLED TYPES ──
 
 var enabledTypes = null;
-var ALL_APP_TYPES = ['doc','sheet','graph','slides','notebook','glossary','calendar','economy','bestiary'];
+var cAllAppTypes = ['doc','sheet','graph','slides','notebook','glossary','calendar','economy','bestiary'];
 
 // The types that existed when lk_known_types started being recorded. A saved
 // list of enabled types only says which of the *known* types were switched
 // off, so a type added later starts enabled instead of silently hidden.
-var ORIGINAL_APP_TYPES = ['doc','sheet','graph','notebook','glossary','calendar','economy','bestiary'];
+var cOriginalAppTypes = ['doc','sheet','graph','notebook','glossary','calendar','economy','bestiary'];
 
-function getEnabledTypes()
+function fGetEnabledTypes()
 {
   if (!enabledTypes)
   {
@@ -372,39 +372,39 @@ function getEnabledTypes()
       if (enabledTypes)
       {
         var knownRaw = localStorage.getItem('lk_known_types'),
-            known = knownRaw ? JSON.parse(knownRaw) : ORIGINAL_APP_TYPES;
+            known = knownRaw ? JSON.parse(knownRaw) : cOriginalAppTypes;
 
-        ALL_APP_TYPES.forEach(function(t)
+        cAllAppTypes.forEach(function(t)
         {
           if (known.indexOf(t) === -1 && enabledTypes.indexOf(t) === -1)
             enabledTypes.push(t);
         });
 
-        localStorage.setItem('lk_known_types', JSON.stringify(ALL_APP_TYPES));
+        localStorage.setItem('lk_known_types', JSON.stringify(cAllAppTypes));
       }
     }
     catch(e) {}
-    if (!enabledTypes) enabledTypes = ALL_APP_TYPES.slice();
+    if (!enabledTypes) enabledTypes = cAllAppTypes.slice();
   }
   return enabledTypes;
 }
 
-function saveEnabledTypes(types)
+function fSaveEnabledTypes(types)
 {
   enabledTypes = types.length ? types : [currentAppType || 'doc'];
   try
   {
     localStorage.setItem('lk_enabled_types', JSON.stringify(enabledTypes));
-    localStorage.setItem('lk_known_types', JSON.stringify(ALL_APP_TYPES));
+    localStorage.setItem('lk_known_types', JSON.stringify(cAllAppTypes));
   }
   catch(e) {}
-  applyEnabledTypes();
+  fApplyEnabledTypes();
 }
 
-function applyEnabledTypes()
+function fApplyEnabledTypes()
 {
-  var enabled = getEnabledTypes();
-  ALL_APP_TYPES.forEach(function(t)
+  var enabled = fGetEnabledTypes();
+  cAllAppTypes.forEach(function(t)
   {
     var tab = document.getElementById('tab-' + t);
     if (tab) tab.style.display = enabled.includes(t) ? '' : 'none';
@@ -412,10 +412,10 @@ function applyEnabledTypes()
     if (card) card.style.display = enabled.includes(t) ? '' : 'none';
   });
   if (enabled.length && !enabled.includes(currentAppType))
-    switchAppType(enabled[0]);
+    fSwitchAppType(enabled[0]);
 }
 
-function onTypeToggle()
+function fOnTypeToggle()
 {
   var enabled = [];
   document.querySelectorAll('#settings-type-toggles input[type=checkbox]:checked').forEach(function(cb){ enabled.push(cb.value); });
@@ -425,14 +425,14 @@ function onTypeToggle()
     if (cur) { cur.checked = true; enabled.push(cur.value); }
     else enabled = [currentAppType || 'doc'];
   }
-  saveEnabledTypes(enabled);
+  fSaveEnabledTypes(enabled);
 }
 
 // ── THEME ──
 
-var THEME_VAR_NAMES = ['--bg','--bg2','--bg3','--bg4','--border','--border2','--text','--text2','--text3','--accent','--accent2','--accent-dim','--accent-dim2'];
+var cThemeVarNames = ['--bg','--bg2','--bg3','--bg4','--border','--border2','--text','--text2','--text3','--accent','--accent2','--accent-dim','--accent-dim2'];
 
-var THEME_PRESETS =
+var cThemePresets =
 [
   { name: 'Amber Dusk', vars: { '--bg':'#0f0e0c', '--bg2':'#1a1916', '--bg3':'#232220', '--bg4':'#2d2c29', '--border':'rgba(255,255,255,0.07)', '--border2':'rgba(255,255,255,0.13)', '--text':'#f0ede6', '--text2':'#9e9b94', '--text3':'#5c5a55', '--accent':'#d4a843', '--accent2':'#b8912e', '--accent-dim':'rgba(212,168,67,0.12)', '--accent-dim2':'rgba(212,168,67,0.06)' } },
   { name: 'Ocean Blue', vars: { '--bg':'#0b1218', '--bg2':'#151f27', '--bg3':'#1e2a33', '--bg4':'#28353f', '--border':'rgba(255,255,255,0.07)', '--border2':'rgba(255,255,255,0.13)', '--text':'#e8edf0', '--text2':'#94a3ac', '--text3':'#54626b', '--accent':'#4a9fd8', '--accent2':'#3a84b8', '--accent-dim':'rgba(74,159,216,0.12)', '--accent-dim2':'rgba(74,159,216,0.06)' } },
@@ -441,7 +441,7 @@ var THEME_PRESETS =
   { name: 'Slate Violet', vars: { '--bg':'#100e17', '--bg2':'#1a1722', '--bg3':'#23202d', '--bg4':'#2d2a38', '--border':'rgba(255,255,255,0.07)', '--border2':'rgba(255,255,255,0.13)', '--text':'#eae7f0', '--text2':'#a19cac', '--text3':'#5f5a6b', '--accent':'#9a7fd4', '--accent2':'#8267bf', '--accent-dim':'rgba(154,127,212,0.12)', '--accent-dim2':'rgba(154,127,212,0.06)' } }
 ];
 
-function hexToRgb(hex)
+function fHexToRgb(hex)
 {
   hex = hex.replace('#', '');
   if (hex.length === 3) hex = hex.split('').map(function(c){ return c + c; }).join('');
@@ -449,7 +449,7 @@ function hexToRgb(hex)
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-function rgbToHex(r, g, b)
+function fRgbToHex(r, g, b)
 {
   return '#' + [r, g, b].map(function(v)
   {
@@ -457,61 +457,61 @@ function rgbToHex(r, g, b)
   }).join('');
 }
 
-function mixHex(hex, towardHex, amount)
+function fMixHex(hex, towardHex, amount)
 {
-  var a = hexToRgb(hex), b = hexToRgb(towardHex);
-  return rgbToHex(a.r + (b.r - a.r) * amount, a.g + (b.g - a.g) * amount, a.b + (b.b - a.b) * amount);
+  var a = fHexToRgb(hex), b = fHexToRgb(towardHex);
+  return fRgbToHex(a.r + (b.r - a.r) * amount, a.g + (b.g - a.g) * amount, a.b + (b.b - a.b) * amount);
 }
 
-function relativeLuminance(hex)
+function fRelativeLuminance(hex)
 {
-  var c = hexToRgb(hex);
+  var c = fHexToRgb(hex);
   return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
 }
 
 // Derives a full palette from just a background and an accent color, so a
 // custom pick stays legible regardless of how light or dark it is.
-function generateThemeVars(bgHex, accentHex)
+function fGenerateThemeVars(bgHex, accentHex)
 {
-  var isDark = relativeLuminance(bgHex) < 0.5,
+  var isDark = fRelativeLuminance(bgHex) < 0.5,
       lightenTarget = isDark ? '#ffffff' : '#000000',
       text = isDark ? '#f0ede6' : '#1c1a17',
-      accentRgb = hexToRgb(accentHex);
+      accentRgb = fHexToRgb(accentHex);
 
   return {
     '--bg': bgHex,
-    '--bg2': mixHex(bgHex, lightenTarget, 0.045),
-    '--bg3': mixHex(bgHex, lightenTarget, 0.085),
-    '--bg4': mixHex(bgHex, lightenTarget, 0.125),
+    '--bg2': fMixHex(bgHex, lightenTarget, 0.045),
+    '--bg3': fMixHex(bgHex, lightenTarget, 0.085),
+    '--bg4': fMixHex(bgHex, lightenTarget, 0.125),
     '--border': isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
     '--border2': isDark ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.15)',
     '--text': text,
-    '--text2': mixHex(bgHex, text, 0.55),
-    '--text3': mixHex(bgHex, text, 0.32),
+    '--text2': fMixHex(bgHex, text, 0.55),
+    '--text3': fMixHex(bgHex, text, 0.32),
     '--accent': accentHex,
-    '--accent2': mixHex(accentHex, '#000000', 0.15),
+    '--accent2': fMixHex(accentHex, '#000000', 0.15),
     '--accent-dim': 'rgba(' + accentRgb.r + ',' + accentRgb.g + ',' + accentRgb.b + ',0.12)',
     '--accent-dim2': 'rgba(' + accentRgb.r + ',' + accentRgb.g + ',' + accentRgb.b + ',0.06)'
   };
 }
 
-function applyThemeVars(vars)
+function fApplyThemeVars(vars)
 {
   var root = document.documentElement.style;
-  THEME_VAR_NAMES.forEach(function(name)
+  cThemeVarNames.forEach(function(name)
   {
     if (vars[name]) root.setProperty(name, vars[name]);
   });
 }
 
-function resolveThemeChoice(choice)
+function fResolveThemeChoice(choice)
 {
-  if (choice.type === 'custom') return generateThemeVars(choice.bg, choice.accent);
-  var preset = THEME_PRESETS.find(function(p){ return p.name === choice.name; });
+  if (choice.type === 'custom') return fGenerateThemeVars(choice.bg, choice.accent);
+  var preset = cThemePresets.find(function(p){ return p.name === choice.name; });
   return preset ? preset.vars : null;
 }
 
-function loadThemeChoice()
+function fLoadThemeChoice()
 {
   try
   {
@@ -521,24 +521,24 @@ function loadThemeChoice()
   catch(e) { return null; }
 }
 
-function saveThemeChoice(choice)
+function fSaveThemeChoice(choice)
 {
   try { localStorage.setItem('lk_theme', JSON.stringify(choice)); } catch(e) {}
-  persistRoamingTheme(choice);
+  fPersistRoamingTheme(choice);
 }
 
-function initTheme()
+function fInitTheme()
 {
-  var choice = loadThemeChoice();
+  var choice = fLoadThemeChoice();
   if (choice)
   {
-    var vars = resolveThemeChoice(choice);
-    if (vars) applyThemeVars(vars);
+    var vars = fResolveThemeChoice(choice);
+    if (vars) fApplyThemeVars(vars);
   }
   // localStorage is only per-browser/per-install, so on a fresh device (or
   // after an app reinstall wiped webview storage) pull the roamed choice from
   // the workspace; repaints shortly after first paint when they differ.
-  loadRoamingTheme();
+  fLoadRoamingTheme();
 }
 
 // ── ROAMING APPEARANCE ──
@@ -546,11 +546,11 @@ function initTheme()
 // across devices like the `_lktpl.json` template store), with localStorage
 // kept as the instant-paint cache.
 
-async function loadRoamingTheme()
+async function fLoadRoamingTheme()
 {
   if (!workFolderRoot) return;
   var prefs;
-  try { prefs = JSON.parse(await Platform.readWorkFile(workFolderRoot, '_lkprefs.json')); }
+  try { prefs = JSON.parse(await Platform.fReadWorkFile(workFolderRoot, '_lkprefs.json')); }
   catch(e) { return; } // no prefs stored yet
   if (!prefs || !('theme' in prefs)) return;
 
@@ -567,93 +567,93 @@ async function loadRoamingTheme()
 
   if (prefs.theme)
   {
-    var vars = resolveThemeChoice(prefs.theme);
-    if (vars) applyThemeVars(vars);
+    var vars = fResolveThemeChoice(prefs.theme);
+    if (vars) fApplyThemeVars(vars);
   }
   else
-    THEME_VAR_NAMES.forEach(function(name){ document.documentElement.style.removeProperty(name); });
+    cThemeVarNames.forEach(function(name){ document.documentElement.style.removeProperty(name); });
 }
 
 /// choice = null records an explicit reset, so it roams too.
-async function persistRoamingTheme(choice)
+async function fPersistRoamingTheme(choice)
 {
   if (!workFolderRoot) return;
   var prefs = {};
-  try { prefs = JSON.parse(await Platform.readWorkFile(workFolderRoot, '_lkprefs.json')) || {}; }
+  try { prefs = JSON.parse(await Platform.fReadWorkFile(workFolderRoot, '_lkprefs.json')) || {}; }
   catch(e) {}
   prefs.theme = choice;
-  try { await Platform.writeWorkFile(workFolderRoot, '_lkprefs.json', JSON.stringify(prefs, null, 2)); }
+  try { await Platform.fWriteWorkFile(workFolderRoot, '_lkprefs.json', JSON.stringify(prefs, null, 2)); }
   catch(e) { console.warn('Prefs write error', e); }
 }
 
-function selectThemePreset(name)
+function fSelectThemePreset(name)
 {
   var choice = { type: 'preset', name: name };
-  saveThemeChoice(choice);
-  applyThemeVars(resolveThemeChoice(choice));
-  renderThemeSection();
+  fSaveThemeChoice(choice);
+  fApplyThemeVars(fResolveThemeChoice(choice));
+  fRenderThemeSection();
 }
 
-function onCustomColorChange()
+function fOnCustomColorChange()
 {
   var bg = document.getElementById('settings-bg-color').value,
       accent = document.getElementById('settings-accent-color').value,
       choice = { type: 'custom', bg: bg, accent: accent };
-  saveThemeChoice(choice);
-  applyThemeVars(generateThemeVars(bg, accent));
-  renderThemeSection();
+  fSaveThemeChoice(choice);
+  fApplyThemeVars(fGenerateThemeVars(bg, accent));
+  fRenderThemeSection();
 }
 
-function resetTheme()
+function fResetTheme()
 {
   localStorage.removeItem('lk_theme');
-  THEME_VAR_NAMES.forEach(function(name){ document.documentElement.style.removeProperty(name); });
-  persistRoamingTheme(null); // roam the reset too
-  renderThemeSection();
+  cThemeVarNames.forEach(function(name){ document.documentElement.style.removeProperty(name); });
+  fPersistRoamingTheme(null); // roam the reset too
+  fRenderThemeSection();
 }
 
-function renderThemeSection()
+function fRenderThemeSection()
 {
-  var choice = loadThemeChoice() || { type: 'preset', name: 'Amber Dusk' };
+  var choice = fLoadThemeChoice() || { type: 'preset', name: 'Amber Dusk' };
 
-  document.getElementById('settings-theme-presets').innerHTML = THEME_PRESETS.map(function(p)
+  document.getElementById('settings-theme-presets').innerHTML = cThemePresets.map(function(p)
   {
     var active = (choice.type === 'preset' && choice.name === p.name) ? ' active' : '';
-    return '<button type="button" class="settings-theme-swatch' + active + '" title="' + p.name + '" onclick="selectThemePreset(\'' + p.name + '\')">' +
+    return '<button type="button" class="settings-theme-swatch' + active + '" title="' + p.name + '" onclick="fSelectThemePreset(\'' + p.name + '\')">' +
       '<span class="settings-theme-swatch-dot" style="background:' + p.vars['--bg4'] + '"></span>' +
       '<span class="settings-theme-swatch-dot" style="background:' + p.vars['--accent'] + '"></span>' +
       '<span class="settings-theme-swatch-label">' + p.name + '</span>' +
     '</button>';
   }).join('');
 
-  var defaultPreset = THEME_PRESETS[0];
+  var defaultPreset = cThemePresets[0];
   document.getElementById('settings-bg-color').value = choice.type === 'custom' ? choice.bg : defaultPreset.vars['--bg'];
   document.getElementById('settings-accent-color').value = choice.type === 'custom' ? choice.accent : defaultPreset.vars['--accent'];
 }
 
 // ── SETTINGS MODAL ──
 
-function openSettingsModal()
+function fOpenSettingsModal()
 {
-  renderSettingsModal();
+  fRenderSettingsModal();
   document.getElementById('settings-modal').classList.add('open');
-  refreshCloudStatus();
+  fRefreshCloudStatus();
 
   if (!Platform.isNative)
-    refreshCustomFonts().then(renderCustomFontsSection);
+    fRefreshCustomFonts().then(fRenderCustomFontsSection);
 }
 
-function closeSettingsModal()
+function fCloseSettingsModal()
 {
   document.getElementById('settings-modal').classList.remove('open');
 }
 
-var TYPE_LABELS = { doc:'Documents', sheet:'Sheets', graph:'Diagrams', slides:'Slides', notebook:'Notebook / Maps', glossary:'Glossary', calendar:'Calendar', economy:'Economy', bestiary:'Bestiary' };
+var cTypeLabels = { doc:'Documents', sheet:'Sheets', graph:'Diagrams', slides:'Slides', notebook:'Notebook / Maps', glossary:'Glossary', calendar:'Calendar', economy:'Economy', bestiary:'Bestiary' };
 
-function renderSettingsModal()
+function fRenderSettingsModal()
 {
   var activeWs = workspaces.filter(function(w) { return w.root === workFolderRoot; })[0],
-      location = workFolderRoot ? workspaceLocationLabel(workFolderRoot) : null;
+      location = workFolderRoot ? fWorkspaceLocationLabel(workFolderRoot) : null;
 
   document.getElementById('settings-folder-path').textContent =
     workFolderRoot
@@ -664,7 +664,7 @@ function renderSettingsModal()
   if (folderBtn)
     folderBtn.innerHTML = (!Platform.isNative && workFolderRoot) ? 'Add Workspace&hellip;' : 'Choose Folder&hellip;';
 
-  renderWorkspacesSection();
+  fRenderWorkspacesSection();
 
   var spellEnabled = document.getElementById('settings-spell-enabled'),
       spellLang    = document.getElementById('settings-spell-lang');
@@ -674,25 +674,25 @@ function renderSettingsModal()
 
   if (spellLang)
   {
-    spellLang.innerHTML = SPELL_LANGS.map(function(l){
-      return '<option value="' + l[0] + '"' + (spellPrefs.lang === l[0] ? ' selected' : '') + '>' + escHtml(l[1]) + '</option>';
+    spellLang.innerHTML = cSpellLangs.map(function(l){
+      return '<option value="' + l[0] + '"' + (spellPrefs.lang === l[0] ? ' selected' : '') + '>' + fEscHtml(l[1]) + '</option>';
     }).join('');
   }
 
   document.getElementById('settings-stop-btn').style.display = workFolderRoot ? '' : 'none';
 
-  var enabled = getEnabledTypes();
-  document.getElementById('settings-type-toggles').innerHTML = ALL_APP_TYPES.map(function(t){
+  var enabled = fGetEnabledTypes();
+  document.getElementById('settings-type-toggles').innerHTML = cAllAppTypes.map(function(t){
     var checked = enabled.includes(t) ? ' checked' : '';
     return '<label class="settings-type-toggle">' +
-      '<input type="checkbox" value="' + t + '"' + checked + ' onchange="onTypeToggle()"> ' +
-      '<span>' + (TYPE_LABELS[t] || t) + '</span>' +
+      '<input type="checkbox" value="' + t + '"' + checked + ' onchange="fOnTypeToggle()"> ' +
+      '<span>' + (cTypeLabels[t] || t) + '</span>' +
     '</label>';
   }).join('');
 
-  renderThemeSection();
-  renderCloudSyncSection();
-  renderCustomFontsSection();
+  fRenderThemeSection();
+  fRenderCloudSyncSection();
+  fRenderCustomFontsSection();
 }
 
 // ── CUSTOM FONTS ──
@@ -701,19 +701,19 @@ function renderSettingsModal()
 // whatever happens to be installed on THIS device), an uploaded font is
 // served as a real asset and always renders the same way for every viewer,
 // in the live editor and in exported PDFs (see embed_account_fonts_style
-// server-side and buildDocExportHtml's use of injectedFontStyleTag below).
+// server-side and fBuildDocExportHtml's use of injectedFontStyleTag below).
 
 var customFontsCache = null; // [{id, familyName, contentType, byteSize}]
 
-async function refreshCustomFonts()
+async function fRefreshCustomFonts()
 {
-  customFontsCache = await Platform.listCustomFonts();
+  customFontsCache = await Platform.fListCustomFonts();
   return customFontsCache;
 }
 
-async function injectCustomFontsStyle()
+async function fInjectCustomFontsStyle()
 {
-  if (!customFontsCache) await refreshCustomFonts();
+  if (!customFontsCache) await fRefreshCustomFonts();
 
   var tag = document.getElementById('custom-fonts-style');
   if (!tag)
@@ -725,7 +725,7 @@ async function injectCustomFontsStyle()
 
   var rules = await Promise.all((customFontsCache || []).map(async function(f)
   {
-    var url = await Platform.customFontDataUrl(f.id);
+    var url = await Platform.fCustomFontDataUrl(f.id);
     var format = f.contentType.indexOf('woff2') !== -1 ? 'woff2'
                : f.contentType.indexOf('woff') !== -1  ? 'woff'
                : f.contentType.indexOf('otf') !== -1   ? 'opentype'
@@ -736,7 +736,7 @@ async function injectCustomFontsStyle()
   tag.textContent = rules.join('\n');
 }
 
-function renderCustomFontsSection()
+function fRenderCustomFontsSection()
 {
   var section = document.getElementById('custom-fonts-section');
   if (!section) return;
@@ -757,15 +757,15 @@ function renderCustomFontsSection()
     ? fonts.map(function(f)
       {
         return '<div class="custom-font-row">' +
-          '<span class="custom-font-name" style="font-family:' + escAttr(cssFontFamilyValue(f.familyName)) + '">' + escHtml(f.familyName) + '</span>' +
+          '<span class="custom-font-name" style="font-family:' + fEscAttr(fCssFontFamilyValue(f.familyName)) + '">' + fEscHtml(f.familyName) + '</span>' +
           '<span class="custom-font-size">' + Math.max(1, Math.round(f.byteSize / 1024)) + ' KB</span>' +
-          '<button class="gls-card-del" style="position:static" onclick="removeCustomFont(\'' + escAttr(f.id) + '\')" title="Delete">×</button>' +
+          '<button class="gls-card-del" style="position:static" onclick="fRemoveCustomFont(\'' + fEscAttr(f.id) + '\')" title="Delete">×</button>' +
         '</div>';
       }).join('')
     : '<div class="settings-help-text" style="margin:0">No custom fonts yet.</div>';
 }
 
-async function onCustomFontFileChosen()
+async function fOnCustomFontFileChosen()
 {
   var fileInput = document.getElementById('custom-font-file'),
       nameInput = document.getElementById('custom-font-name'),
@@ -780,12 +780,12 @@ async function onCustomFontFileChosen()
   try
   {
     var bytes = await file.arrayBuffer();
-    await Platform.uploadCustomFont(familyName, file.name, bytes);
+    await Platform.fUploadCustomFont(familyName, file.name, bytes);
     nameInput.value = '';
     fileInput.value = '';
-    await refreshCustomFonts();
-    renderCustomFontsSection();
-    await injectCustomFontsStyle();
+    await fRefreshCustomFonts();
+    fRenderCustomFontsSection();
+    await fInjectCustomFontsStyle();
     cachedFontList = null; // let the "Font…" picker pick up the new family
   }
   catch(e)
@@ -795,12 +795,12 @@ async function onCustomFontFileChosen()
   }
 }
 
-async function removeCustomFont(id)
+async function fRemoveCustomFont(id)
 {
-  try { await Platform.deleteCustomFont(id); } catch(e) {}
-  await refreshCustomFonts();
-  renderCustomFontsSection();
-  await injectCustomFontsStyle();
+  try { await Platform.fDeleteCustomFont(id); } catch(e) {}
+  await fRefreshCustomFonts();
+  fRenderCustomFontsSection();
+  await fInjectCustomFontsStyle();
   cachedFontList = null;
 }
 
@@ -810,15 +810,15 @@ document.getElementById('settings-modal').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('settings-modal'))
-      closeSettingsModal();
+      fCloseSettingsModal();
   }
 );
 
 // Writes every file currently in localStorage out as a real file at the root
 // of `root`, de-duplicating names locally (the in-memory `files` are still
 // keyed by the old synthetic ids at this point, so collisions can't be
-// detected by checking `files[candidate]` the way uniqueRelPath does).
-async function migrateLocalStorageFilesToFolder(root)
+// detected by checking `files[candidate]` the way fUniqueRelPath does).
+async function fMigrateLocalStorageFilesToFolder(root)
 {
   const usedPaths = {},
         entries = Object.values(files);
@@ -826,8 +826,8 @@ async function migrateLocalStorageFilesToFolder(root)
   for (let i = 0; i < entries.length; i++)
   {
     const f = entries[i],
-          ext = fileExtensionFor(f.type),
-          base = sanitizeFileName(f.name) || 'Untitled';
+          ext = fFileExtensionFor(f.type),
+          base = fSanitizeFileName(f.name) || 'Untitled';
 
     let candidate = base + '.' + ext,
         n = 2;
@@ -842,7 +842,7 @@ async function migrateLocalStorageFilesToFolder(root)
 
     try
     {
-      await Platform.writeWorkFile(root, candidate, f.content || '');
+      await Platform.fWriteWorkFile(root, candidate, f.content || '');
     }
     catch(e)
     {
@@ -851,13 +851,13 @@ async function migrateLocalStorageFilesToFolder(root)
   }
 }
 
-async function chooseWorkFolder()
+async function fChooseWorkFolder()
 {
   let picked;
 
   try
   {
-    picked = await Platform.pickWorkFolder();
+    picked = await Platform.fPickWorkFolder();
   }
   catch(e)
   {
@@ -874,7 +874,7 @@ async function chooseWorkFolder()
   // since work-folder content loads lazily) into every folder ever picked.
   if (!workFolderRoot && Object.keys(files).length > 0)
   {
-    await migrateLocalStorageFilesToFolder(picked);
+    await fMigrateLocalStorageFilesToFolder(picked);
 
     // The files now live in the folder; leaving them in localStorage would
     // re-migrate them - as duplicates - on every future folder pick.
@@ -882,17 +882,17 @@ async function chooseWorkFolder()
     files = {};
   }
 
-  await activateWorkspace(picked, true);
+  await fActivateWorkspace(picked, true);
 }
 
 // Makes `root` the active work folder, optionally registering it as a new
 // named workspace first. Everything keyed by rel-path (open file, tabs, split
 // pane, backlinks) belongs to the previous workspace and is reset.
-async function activateWorkspace(root, isNew)
+async function fActivateWorkspace(root, isNew)
 {
   if (isNew && !workspaces.some(function(w) { return w.root === root; }))
   {
-    var name = workspaceNameFromRoot(root);
+    var name = fWorkspaceNameFromRoot(root);
 
     if (Platform.isNative)
       name = (prompt('Name this workspace:', name) || '').trim() || name;
@@ -900,37 +900,37 @@ async function activateWorkspace(root, isNew)
     workspaces.push({ name: name, root: root });
   }
 
-  await flushPendingSave();
+  await fFlushPendingSave();
 
   workFolderRoot = root;
-  saveSettings();
-  applyCloudWorkspaceScope();
+  fSaveSettings();
+  fApplyCloudWorkspaceScope();
 
   currentFileId = null;
   folders = {};
   expandedFolders = new Set();
-  clearActiveEditors();
-  closeSplitPane();
+  fClearActiveEditors();
+  fCloseSplitPane();
 
-  await loadWorkFolderTree();
-  loadOpenTabs();
-  await loadBacklinksIndex();
-  renderSettingsModal();
+  await fLoadWorkFolderTree();
+  fLoadOpenTabs();
+  await fLoadBacklinksIndex();
+  fRenderSettingsModal();
 }
 
 // Web: a new workspace is a named top-level folder in the cloud space.
 // Naming an existing folder attaches to it instead of failing, so a second
 // browser (or a fresh login) can re-add the same workspaces.
-async function addCloudWorkspace()
+async function fAddCloudWorkspace()
 {
-  var name = sanitizeFileName(prompt('Name the new workspace (it becomes a folder in your cloud space):', '') || '');
+  var name = fSanitizeFileName(prompt('Name the new workspace (it becomes a folder in your cloud space):', '') || '');
 
   if (!name)
     return;
 
   try
   {
-    await Platform.createWorkFolder('cloud', name);
+    await Platform.fCreateWorkFolder('cloud', name);
   }
   catch(e)
   {
@@ -944,30 +944,30 @@ async function addCloudWorkspace()
   if (!workspaces.some(function(w) { return w.root === root; }))
     workspaces.push({ name: name, root: root });
 
-  saveSettings();
-  persistRoamingCloudWorkspaces();
-  await activateWorkspace(root, false);
+  fSaveSettings();
+  fPersistRoamingCloudWorkspaces();
+  await fActivateWorkspace(root, false);
 }
 
 // The settings button doubles as "pick a folder" (desktop, or the web's
 // first-time cloud attach) and "add a cloud workspace" (web, once attached).
-function onSettingsFolderButton()
+function fOnSettingsFolderButton()
 {
   if (!Platform.isNative && workFolderRoot)
-    addCloudWorkspace();
+    fAddCloudWorkspace();
   else
-    chooseWorkFolder();
+    fChooseWorkFolder();
 }
 
 // ── Roaming cloud workspace list (web only) ──
 // Saved in the root _lkprefs.json sidecar (always unscoped: root 'cloud'),
 // so the list follows the account across browsers and devices.
 
-async function loadRoamingCloudWorkspaces()
+async function fLoadRoamingCloudWorkspaces()
 {
   var prefs;
 
-  try { prefs = JSON.parse(await Platform.readWorkFile('cloud', '_lkprefs.json')); }
+  try { prefs = JSON.parse(await Platform.fReadWorkFile('cloud', '_lkprefs.json')); }
   catch(e) { return; } // no prefs stored yet (or logged out)
 
   if (!prefs || !Array.isArray(prefs.cloudWorkspaces))
@@ -990,10 +990,10 @@ async function loadRoamingCloudWorkspaces()
   });
 
   if (changed)
-    saveSettings();
+    fSaveSettings();
 }
 
-function persistRoamingCloudWorkspaces()
+function fPersistRoamingCloudWorkspaces()
 {
   if (Platform.isNative)
     return;
@@ -1002,42 +1002,42 @@ function persistRoamingCloudWorkspaces()
   {
     var prefs = {};
 
-    try { prefs = JSON.parse(await Platform.readWorkFile('cloud', '_lkprefs.json')) || {}; }
+    try { prefs = JSON.parse(await Platform.fReadWorkFile('cloud', '_lkprefs.json')) || {}; }
     catch(e) {}
 
     prefs.cloudWorkspaces = workspaces
       .filter(function(w) { return w.root.indexOf('cloud:') === 0; })
       .map(function(w) { return { name: w.name, folder: w.root.slice(6) }; });
 
-    try { await Platform.writeWorkFile('cloud', '_lkprefs.json', JSON.stringify(prefs, null, 2)); }
+    try { await Platform.fWriteWorkFile('cloud', '_lkprefs.json', JSON.stringify(prefs, null, 2)); }
     catch(e) { console.warn('Workspace prefs write error', e); }
   })();
 }
 
 // A pending autosave debounce still targets the previous workspace's file;
 // write it out before the switch so the last keystrokes aren't lost.
-async function flushPendingSave()
+async function fFlushPendingSave()
 {
   if (saveTimer && currentFileId && files[currentFileId])
   {
     clearTimeout(saveTimer);
     saveTimer = null;
     files[currentFileId].modified = Date.now();
-    await persistFileEntry(currentFileId);
+    await fPersistFileEntry(currentFileId);
   }
 }
 
-function switchWorkspaceAt(i)
+function fSwitchWorkspaceAt(i)
 {
   var ws = workspaces[i];
 
   if (!ws || ws.root === workFolderRoot)
     return;
 
-  activateWorkspace(ws.root, false);
+  fActivateWorkspace(ws.root, false);
 }
 
-function renameWorkspaceAt(i)
+function fRenameWorkspaceAt(i)
 {
   var ws = workspaces[i];
 
@@ -1050,12 +1050,12 @@ function renameWorkspaceAt(i)
     return;
 
   ws.name = name;
-  saveSettings();
-  persistRoamingCloudWorkspaces();
-  renderSettingsModal();
+  fSaveSettings();
+  fPersistRoamingCloudWorkspaces();
+  fRenderSettingsModal();
 }
 
-function forgetWorkspaceAt(i)
+function fForgetWorkspaceAt(i)
 {
   var ws = workspaces[i];
 
@@ -1071,23 +1071,23 @@ function forgetWorkspaceAt(i)
   var wasActive = ws.root === workFolderRoot;
 
   workspaces.splice(i, 1);
-  saveSettings();
-  persistRoamingCloudWorkspaces();
+  fSaveSettings();
+  fPersistRoamingCloudWorkspaces();
 
   if (wasActive)
   {
     if (!Platform.isNative)
-      activateWorkspace('cloud', false); // fall back to the whole cloud space
+      fActivateWorkspace('cloud', false); // fall back to the whole cloud space
     else
-      stopUsingWorkFolder();
+      fStopUsingWorkFolder();
   }
   else
-    renderSettingsModal();
+    fRenderSettingsModal();
 }
 
 // Human-readable location line for a workspace row: a real path on desktop,
 // a friendly description of the scoped cloud folder on the web.
-function workspaceLocationLabel(root)
+function fWorkspaceLocationLabel(root)
 {
   if (root === 'cloud')
     return 'Entire cloud space';
@@ -1098,7 +1098,7 @@ function workspaceLocationLabel(root)
   return root;
 }
 
-function renderWorkspacesSection()
+function fRenderWorkspacesSection()
 {
   var listEl = document.getElementById('settings-workspaces-list');
 
@@ -1122,35 +1122,35 @@ function renderWorkspacesSection()
             protectedRow = ws.root === 'cloud' && !Platform.isNative;
 
         return '<div class="settings-workspace-row' + (active ? ' active' : '') + '">' +
-          '<button type="button" class="settings-workspace-main" title="' + escAttr(workspaceLocationLabel(ws.root)) + '" onclick="switchWorkspaceAt(' + i + ')">' +
-            '<span class="settings-workspace-name">' + escHtml(ws.name) + (active ? '<span class="settings-workspace-badge">active</span>' : '') + '</span>' +
-            '<span class="settings-workspace-path">' + escHtml(workspaceLocationLabel(ws.root)) + '</span>' +
+          '<button type="button" class="settings-workspace-main" title="' + fEscAttr(fWorkspaceLocationLabel(ws.root)) + '" onclick="fSwitchWorkspaceAt(' + i + ')">' +
+            '<span class="settings-workspace-name">' + fEscHtml(ws.name) + (active ? '<span class="settings-workspace-badge">active</span>' : '') + '</span>' +
+            '<span class="settings-workspace-path">' + fEscHtml(fWorkspaceLocationLabel(ws.root)) + '</span>' +
           '</button>' +
-          '<button type="button" class="settings-workspace-action" title="Rename workspace" onclick="renameWorkspaceAt(' + i + ')">&#9998;</button>' +
+          '<button type="button" class="settings-workspace-action" title="Rename workspace" onclick="fRenameWorkspaceAt(' + i + ')">&#9998;</button>' +
           (protectedRow ? '' :
-            '<button type="button" class="settings-workspace-action" title="Remove from list" onclick="forgetWorkspaceAt(' + i + ')">&times;</button>') +
+            '<button type="button" class="settings-workspace-action" title="Remove from list" onclick="fForgetWorkspaceAt(' + i + ')">&times;</button>') +
         '</div>';
       }).join('')
     : '<div class="settings-help-text" style="margin:0">No saved workspaces yet. Choose a folder to create one.</div>';
 }
 
-async function stopUsingWorkFolder()
+async function fStopUsingWorkFolder()
 {
-  await flushPendingSave();
+  await fFlushPendingSave();
 
   workFolderRoot = null;
-  saveSettings();
-  applyCloudWorkspaceScope();
+  fSaveSettings();
+  fApplyCloudWorkspaceScope();
 
   files = {};
   folders = {};
   currentFileId = null;
   expandedFolders = new Set();
-  clearActiveEditors();
-  closeSplitPane();
+  fClearActiveEditors();
+  fCloseSplitPane();
 
-  loadFromStorage();
-  loadOpenTabs();
-  renderFileList();
-  renderSettingsModal();
+  fLoadFromStorage();
+  fLoadOpenTabs();
+  fRenderFileList();
+  fRenderSettingsModal();
 }

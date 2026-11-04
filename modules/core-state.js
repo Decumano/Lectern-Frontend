@@ -67,19 +67,19 @@ var sidebarCollapsed = false;
 // a burst, via keydown, since oninput only ever sees the "after" state), plus
 // a forced single-step snapshot for toolbar actions that rewrite the value
 // programmatically (bold/italic wrapping, inserting a table, etc).
-function makeTextUndo(getEditor)
+function fMakeTextUndo(getEditor)
 {
   var undoStack = [],
       redoStack = [],
       pending = null,
       debounceTimer = null;
 
-  function snapshotOf(editor)
+  function fSnapshotOf(editor)
   {
     return { value: editor.value, start: editor.selectionStart, end: editor.selectionEnd };
   }
 
-  function flushPending()
+  function fFlushPending()
   {
     if (!pending)
       return;
@@ -92,7 +92,7 @@ function makeTextUndo(getEditor)
       undoStack.shift();
   }
 
-  function noteKeydown(e)
+  function fNoteKeydown(e)
   {
     if (e.ctrlKey || e.metaKey || e.altKey)
       return;
@@ -103,31 +103,31 @@ function makeTextUndo(getEditor)
       return;
 
     if (!pending)
-      pending = snapshotOf(getEditor());
+      pending = fSnapshotOf(getEditor());
 
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(flushPending, 700);
+    debounceTimer = setTimeout(fFlushPending, 700);
   }
 
-  function forceSnapshot()
+  function fForceSnapshot()
   {
-    flushPending();
-    undoStack.push(snapshotOf(getEditor()));
+    fFlushPending();
+    undoStack.push(fSnapshotOf(getEditor()));
     redoStack = [];
 
     if (undoStack.length > 100)
       undoStack.shift();
   }
 
-  function restore(from, to)
+  function fRestore(from, to)
   {
-    flushPending();
+    fFlushPending();
 
     if (!from.length)
       return false;
 
     var editor = getEditor();
-    to.push(snapshotOf(editor));
+    to.push(fSnapshotOf(editor));
 
     var snap = from.pop();
     editor.value = snap.value;
@@ -138,10 +138,10 @@ function makeTextUndo(getEditor)
   }
 
   return  {
-            noteKeydown: noteKeydown,
-            forceSnapshot: forceSnapshot,
-            undo: function(){ return restore(undoStack, redoStack); },
-            redo: function(){ return restore(redoStack, undoStack); },
+            fNoteKeydown: fNoteKeydown,
+            fForceSnapshot: fForceSnapshot,
+            undo: function(){ return fRestore(undoStack, redoStack); },
+            redo: function(){ return fRestore(redoStack, undoStack); },
             reset: function(){ undoStack = []; redoStack = []; pending = null; clearTimeout(debounceTimer); }
           };
 }
@@ -178,40 +178,40 @@ let documentHeadings = [];
 let headingRenderCursor = 0;
 let slugCounts = {};
 
-async function createDefaultFile()
+async function fCreateDefaultFile()
 {
-  let fileContext = await Platform.defaultFile("Decumano");
+  let fileContext = await Platform.fDefaultFile("Decumano");
 
-  const file = createFile
+  const file = fCreateFile
   (
     fileContext.name,
     fileContext.docType,
     fileContext.content
   );
 
-  openFile(file);
+  fOpenFile(file);
 }
 
-async function init()
+async function fInit()
 {
-  loadSettings();
-  applyCloudWorkspaceScope();
-  applySpellcheckPrefs();
+  fLoadSettings();
+  fApplyCloudWorkspaceScope();
+  fApplySpellcheckPrefs();
 
   // Cloud workspace names roam with the account (fire-and-forget; the
   // settings modal re-renders when it opens, so late arrival is fine).
   if (!Platform.isNative && workFolderRoot)
-    loadRoamingCloudWorkspaces();
+    fLoadRoamingCloudWorkspaces();
 
   // ?win= (satellite window) and ?embed= (split-pane iframe) boot the same
-  // app with trimmed chrome; see initSecondaryContext.
+  // app with trimmed chrome; see fInitSecondaryContext.
   if (!isMainWindow)
   {
-    await initSecondaryContext();
+    await fInitSecondaryContext();
     return;
   }
 
-  // #link=<token> in the URL is a share link (see initLinkAccess); it works
+  // #link=<token> in the URL is a share link (see fInitLinkAccess); it works
   // with or without a logged-in account.
   var linkToken = null;
   if (!Platform.isNative)
@@ -226,47 +226,47 @@ async function init()
   {
     var dlItem = document.getElementById('file-menu-download');
     if (dlItem) dlItem.style.display = '';
-    refreshSharedSection();
+    fRefreshSharedSection();
   }
 
   // Anonymous link visitor: skip the personal-workspace bootstrap entirely —
   // there is no account, just the linked file/folder.
-  if (linkToken && !(await Platform.currentUser()))
+  if (linkToken && !(await Platform.fCurrentUser()))
   {
-    initTheme();
-    applyEnabledTypes();
-    applySidebarCollapse();
-    buildSheet();
-    renderFileList();
-    await initLinkAccess(linkToken);
+    fInitTheme();
+    fApplyEnabledTypes();
+    fApplySidebarCollapse();
+    fBuildSheet();
+    fRenderFileList();
+    await fInitLinkAccess(linkToken);
     return;
   }
 
-  await refreshCloudStatus();
-  initTheme();
-  applyEnabledTypes();
-  applySidebarCollapse();
-  buildSheet();
-  pruneWindowRegistry();
-  registerThisWindow();
-  initCrossWindowSync();
+  await fRefreshCloudStatus();
+  fInitTheme();
+  fApplyEnabledTypes();
+  fApplySidebarCollapse();
+  fBuildSheet();
+  fPruneWindowRegistry();
+  fRegisterThisWindow();
+  fInitCrossWindowSync();
 
   if (workFolderRoot)
   {
-    await loadWorkFolderTree();
-    await loadBacklinksIndex();
-    loadOpenTabs();
-    initSplitView();
-    injectCustomFontsStyle(); // fire-and-forget: doesn't block first paint
-    if (linkToken) await initLinkAccess(linkToken);
+    await fLoadWorkFolderTree();
+    await fLoadBacklinksIndex();
+    fLoadOpenTabs();
+    fInitSplitView();
+    fInjectCustomFontsStyle(); // fire-and-forget: doesn't block first paint
+    if (linkToken) await fInitLinkAccess(linkToken);
     return;
   }
 
-  loadFromStorage();
-  await loadBacklinksIndex();
-  loadOpenTabs();
-  initSplitView();
-  renderFileList();
+  fLoadFromStorage();
+  await fLoadBacklinksIndex();
+  fLoadOpenTabs();
+  fInitSplitView();
+  fRenderFileList();
 
   // First run only (per browser/install): an empty list later on means the
   // user deleted everything, and recreating the welcome file would make it
@@ -274,13 +274,13 @@ async function init()
   if (Object.keys(files).length === 0 && !linkToken && !localStorage.getItem('lk_welcomed'))
   {
     try { localStorage.setItem('lk_welcomed', '1'); } catch(e) {}
-    createDefaultFile();
+    fCreateDefaultFile();
   }
 
-  if (linkToken) await initLinkAccess(linkToken);
+  if (linkToken) await fInitLinkAccess(linkToken);
 }
 
-function saveToStorage()
+function fSaveToStorage()
 {
   try
   {
@@ -292,7 +292,7 @@ function saveToStorage()
   }
 }
 
-function loadFromStorage()
+function fLoadFromStorage()
 {
   try
   {
@@ -309,7 +309,7 @@ function loadFromStorage()
 // Default display name for a workspace: the folder's basename. "cloud" is
 // the web build's whole-space sentinel; "cloud:<folder>" scopes the web app
 // to that top-level folder of the cloud space (see platform.js).
-function workspaceNameFromRoot(root)
+function fWorkspaceNameFromRoot(root)
 {
   if (root === 'cloud')
     return 'Cloud workspace';
@@ -323,17 +323,17 @@ function workspaceNameFromRoot(root)
 
 // Tells platform.js which cloud folder scopes the share/comment calls (they
 // don't take a root argument). Must run whenever workFolderRoot changes.
-function applyCloudWorkspaceScope()
+function fApplyCloudWorkspaceScope()
 {
-  if (Platform.setCloudWorkspace)
-    Platform.setCloudWorkspace(
+  if (Platform.fSetCloudWorkspace)
+    Platform.fSetCloudWorkspace(
       (!Platform.isNative && workFolderRoot && workFolderRoot.indexOf('cloud:') === 0)
         ? workFolderRoot.slice(6)
         : ''
     );
 }
 
-function loadSettings()
+function fLoadSettings()
 {
   try
   {
@@ -349,7 +349,7 @@ function loadSettings()
     // Installs that predate named workspaces have an active folder but no
     // list: adopt it so it shows up (and stays switchable) in Settings.
     if (workFolderRoot && !workspaces.some(function(w) { return w.root === workFolderRoot; }))
-      workspaces.push({ name: workspaceNameFromRoot(workFolderRoot), root: workFolderRoot });
+      workspaces.push({ name: fWorkspaceNameFromRoot(workFolderRoot), root: workFolderRoot });
 
     // Web: the whole-space workspace is always available to switch back to,
     // even when the active workspace is a scoped folder.
@@ -366,7 +366,7 @@ function loadSettings()
   }
 }
 
-function saveSettings()
+function fSaveSettings()
 {
   try
   {

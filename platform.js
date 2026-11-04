@@ -15,9 +15,9 @@ var Platform = (function () {
   })();
   var tauri = tauriGlobal && tauriGlobal.core;
 
-  // Sentinel returned by pickWorkFolder() once authenticated: there's no
+  // Sentinel returned by fPickWorkFolder() once authenticated: there's no
   // folder to pick on the web, just an implicit per-user workspace.
-  var CLOUD_ROOT = 'cloud';
+  var cCloudRoot = 'cloud';
 
   // ── Cloud workspaces (web only) ──
   // A named workspace on the web is just a top-level folder of the user's one
@@ -25,31 +25,31 @@ var Platform = (function () {
   // Scoping is applied here, in the single funnel every API call goes
   // through: work-folder methods derive the folder from their `root`
   // argument; share/comment methods don't receive a root, so main.js tells
-  // us the active folder once via setCloudWorkspace. The server only ever
+  // us the active folder once via fSetCloudWorkspace. The server only ever
   // sees full root-relative paths, so sync, sharing and deletion tombstones
   // work unchanged.
   var cloudWorkspaceFolder = '';
 
-  function setCloudWorkspace(folder) {
+  function fSetCloudWorkspace(folder) {
     cloudWorkspaceFolder = folder || '';
   }
 
-  function cloudFolderOf(root) {
+  function fCloudFolderOf(root) {
     return (typeof root === 'string' && root.indexOf('cloud:') === 0) ? root.slice(6) : '';
   }
 
   // Workspace-relative -> root-relative, for methods that take `root`.
-  function cloudRel(root, relPath) {
-    var folder = cloudFolderOf(root);
+  function fCloudRel(root, relPath) {
+    var folder = fCloudFolderOf(root);
     return folder ? folder + '/' + relPath : relPath;
   }
 
-  // Same, for the share/comment methods scoped via setCloudWorkspace.
-  function activeRel(relPath) {
+  // Same, for the share/comment methods scoped via fSetCloudWorkspace.
+  function fActiveRel(relPath) {
     return cloudWorkspaceFolder ? cloudWorkspaceFolder + '/' + relPath : relPath;
   }
 
-  function api(path, options) {
+  function fApi(path, options) {
     options = options || {};
     options.credentials = 'include';
     return fetch('/api' + path, options).then(function (res) {
@@ -62,21 +62,21 @@ var Platform = (function () {
     });
   }
 
-  function apiJson(path, options) {
-    return api(path, options).then(function (res) { return res.json(); });
+  function fApiJson(path, options) {
+    return fApi(path, options).then(function (res) { return res.json(); });
   }
 
-  function pickWorkFolder() {
+  function fPickWorkFolder() {
     if (tauri) return tauri.invoke('pick_work_folder');
-    return currentUser().then(function (user) {
-      return user ? CLOUD_ROOT : null;
+    return fCurrentUser().then(function (user) {
+      return user ? cCloudRoot : null;
     });
   }
 
-  function listWorkFolder(root) {
+  function fListWorkFolder(root) {
     if (tauri) return tauri.invoke('list_work_folder', { root: root });
-    return apiJson('/workspace').then(function (tree) {
-      var folder = cloudFolderOf(root);
+    return fApiJson('/workspace').then(function (tree) {
+      var folder = fCloudFolderOf(root);
       if (!folder) return tree;
 
       // Scoped workspace: present the named top-level folder's contents as
@@ -88,25 +88,25 @@ var Platform = (function () {
       if (!node) return [];
 
       var strip = folder.length + 1;
-      function stripRel(list) {
+      function fStripRel(list) {
         list.forEach(function (e) {
           e.relPath = e.relPath.slice(strip);
-          if (e.children && e.children.length) stripRel(e.children);
+          if (e.children && e.children.length) fStripRel(e.children);
         });
         return list;
       }
-      return stripRel(node.children || []);
+      return fStripRel(node.children || []);
     });
   }
 
-  function readWorkFile(root, relPath) {
+  function fReadWorkFile(root, relPath) {
     if (tauri) return tauri.invoke('read_work_file', { root: root, relPath: relPath });
-    return api('/workspace/file?path=' + encodeURIComponent(cloudRel(root, relPath))).then(function (res) { return res.text(); });
+    return fApi('/workspace/file?path=' + encodeURIComponent(fCloudRel(root, relPath))).then(function (res) { return res.text(); });
   }
 
-  function writeWorkFile(root, relPath, content) {
+  function fWriteWorkFile(root, relPath, content) {
     if (tauri) return tauri.invoke('write_work_file', { root: root, relPath: relPath, content: content });
-    return api('/workspace/file?path=' + encodeURIComponent(cloudRel(root, relPath)), {
+    return fApi('/workspace/file?path=' + encodeURIComponent(fCloudRel(root, relPath)), {
       method: 'PUT',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: content
@@ -117,7 +117,7 @@ var Platform = (function () {
   // On the desktop the bridge carries JSON, so bytes travel as base64; the
   // web backend stores and returns a request body byte for byte already.
 
-  function blobToBase64(blob) {
+  function fBlobToBase64(blob) {
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
       reader.onload = function () {
@@ -129,33 +129,33 @@ var Platform = (function () {
     });
   }
 
-  function base64ToBlob(data, type) {
+  function fBase64ToBlob(data, type) {
     var bin = atob(data || ''), bytes = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new Blob([bytes], { type: type || '' });
   }
 
   // Resolves a Blob. `type` labels it (the stored bytes carry no MIME type).
-  function readWorkFileBinary(root, relPath, type) {
+  function fReadWorkFileBinary(root, relPath, type) {
     if (tauri) {
       return tauri.invoke('read_work_file_base64', { root: root, relPath: relPath }).then(function (data) {
-        return base64ToBlob(data, type);
+        return fBase64ToBlob(data, type);
       });
     }
-    return api('/workspace/file?path=' + encodeURIComponent(cloudRel(root, relPath))).then(function (res) {
+    return fApi('/workspace/file?path=' + encodeURIComponent(fCloudRel(root, relPath))).then(function (res) {
       return res.blob();
     }).then(function (blob) {
       return type ? new Blob([blob], { type: type }) : blob;
     });
   }
 
-  function writeWorkFileBinary(root, relPath, blob) {
+  function fWriteWorkFileBinary(root, relPath, blob) {
     if (tauri) {
-      return blobToBase64(blob).then(function (data) {
+      return fBlobToBase64(blob).then(function (data) {
         return tauri.invoke('write_work_file_base64', { root: root, relPath: relPath, data: data });
       });
     }
-    return api('/workspace/file?path=' + encodeURIComponent(cloudRel(root, relPath)), {
+    return fApi('/workspace/file?path=' + encodeURIComponent(fCloudRel(root, relPath)), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/octet-stream' },
       body: blob
@@ -165,10 +165,10 @@ var Platform = (function () {
   // Downloads a remote file (an image picked by URL) as a Blob. The desktop
   // fetches natively; a browser page can only read hosts that allow it (CORS),
   // so on the web this rejects for most image hosts and the caller says so.
-  function fetchRemoteFile(url) {
+  function fFetchRemoteFile(url) {
     if (tauri) {
       return tauri.invoke('fetch_remote_file', { url: url }).then(function (res) {
-        return base64ToBlob(res && res.data, res && res.contentType);
+        return fBase64ToBlob(res && res.data, res && res.contentType);
       });
     }
     return fetch(url, { mode: 'cors', credentials: 'omit' }).then(function (res) {
@@ -180,94 +180,94 @@ var Platform = (function () {
   // Cheap change-detection: {modified, hash} for one file, without the
   // content. Resolves null on Tauri, where live sync doesn't apply (the
   // desktop app has its own explicit cloud-sync flow).
-  function statWorkFile(root, relPath) {
+  function fStatWorkFile(root, relPath) {
     if (tauri) return Promise.resolve(null);
-    return apiJson('/workspace/stat?path=' + encodeURIComponent(cloudRel(root, relPath)));
+    return fApiJson('/workspace/stat?path=' + encodeURIComponent(fCloudRel(root, relPath)));
   }
 
-  function createWorkFolder(root, relPath) {
+  function fCreateWorkFolder(root, relPath) {
     if (tauri) return tauri.invoke('create_work_folder', { root: root, relPath: relPath });
-    return api('/workspace/folder', {
+    return fApi('/workspace/folder', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ relPath: cloudRel(root, relPath) })
+      body: JSON.stringify({ relPath: fCloudRel(root, relPath) })
     }).then(function () { return undefined; });
   }
 
-  function deleteWorkEntry(root, relPath, isDir) {
+  function fDeleteWorkEntry(root, relPath, isDir) {
     if (tauri) return tauri.invoke('delete_work_entry', { root: root, relPath: relPath, isDir: isDir });
-    return api('/workspace/entry?path=' + encodeURIComponent(cloudRel(root, relPath)) + '&isDir=' + !!isDir, {
+    return fApi('/workspace/entry?path=' + encodeURIComponent(fCloudRel(root, relPath)) + '&isDir=' + !!isDir, {
       method: 'DELETE'
     }).then(function () { return undefined; });
   }
 
-  function moveWorkEntry(root, fromRelPath, toRelPath) {
+  function fMoveWorkEntry(root, fromRelPath, toRelPath) {
     if (tauri) return tauri.invoke('move_work_entry', { root: root, fromRelPath: fromRelPath, toRelPath: toRelPath });
-    return api('/workspace/move', {
+    return fApi('/workspace/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: cloudRel(root, fromRelPath), to: cloudRel(root, toRelPath) })
+      body: JSON.stringify({ from: fCloudRel(root, fromRelPath), to: fCloudRel(root, toRelPath) })
     }).then(function () { return undefined; });
   }
 
   // ── Auth (web only; no-ops don't apply to Tauri, which has no accounts) ──
 
-  function currentUser() {
+  function fCurrentUser() {
     if (tauri) return Promise.resolve(null);
     return fetch('/api/auth/me', { credentials: 'include' }).then(function (res) {
       return res.ok ? res.json() : null;
     });
   }
 
-  function register(email, password) {
-    return apiJson('/auth/register', {
+  function fRegister(email, password) {
+    return fApiJson('/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     });
   }
 
-  function login(email, password) {
-    return apiJson('/auth/login', {
+  function fLogin(email, password) {
+    return fApiJson('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     });
   }
 
-  function logout() {
-    return api('/auth/logout', { method: 'POST' }).then(function () { return undefined; });
+  function fLogout() {
+    return fApi('/auth/logout', { method: 'POST' }).then(function () { return undefined; });
   }
 
   // ── Cloud sync (Tauri only; the web build already talks to the cloud
   // natively through the calls above and has no separate "connect" step) ──
 
-  function cloudConnect(serverUrl, email, password, root) {
+  function fCloudConnect(serverUrl, email, password, root) {
     if (!tauri) return Promise.reject(new Error('cloud sync is desktop-only'));
     return tauri.invoke('cloud_connect', { serverUrl: serverUrl, email: email, password: password, root: root });
   }
 
-  function cloudDisconnect() {
+  function fCloudDisconnect() {
     if (!tauri) return Promise.reject(new Error('cloud sync is desktop-only'));
     return tauri.invoke('cloud_disconnect');
   }
 
-  function cloudStatus() {
+  function fCloudStatus() {
     if (!tauri) return Promise.resolve({ connected: false, mode: 'disconnected' });
     return tauri.invoke('cloud_status');
   }
 
-  function cloudSyncNow() {
+  function fCloudSyncNow() {
     if (!tauri) return Promise.reject(new Error('cloud sync is desktop-only'));
     return tauri.invoke('cloud_sync_now');
   }
 
-  function cloudListConflicts() {
+  function fCloudListConflicts() {
     if (!tauri) return Promise.resolve([]);
     return tauri.invoke('cloud_list_conflicts');
   }
 
-  function cloudResolveConflict(relPath, choice) {
+  function fCloudResolveConflict(relPath, choice) {
     if (!tauri) return Promise.reject(new Error('cloud sync is desktop-only'));
     return tauri.invoke('cloud_resolve_conflict', { relPath: relPath, choice: choice });
   }
@@ -275,51 +275,51 @@ var Platform = (function () {
   // ── Sharing & comments (web only; the desktop app works on a local folder
   // and reaches shared content through the website instead) ──
 
-  function webOnly() { return Promise.reject(new Error('sharing is available on the web app')); }
+  function fWebOnly() { return Promise.reject(new Error('sharing is available on the web app')); }
 
-  function shareEntry(relPath, isDir, email, permission) {
-    if (tauri) return webOnly();
-    return apiJson('/shares', {
+  function fShareEntry(relPath, isDir, email, permission) {
+    if (tauri) return fWebOnly();
+    return fApiJson('/shares', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ relPath: activeRel(relPath), isDir: isDir, email: email, permission: permission })
+      body: JSON.stringify({ relPath: fActiveRel(relPath), isDir: isDir, email: email, permission: permission })
     });
   }
 
-  function listSharesFor(relPath) {
+  function fListSharesFor(relPath) {
     if (tauri) return Promise.resolve([]);
-    return apiJson('/shares?path=' + encodeURIComponent(activeRel(relPath)));
+    return fApiJson('/shares?path=' + encodeURIComponent(fActiveRel(relPath)));
   }
 
-  function revokeShare(shareId) {
-    if (tauri) return webOnly();
-    return api('/shares/' + encodeURIComponent(shareId), { method: 'DELETE' }).then(function () { return undefined; });
+  function fRevokeShare(shareId) {
+    if (tauri) return fWebOnly();
+    return fApi('/shares/' + encodeURIComponent(shareId), { method: 'DELETE' }).then(function () { return undefined; });
   }
 
-  function listSharedWithMe() {
+  function fListSharedWithMe() {
     if (tauri) return Promise.resolve([]);
-    return apiJson('/shared');
+    return fApiJson('/shared');
   }
 
-  function listSharedFolder(shareId, subPath) {
-    if (tauri) return webOnly();
-    return apiJson('/shared/list?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''));
+  function fListSharedFolder(shareId, subPath) {
+    if (tauri) return fWebOnly();
+    return fApiJson('/shared/list?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''));
   }
 
-  function readSharedFile(shareId, subPath) {
-    if (tauri) return webOnly();
-    return api('/shared/file?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''))
+  function fReadSharedFile(shareId, subPath) {
+    if (tauri) return fWebOnly();
+    return fApi('/shared/file?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''))
       .then(function (res) { return res.text(); });
   }
 
-  function statSharedFile(shareId, subPath) {
+  function fStatSharedFile(shareId, subPath) {
     if (tauri) return Promise.resolve(null);
-    return apiJson('/shared/stat?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''));
+    return fApiJson('/shared/stat?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''));
   }
 
-  function writeSharedFile(shareId, subPath, content) {
-    if (tauri) return webOnly();
-    return api('/shared/file?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''), {
+  function fWriteSharedFile(shareId, subPath, content) {
+    if (tauri) return fWebOnly();
+    return fApi('/shared/file?share=' + encodeURIComponent(shareId) + '&path=' + encodeURIComponent(subPath || ''), {
       method: 'PUT',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: content
@@ -328,49 +328,49 @@ var Platform = (function () {
 
   // ── Link shares ("anyone with the link"; the token is the authorization) ──
 
-  function createShareLink(relPath, isDir, permission) {
-    if (tauri) return webOnly();
-    return apiJson('/links', {
+  function fCreateShareLink(relPath, isDir, permission) {
+    if (tauri) return fWebOnly();
+    return fApiJson('/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ relPath: activeRel(relPath), isDir: isDir, permission: permission })
+      body: JSON.stringify({ relPath: fActiveRel(relPath), isDir: isDir, permission: permission })
     });
   }
 
-  function listShareLinks(relPath) {
+  function fListShareLinks(relPath) {
     if (tauri) return Promise.resolve([]);
-    return apiJson('/links?path=' + encodeURIComponent(activeRel(relPath)));
+    return fApiJson('/links?path=' + encodeURIComponent(fActiveRel(relPath)));
   }
 
-  function revokeShareLink(linkId) {
-    if (tauri) return webOnly();
-    return api('/links/' + encodeURIComponent(linkId), { method: 'DELETE' }).then(function () { return undefined; });
+  function fRevokeShareLink(linkId) {
+    if (tauri) return fWebOnly();
+    return fApi('/links/' + encodeURIComponent(linkId), { method: 'DELETE' }).then(function () { return undefined; });
   }
 
-  function linkMeta(token) {
-    if (tauri) return webOnly();
-    return apiJson('/link/' + encodeURIComponent(token));
+  function fLinkMeta(token) {
+    if (tauri) return fWebOnly();
+    return fApiJson('/link/' + encodeURIComponent(token));
   }
 
-  function listLinkFolder(token, subPath) {
-    if (tauri) return webOnly();
-    return apiJson('/link/' + encodeURIComponent(token) + '/list?path=' + encodeURIComponent(subPath || ''));
+  function fListLinkFolder(token, subPath) {
+    if (tauri) return fWebOnly();
+    return fApiJson('/link/' + encodeURIComponent(token) + '/list?path=' + encodeURIComponent(subPath || ''));
   }
 
-  function readLinkFile(token, subPath) {
-    if (tauri) return webOnly();
-    return api('/link/' + encodeURIComponent(token) + '/file?path=' + encodeURIComponent(subPath || ''))
+  function fReadLinkFile(token, subPath) {
+    if (tauri) return fWebOnly();
+    return fApi('/link/' + encodeURIComponent(token) + '/file?path=' + encodeURIComponent(subPath || ''))
       .then(function (res) { return res.text(); });
   }
 
-  function statLinkFile(token, subPath) {
+  function fStatLinkFile(token, subPath) {
     if (tauri) return Promise.resolve(null);
-    return apiJson('/link/' + encodeURIComponent(token) + '/stat?path=' + encodeURIComponent(subPath || ''));
+    return fApiJson('/link/' + encodeURIComponent(token) + '/stat?path=' + encodeURIComponent(subPath || ''));
   }
 
-  function writeLinkFile(token, subPath, content) {
-    if (tauri) return webOnly();
-    return api('/link/' + encodeURIComponent(token) + '/file?path=' + encodeURIComponent(subPath || ''), {
+  function fWriteLinkFile(token, subPath, content) {
+    if (tauri) return fWebOnly();
+    return fApi('/link/' + encodeURIComponent(token) + '/file?path=' + encodeURIComponent(subPath || ''), {
       method: 'PUT',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: content
@@ -379,35 +379,35 @@ var Platform = (function () {
 
   // target: { path } for my own file, { share, subPath } for an account
   // share, or { link, subPath } for a share link (works logged out).
-  function commentQs(target) {
+  function fCommentQs(target) {
     if (target.link) return 'link=' + encodeURIComponent(target.link) + '&subPath=' + encodeURIComponent(target.subPath || '');
     if (target.share) return 'share=' + encodeURIComponent(target.share) + '&subPath=' + encodeURIComponent(target.subPath || '');
-    return 'path=' + encodeURIComponent(activeRel(target.path));
+    return 'path=' + encodeURIComponent(fActiveRel(target.path));
   }
 
-  function listComments(target) {
+  function fListComments(target) {
     if (tauri) return Promise.resolve([]);
-    return apiJson('/comments?' + commentQs(target));
+    return fApiJson('/comments?' + fCommentQs(target));
   }
 
-  function addComment(target, body, anchor) {
-    if (tauri) return webOnly();
+  function fAddComment(target, body, anchor) {
+    if (tauri) return fWebOnly();
     var payload = target.link
       ? { link: target.link, subPath: target.subPath || '', body: body }
       : target.share
         ? { share: target.share, subPath: target.subPath || '', body: body }
-        : { path: activeRel(target.path), body: body };
+        : { path: fActiveRel(target.path), body: body };
     if (anchor) payload.anchor = anchor;
-    return apiJson('/comments', {
+    return fApiJson('/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
   }
 
-  function deleteComment(commentId) {
-    if (tauri) return webOnly();
-    return api('/comments/' + encodeURIComponent(commentId), { method: 'DELETE' }).then(function () { return undefined; });
+  function fDeleteComment(commentId) {
+    if (tauri) return fWebOnly();
+    return fApi('/comments/' + encodeURIComponent(commentId), { method: 'DELETE' }).then(function () { return undefined; });
   }
 
   // ── Custom fonts (account-level; see src/fonts.rs) ──
@@ -416,36 +416,36 @@ var Platform = (function () {
   // via Rust commands, since the desktop app has no session/account of its
   // own to authenticate a direct fetch with.
 
-  function listCustomFonts() {
+  function fListCustomFonts() {
     if (tauri) return tauri.invoke('cloud_list_fonts').catch(function () { return []; });
-    return apiJson('/fonts').catch(function () { return []; });
+    return fApiJson('/fonts').catch(function () { return []; });
   }
 
-  function uploadCustomFont(familyName, filename, bytes) {
-    if (tauri) return webOnly();
+  function fUploadCustomFont(familyName, filename, bytes) {
+    if (tauri) return fWebOnly();
     var qs = '?familyName=' + encodeURIComponent(familyName) + '&filename=' + encodeURIComponent(filename);
-    return apiJson('/fonts' + qs, {
+    return fApiJson('/fonts' + qs, {
       method: 'POST',
       headers: { 'Content-Type': 'application/octet-stream' },
       body: bytes
     });
   }
 
-  function deleteCustomFont(id) {
-    if (tauri) return webOnly();
-    return api('/fonts/' + encodeURIComponent(id), { method: 'DELETE' }).then(function () { return undefined; });
+  function fDeleteCustomFont(id) {
+    if (tauri) return fWebOnly();
+    return fApi('/fonts/' + encodeURIComponent(id), { method: 'DELETE' }).then(function () { return undefined; });
   }
 
   // Returns a data: URI (base64) for the font, playing the same role on
   // Tauri that a direct /api/fonts/:id fetch plays on the web — a same-origin
   // <link>/@font-face url() isn't available to an unauthenticated webview,
   // but an inlined data: URI needs no request at all.
-  function customFontDataUrl(id) {
+  function fCustomFontDataUrl(id) {
     if (tauri) return tauri.invoke('cloud_font_data_url', { fontId: id });
     return Promise.resolve('/api/fonts/' + encodeURIComponent(id));
   }
 
-  var DEFAULT_FILE_CONTENT = [
+  var cDefaultFileContent = [
     "# Welcome to Lectern\n\n",
     "Lectern is a lightweight office suite that stores everything in **Markdown**.\n\n",
     "## Features\n\n",
@@ -471,19 +471,19 @@ var Platform = (function () {
   ].join('');
 
   // Returns canned welcome content for a brand-new install. On Tauri this
-  // matches the Rust-side `defaultFile` command; elsewhere it's generated
+  // matches the Rust-side `fDefaultFile` command; elsewhere it's generated
   // here so first-run works without a native backend.
-  function defaultFile(name) {
+  function fDefaultFile(name) {
     if (tauri) return tauri.invoke('defaultFile', { name: name });
     return Promise.resolve({
       name: 'Welcome to Lectern ' + name,
       docType: 'doc',
-      content: DEFAULT_FILE_CONTENT
+      content: cDefaultFileContent
     });
   }
 
   // Triggers a standard browser download of a Blob under the given name.
-  function downloadBlob(name, blob) {
+  function fDownloadBlob(name, blob) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
@@ -496,10 +496,10 @@ var Platform = (function () {
 
   // Saves a one-off exported file. On Tauri this opens a native save dialog;
   // elsewhere it triggers a standard browser download of the same content.
-  function saveFile(name, content) {
+  function fSaveFile(name, content) {
     if (tauri) return tauri.invoke('save_file', { name: name, content: content });
     try {
-      downloadBlob(name, new Blob([content], { type: 'text/plain;charset=utf-8' }));
+      fDownloadBlob(name, new Blob([content], { type: 'text/plain;charset=utf-8' }));
       return Promise.resolve(true);
     } catch (e) {
       return Promise.reject(e);
@@ -509,69 +509,69 @@ var Platform = (function () {
   // Renders `html` to a PDF server-side (headless Chromium, headers/footers
   // disabled - see src/export.rs) and downloads the result. Not available on
   // Tauri, which renders/prints PDFs locally via the print-preview flow instead.
-  function exportPdf(name, html) {
+  function fExportPdf(name, html) {
     if (tauri) return Promise.reject(new Error('exportPdf is web-only'));
-    return api('/export/pdf', {
+    return fApi('/export/pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'text/html;charset=utf-8' },
       body: html
     }).then(function (res) {
       return res.blob();
     }).then(function (blob) {
-      downloadBlob(name, blob);
+      fDownloadBlob(name, blob);
       return true;
     });
   }
 
   return {
     isNative: !!tauri,
-    setCloudWorkspace: setCloudWorkspace,
-    pickWorkFolder: pickWorkFolder,
-    listWorkFolder: listWorkFolder,
-    readWorkFile: readWorkFile,
-    writeWorkFile: writeWorkFile,
-    readWorkFileBinary: readWorkFileBinary,
-    writeWorkFileBinary: writeWorkFileBinary,
-    fetchRemoteFile: fetchRemoteFile,
-    statWorkFile: statWorkFile,
-    createWorkFolder: createWorkFolder,
-    deleteWorkEntry: deleteWorkEntry,
-    moveWorkEntry: moveWorkEntry,
-    defaultFile: defaultFile,
-    saveFile: saveFile,
-    exportPdf: exportPdf,
-    currentUser: currentUser,
-    register: register,
-    login: login,
-    logout: logout,
-    cloudConnect: cloudConnect,
-    cloudDisconnect: cloudDisconnect,
-    cloudStatus: cloudStatus,
-    cloudSyncNow: cloudSyncNow,
-    cloudListConflicts: cloudListConflicts,
-    cloudResolveConflict: cloudResolveConflict,
-    shareEntry: shareEntry,
-    listSharesFor: listSharesFor,
-    revokeShare: revokeShare,
-    listSharedWithMe: listSharedWithMe,
-    listSharedFolder: listSharedFolder,
-    readSharedFile: readSharedFile,
-    writeSharedFile: writeSharedFile,
-    statSharedFile: statSharedFile,
-    listComments: listComments,
-    addComment: addComment,
-    deleteComment: deleteComment,
-    createShareLink: createShareLink,
-    listShareLinks: listShareLinks,
-    revokeShareLink: revokeShareLink,
-    linkMeta: linkMeta,
-    listLinkFolder: listLinkFolder,
-    readLinkFile: readLinkFile,
-    writeLinkFile: writeLinkFile,
-    statLinkFile: statLinkFile,
-    listCustomFonts: listCustomFonts,
-    uploadCustomFont: uploadCustomFont,
-    deleteCustomFont: deleteCustomFont,
-    customFontDataUrl: customFontDataUrl
+    fSetCloudWorkspace: fSetCloudWorkspace,
+    fPickWorkFolder: fPickWorkFolder,
+    fListWorkFolder: fListWorkFolder,
+    fReadWorkFile: fReadWorkFile,
+    fWriteWorkFile: fWriteWorkFile,
+    fReadWorkFileBinary: fReadWorkFileBinary,
+    fWriteWorkFileBinary: fWriteWorkFileBinary,
+    fFetchRemoteFile: fFetchRemoteFile,
+    fStatWorkFile: fStatWorkFile,
+    fCreateWorkFolder: fCreateWorkFolder,
+    fDeleteWorkEntry: fDeleteWorkEntry,
+    fMoveWorkEntry: fMoveWorkEntry,
+    fDefaultFile: fDefaultFile,
+    fSaveFile: fSaveFile,
+    fExportPdf: fExportPdf,
+    fCurrentUser: fCurrentUser,
+    register: fRegister,
+    fLogin: fLogin,
+    fLogout: fLogout,
+    fCloudConnect: fCloudConnect,
+    fCloudDisconnect: fCloudDisconnect,
+    fCloudStatus: fCloudStatus,
+    fCloudSyncNow: fCloudSyncNow,
+    fCloudListConflicts: fCloudListConflicts,
+    fCloudResolveConflict: fCloudResolveConflict,
+    fShareEntry: fShareEntry,
+    fListSharesFor: fListSharesFor,
+    fRevokeShare: fRevokeShare,
+    fListSharedWithMe: fListSharedWithMe,
+    fListSharedFolder: fListSharedFolder,
+    fReadSharedFile: fReadSharedFile,
+    fWriteSharedFile: fWriteSharedFile,
+    fStatSharedFile: fStatSharedFile,
+    fListComments: fListComments,
+    fAddComment: fAddComment,
+    fDeleteComment: fDeleteComment,
+    fCreateShareLink: fCreateShareLink,
+    fListShareLinks: fListShareLinks,
+    fRevokeShareLink: fRevokeShareLink,
+    fLinkMeta: fLinkMeta,
+    fListLinkFolder: fListLinkFolder,
+    fReadLinkFile: fReadLinkFile,
+    fWriteLinkFile: fWriteLinkFile,
+    fStatLinkFile: fStatLinkFile,
+    fListCustomFonts: fListCustomFonts,
+    fUploadCustomFont: fUploadCustomFont,
+    fDeleteCustomFont: fDeleteCustomFont,
+    fCustomFontDataUrl: fCustomFontDataUrl
   };
 })();

@@ -35,7 +35,7 @@ let nbImport = null;
 // which is the opposite of what you want from a 100+Hz pointer stream.
 let nbCommittedCache = {};
 
-const NB_COLORS = ['#1a1a1a', '#c0574a', '#2f6fd1', '#2f9e44', '#e8830f', '#7048b8'];
+const cNbColors = ['#1a1a1a', '#c0574a', '#2f6fd1', '#2f9e44', '#e8830f', '#7048b8'];
 
 // The ink layer is rendered at least 2x even on a plain 1x display - canvas
 // path strokes are always antialiased by the browser, but only against
@@ -43,19 +43,19 @@ const NB_COLORS = ['#1a1a1a', '#c0574a', '#2f6fd1', '#2f9e44', '#e8830f', '#7048
 // (supersampling) gives visibly smoother edges than native resolution alone,
 // the same idea as MSAA. devicePixelRatio is still respected on top of that
 // floor, so a HiDPI display gets whichever of the two is sharper.
-function notebookCanvasScale()
+function fNotebookCanvasScale()
 {
   return Math.max(window.devicePixelRatio || 1, 2);
 }
 
-function rebuildNotebookCommittedCache(pageIndex)
+function fRebuildNotebookCommittedCache(pageIndex)
 {
   const page = nbData && nbData.pages[pageIndex];
 
   if (!page)
     return;
 
-  const scale = notebookCanvasScale(),
+  const scale = fNotebookCanvasScale(),
         rawWidth = Math.round(page.width * scale),
         rawHeight = Math.round(page.height * scale);
 
@@ -75,11 +75,11 @@ function rebuildNotebookCommittedCache(pageIndex)
   ctx.clearRect(0, 0, rawWidth, rawHeight);
   ctx.scale(scale, scale);
 
-  page.strokes.forEach(function(s){ drawNotebookStroke(ctx, s); });
-  page.shapes.forEach(function(s){ drawNotebookShape(ctx, s); });
+  page.strokes.forEach(function(s){ fDrawNotebookStroke(ctx, s); });
+  page.shapes.forEach(function(s){ fDrawNotebookShape(ctx, s); });
 }
 
-function defaultNotebookPage()
+function fDefaultNotebookPage()
 {
   return {
     width: 816,
@@ -91,44 +91,44 @@ function defaultNotebookPage()
   };
 }
 
-function defaultNotebookData()
+function fDefaultNotebookData()
 {
-  return { version: 1, pdfData: null, pages: [defaultNotebookPage()] };
+  return { version: 1, pdfData: null, pages: [fDefaultNotebookPage()] };
 }
 
-function serializeNotebookData(data)
+function fSerializeNotebookData(data)
 {
   return '<!-- type: notebook -->\n\n```notebook\n' + JSON.stringify(data) + '\n```\n';
 }
 
-function parseNotebookContent(content)
+function fParseNotebookContent(content)
 {
   const match = /```notebook\n([\s\S]*?)\n```/.exec(content || '');
 
   if (!match)
-    return defaultNotebookData();
+    return fDefaultNotebookData();
 
   try
   {
     const data = JSON.parse(match[1]);
 
     if (!data.pages || !data.pages.length)
-      data.pages = [defaultNotebookPage()];
+      data.pages = [fDefaultNotebookPage()];
 
     return data;
   }
   catch(e)
   {
     console.warn('Notebook parse error', e);
-    return defaultNotebookData();
+    return fDefaultNotebookData();
   }
 }
 
-function loadNotebookFile(file)
+function fLoadNotebookFile(file)
 {
   document.getElementById('notebook-title-input').value = file.name;
 
-  nbData = parseNotebookContent(file.content || '');
+  nbData = fParseNotebookContent(file.content || '');
   nbCurrentPage = 0;
   nbUndoStack = [];
   nbRedoStack = [];
@@ -140,34 +140,34 @@ function loadNotebookFile(file)
   nbPdfDocCacheKey = null;
   nbZoom = 1;
 
-  renderNotebookColorSwatches();
-  renderNotebookPages();
-  updateNotebookZoomIndicator();
-  updateMapToolbarVisibility();
+  fRenderNotebookColorSwatches();
+  fRenderNotebookPages();
+  fUpdateNotebookZoomIndicator();
+  fUpdateMapToolbarVisibility();
 }
 
-function onNotebookTitleChange()
+function fOnNotebookTitleChange()
 {
   if ((!currentFileId) || (files[currentFileId].type !== 'notebook'))
     return;
 
   files[currentFileId].name = (document.getElementById('notebook-title-input').value || files[currentFileId].name);
-  scheduleSave();
-  renderFileList();
+  fScheduleSave();
+  fRenderFileList();
 }
 
-function commitNotebookChange()
+function fCommitNotebookChange()
 {
   if (!currentFileId || !nbData || !files[currentFileId] || files[currentFileId].type !== 'notebook')
     return;
 
-  files[currentFileId].content = serializeNotebookData(nbData);
-  scheduleSave();
+  files[currentFileId].content = fSerializeNotebookData(nbData);
+  fScheduleSave();
 }
 
 // ── Tool / color / width selection ──
 
-function setNotebookTool(tool)
+function fSetNotebookTool(tool)
 {
   nbTool = tool;
   nbSelection = [];
@@ -186,10 +186,10 @@ function setNotebookTool(tool)
   }
 
   if (nbData)
-    redrawNotebookPage(nbCurrentPage);
+    fRedrawNotebookPage(nbCurrentPage);
 }
 
-function setNotebookColor(color)
+function fSetNotebookColor(color)
 {
   nbColor = color;
 
@@ -199,28 +199,28 @@ function setNotebookColor(color)
   });
 }
 
-function setNotebookWidth(width)
+function fSetNotebookWidth(width)
 {
   nbWidth = parseFloat(width);
 }
 
-function renderNotebookColorSwatches()
+function fRenderNotebookColorSwatches()
 {
   const group = document.getElementById('notebook-color-group');
 
   if (!group)
     return;
 
-  group.innerHTML = NB_COLORS.map(function(c)
+  group.innerHTML = cNbColors.map(function(c)
   {
     return  '<button type="button" class="nb-swatch' + (c === nbColor ? ' active' : '') + '"' +
-              ' data-color="' + c + '" style="background:' + c + '" onclick="setNotebookColor(\'' + c + '\')" title="' + c + '"></button>';
+              ' data-color="' + c + '" style="background:' + c + '" onclick="fSetNotebookColor(\'' + c + '\')" title="' + c + '"></button>';
   }).join('');
 }
 
 // ── Page rendering ──
 
-function renderNotebookPages()
+function fRenderNotebookPages()
 {
   const container = document.getElementById('notebook-pages');
 
@@ -240,11 +240,11 @@ function renderNotebookPages()
 
     // Canvases are sized well above CSS resolution so strokes render crisp
     // rather than blurry, on both HiDPI displays and plain 1x ones (see
-    // notebookCanvasScale). The ink canvas's context is scaled once here and
+    // fNotebookCanvasScale). The ink canvas's context is scaled once here and
     // never touched again, so every other ink-canvas function keeps drawing
     // in plain page-space coordinates (0..page.width/height) regardless of
     // the actual buffer size.
-    const scale = notebookCanvasScale();
+    const scale = fNotebookCanvasScale();
 
     const bgCanvas = document.createElement('canvas');
     bgCanvas.className = 'notebook-bg-canvas';
@@ -286,22 +286,22 @@ function renderNotebookPages()
 
     container.appendChild(pageEl);
 
-    renderNotebookPageBackground(page, bgCanvas);
-    wireNotebookPointerEvents(inkCanvas, i);
-    rebuildNotebookCommittedCache(i);
-    redrawNotebookPage(i);
-    renderNotebookTextLayerForPage(i);
+    fRenderNotebookPageBackground(page, bgCanvas);
+    fWireNotebookPointerEvents(inkCanvas, i);
+    fRebuildNotebookCommittedCache(i);
+    fRedrawNotebookPage(i);
+    fRenderNotebookTextLayerForPage(i);
 
     if (page.type === 'map')
-      renderMapPinLayer(i);
+      fRenderMapPinLayer(i);
   });
 
-  updateNotebookPageIndicator();
-  setupNotebookPageObserver();
-  updateMapToolbarVisibility();
+  fUpdateNotebookPageIndicator();
+  fSetupNotebookPageObserver();
+  fUpdateMapToolbarVisibility();
 }
 
-function notebookSetZoom(zoom)
+function fNotebookSetZoom(zoom)
 {
   nbZoom = Math.max(0.25, Math.min(3, zoom));
 
@@ -313,28 +313,28 @@ function notebookSetZoom(zoom)
     pageEl.style.width = (page.width * nbZoom) + 'px';
     pageEl.style.height = (page.height * nbZoom) + 'px';
 
-    if (page.type === 'map') renderMapPinLayer(i);
+    if (page.type === 'map') fRenderMapPinLayer(i);
   });
 
-  updateNotebookZoomIndicator();
+  fUpdateNotebookZoomIndicator();
 }
 
-function notebookZoomIn()
+function fNotebookZoomIn()
 {
-  notebookSetZoom(nbZoom + 0.1);
+  fNotebookSetZoom(nbZoom + 0.1);
 }
 
-function notebookZoomOut()
+function fNotebookZoomOut()
 {
-  notebookSetZoom(nbZoom - 0.1);
+  fNotebookSetZoom(nbZoom - 0.1);
 }
 
-function notebookZoomReset()
+function fNotebookZoomReset()
 {
-  notebookSetZoom(1);
+  fNotebookSetZoom(1);
 }
 
-function updateNotebookZoomIndicator()
+function fUpdateNotebookZoomIndicator()
 {
   const el = document.getElementById('notebook-zoom-indicator');
 
@@ -342,7 +342,7 @@ function updateNotebookZoomIndicator()
     el.textContent = Math.round(nbZoom * 100) + '%';
 }
 
-function renderNotebookPageBackground(page, canvas)
+function fRenderNotebookPageBackground(page, canvas)
 {
   const ctx = canvas.getContext('2d');
 
@@ -365,7 +365,7 @@ function renderNotebookPageBackground(page, canvas)
   if (page.background.type === 'pdf')
   {
     if (nbData.pdfData)
-      renderNotebookPdfBackground(page, canvas);
+      fRenderNotebookPdfBackground(page, canvas);
 
     return;
   }
@@ -375,7 +375,7 @@ function renderNotebookPageBackground(page, canvas)
     // Scoped to just this section (save/restore) rather than scaling the whole
     // context, since the PDF branch above computes its own scale to fill the
     // raw buffer directly - a persistent transform here would double-scale it.
-    const scale = notebookCanvasScale();
+    const scale = fNotebookCanvasScale();
 
     ctx.save();
     ctx.scale(scale, scale);
@@ -419,7 +419,7 @@ function renderNotebookPageBackground(page, canvas)
   }
 }
 
-async function getNotebookPdfDocument()
+async function fGetNotebookPdfDocument()
 {
   if (nbPdfDocCache && nbPdfDocCacheKey === nbData.pdfData)
     return nbPdfDocCache;
@@ -437,14 +437,14 @@ async function getNotebookPdfDocument()
   return nbPdfDocCache;
 }
 
-async function renderNotebookPdfBackground(page, canvas)
+async function fRenderNotebookPdfBackground(page, canvas)
 {
   if (typeof pdfjsLib === 'undefined')
     return;
 
   try
   {
-    const pdfDoc = await getNotebookPdfDocument(),
+    const pdfDoc = await fGetNotebookPdfDocument(),
           pdfPage = await pdfDoc.getPage(page.background.pdfPageIndex + 1),
           scale = canvas.width / pdfPage.getViewport({ scale: 1 }).width,
           viewport = pdfPage.getViewport({ scale: scale });
@@ -457,7 +457,7 @@ async function renderNotebookPdfBackground(page, canvas)
   }
 }
 
-function drawNotebookStroke(ctx, stroke, alphaScale)
+function fDrawNotebookStroke(ctx, stroke, alphaScale)
 {
   const pts = stroke.points;
 
@@ -554,7 +554,7 @@ function drawNotebookStroke(ctx, stroke, alphaScale)
   ctx.globalAlpha = 1;
 }
 
-function drawNotebookShape(ctx, shape)
+function fDrawNotebookShape(ctx, shape)
 {
   ctx.strokeStyle = shape.color;
   ctx.lineWidth = shape.width;
@@ -583,7 +583,7 @@ function drawNotebookShape(ctx, shape)
   ctx.stroke();
 }
 
-function notebookStrokeBounds(stroke)
+function fNotebookStrokeBounds(stroke)
 {
   const xs = stroke.points.map(function(p){ return p.x; }),
         ys = stroke.points.map(function(p){ return p.y; });
@@ -591,31 +591,31 @@ function notebookStrokeBounds(stroke)
   return { x1: Math.min.apply(null, xs), y1: Math.min.apply(null, ys), x2: Math.max.apply(null, xs), y2: Math.max.apply(null, ys) };
 }
 
-function notebookShapeBounds(shape)
+function fNotebookShapeBounds(shape)
 {
   return { x1: Math.min(shape.x1, shape.x2), y1: Math.min(shape.y1, shape.y2), x2: Math.max(shape.x1, shape.x2), y2: Math.max(shape.y1, shape.y2) };
 }
 
-function notebookTextBounds(text)
+function fNotebookTextBounds(text)
 {
   return { x1: text.x, y1: text.y, x2: text.x + text.width, y2: text.y + text.height };
 }
 
-function notebookItemBounds(page, sel)
+function fNotebookItemBounds(page, sel)
 {
   if (sel.kind === 'stroke')
-    return notebookStrokeBounds(page.strokes[sel.index]);
+    return fNotebookStrokeBounds(page.strokes[sel.index]);
 
   if (sel.kind === 'shape')
-    return notebookShapeBounds(page.shapes[sel.index]);
+    return fNotebookShapeBounds(page.shapes[sel.index]);
 
   if (sel.kind === 'text')
-    return notebookTextBounds(page.texts[sel.index]);
+    return fNotebookTextBounds(page.texts[sel.index]);
 
   return null;
 }
 
-function redrawNotebookPage(pageIndex)
+function fRedrawNotebookPage(pageIndex)
 {
   if (!nbData || !nbData.pages[pageIndex])
     return;
@@ -641,8 +641,8 @@ function redrawNotebookPage(pageIndex)
     // These mutate already-committed strokes/shapes in place rather than adding
     // a new one, so the cached bitmap (which reflects the *previous* commit)
     // can't be reused for them - has to be a real redraw from current data.
-    page.strokes.forEach(function(s){ drawNotebookStroke(ctx, s); });
-    page.shapes.forEach(function(s){ drawNotebookShape(ctx, s); });
+    page.strokes.forEach(function(s){ fDrawNotebookStroke(ctx, s); });
+    page.shapes.forEach(function(s){ fDrawNotebookShape(ctx, s); });
   }
   else
   {
@@ -652,14 +652,14 @@ function redrawNotebookPage(pageIndex)
       ctx.drawImage(cached, 0, 0, page.width, page.height);
     else
     {
-      page.strokes.forEach(function(s){ drawNotebookStroke(ctx, s); });
-      page.shapes.forEach(function(s){ drawNotebookShape(ctx, s); });
+      page.strokes.forEach(function(s){ fDrawNotebookStroke(ctx, s); });
+      page.shapes.forEach(function(s){ fDrawNotebookShape(ctx, s); });
     }
 
     if (activeHere && nbActive.kind === 'stroke')
-      drawNotebookStroke(ctx, nbActive.stroke);
+      fDrawNotebookStroke(ctx, nbActive.stroke);
     else if (activeHere && nbActive.kind === 'shape')
-      drawNotebookShape(ctx, nbActive.shape);
+      fDrawNotebookShape(ctx, nbActive.shape);
   }
 
   if (nbImport && nbImport.pageIndex === pageIndex)
@@ -673,7 +673,7 @@ function redrawNotebookPage(pageIndex)
     ctx.save();
     ctx.translate(nbImport.x, nbImport.y);
     ctx.scale(nbImport.scale, nbImport.scale);
-    nbImport.strokes.forEach(function(s){ drawNotebookStroke(ctx, s, 0.75); });
+    nbImport.strokes.forEach(function(s){ fDrawNotebookStroke(ctx, s, 0.75); });
     ctx.restore();
 
     ctx.save();
@@ -707,7 +707,7 @@ function redrawNotebookPage(pageIndex)
   {
     nbSelection.forEach(function(sel)
     {
-      const b = notebookItemBounds(page, sel);
+      const b = fNotebookItemBounds(page, sel);
 
       if (!b)
         return;
@@ -722,7 +722,7 @@ function redrawNotebookPage(pageIndex)
   }
 }
 
-function updateNotebookPageIndicator()
+function fUpdateNotebookPageIndicator()
 {
   const el = document.getElementById('notebook-page-indicator');
 
@@ -739,7 +739,7 @@ function updateNotebookPageIndicator()
 // programmatic jump avoids that race.
 let nbSuppressObserverUntil = 0;
 
-function setupNotebookPageObserver()
+function fSetupNotebookPageObserver()
 {
   if (nbPageObserver)
     nbPageObserver.disconnect();
@@ -762,7 +762,7 @@ function setupNotebookPageObserver()
     if (best)
     {
       nbCurrentPage = parseInt(best.target.dataset.pageIndex, 10);
-      updateNotebookPageIndicator();
+      fUpdateNotebookPageIndicator();
     }
   }, { root: container, threshold: [0.5] });
 
@@ -772,7 +772,7 @@ function setupNotebookPageObserver()
   });
 }
 
-function notebookScrollToPage(index)
+function fNotebookScrollToPage(index)
 {
   const pageEl = document.querySelector('.notebook-page[data-page-index="' + index + '"]');
 
@@ -780,32 +780,32 @@ function notebookScrollToPage(index)
     pageEl.scrollIntoView({ behavior: 'auto', block: 'start' });
 }
 
-function notebookGoToPage(index)
+function fNotebookGoToPage(index)
 {
   nbCurrentPage = index;
   nbSuppressObserverUntil = Date.now() + 400;
-  updateNotebookPageIndicator();
-  notebookScrollToPage(index);
-  updateMapToolbarVisibility();
+  fUpdateNotebookPageIndicator();
+  fNotebookScrollToPage(index);
+  fUpdateMapToolbarVisibility();
 }
 
-function notebookPrevPage()
+function fNotebookPrevPage()
 {
   if (!nbData || nbCurrentPage <= 0)
     return;
 
-  notebookGoToPage(nbCurrentPage - 1);
+  fNotebookGoToPage(nbCurrentPage - 1);
 }
 
-function notebookNextPage()
+function fNotebookNextPage()
 {
   if (!nbData || nbCurrentPage >= nbData.pages.length - 1)
     return;
 
-  notebookGoToPage(nbCurrentPage + 1);
+  fNotebookGoToPage(nbCurrentPage + 1);
 }
 
-function notebookAddPage()
+function fNotebookAddPage()
 {
   if (!nbData)
     return;
@@ -823,12 +823,12 @@ function notebookAddPage()
 
   nbData.pages.push(newPage);
 
-  renderNotebookPages();
-  commitNotebookChange();
-  notebookGoToPage(nbData.pages.length - 1);
+  fRenderNotebookPages();
+  fCommitNotebookChange();
+  fNotebookGoToPage(nbData.pages.length - 1);
 }
 
-function notebookDeletePage()
+function fNotebookDeletePage()
 {
   if (!nbData)
     return;
@@ -850,16 +850,16 @@ function notebookDeletePage()
   // Page indices shift under a pending vector import - drop it rather than
   // letting it land on the wrong page.
   if (nbImport)
-    cancelNotebookVectorImport();
+    fCancelNotebookVectorImport();
 
-  renderNotebookPages();
-  commitNotebookChange();
-  notebookGoToPage(Math.min(targetPage, nbData.pages.length - 1));
+  fRenderNotebookPages();
+  fCommitNotebookChange();
+  fNotebookGoToPage(Math.min(targetPage, nbData.pages.length - 1));
 }
 
 // ── Undo / redo ──
 
-function notebookSnapshotForUndo(pageIndex)
+function fNotebookSnapshotForUndo(pageIndex)
 {
   const page = nbData.pages[pageIndex];
 
@@ -873,7 +873,7 @@ function notebookSnapshotForUndo(pageIndex)
     nbUndoStack.shift();
 }
 
-function notebookRestoreSnapshot(entry, stack)
+function fNotebookRestoreSnapshot(entry, stack)
 {
   const page = nbData.pages[entry.pageIndex],
         inverse = JSON.parse(JSON.stringify({ strokes: page.strokes, shapes: page.shapes, texts: page.texts }));
@@ -887,26 +887,26 @@ function notebookRestoreSnapshot(entry, stack)
   nbSelection = [];
   nbCurrentPage = entry.pageIndex;
 
-  rebuildNotebookCommittedCache(entry.pageIndex);
-  renderNotebookTextLayerForPage(entry.pageIndex);
-  redrawNotebookPage(entry.pageIndex);
-  commitNotebookChange();
+  fRebuildNotebookCommittedCache(entry.pageIndex);
+  fRenderNotebookTextLayerForPage(entry.pageIndex);
+  fRedrawNotebookPage(entry.pageIndex);
+  fCommitNotebookChange();
 }
 
-function notebookUndo()
+function fNotebookUndo()
 {
   if (!nbUndoStack.length)
     return;
 
-  notebookRestoreSnapshot(nbUndoStack.pop(), nbRedoStack);
+  fNotebookRestoreSnapshot(nbUndoStack.pop(), nbRedoStack);
 }
 
-function notebookRedo()
+function fNotebookRedo()
 {
   if (!nbRedoStack.length)
     return;
 
-  notebookRestoreSnapshot(nbRedoStack.pop(), nbUndoStack);
+  fNotebookRestoreSnapshot(nbRedoStack.pop(), nbUndoStack);
 }
 
 document.addEventListener
@@ -927,12 +927,12 @@ document.addEventListener
       if (e.key === 'Enter')
       {
         e.preventDefault();
-        acceptNotebookVectorImport();
+        fAcceptNotebookVectorImport();
       }
       else if (e.key === 'Escape')
       {
         e.preventDefault();
-        cancelNotebookVectorImport();
+        fCancelNotebookVectorImport();
       }
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')
       {
@@ -945,7 +945,7 @@ document.addEventListener
         if (e.key === 'ArrowUp')    nbImport.y -= nudge;
         if (e.key === 'ArrowDown')  nbImport.y += nudge;
 
-        redrawNotebookPage(nbImport.pageIndex);
+        fRedrawNotebookPage(nbImport.pageIndex);
       }
 
       return;
@@ -953,12 +953,12 @@ document.addEventListener
 
     if ((e.key === 'Delete' || e.key === 'Backspace') && nbSelection.length)
     {
-      notebookSnapshotForUndo(nbCurrentPage);
-      notebookDeleteSelection();
-      rebuildNotebookCommittedCache(nbCurrentPage);
-      commitNotebookChange();
-      renderNotebookTextLayerForPage(nbCurrentPage);
-      redrawNotebookPage(nbCurrentPage);
+      fNotebookSnapshotForUndo(nbCurrentPage);
+      fNotebookDeleteSelection();
+      fRebuildNotebookCommittedCache(nbCurrentPage);
+      fCommitNotebookChange();
+      fRenderNotebookTextLayerForPage(nbCurrentPage);
+      fRedrawNotebookPage(nbCurrentPage);
     }
     else if ((e.ctrlKey || e.metaKey) && (e.code === 'Equal' || e.code === 'NumpadAdd'))
     {
@@ -966,27 +966,27 @@ document.addEventListener
       // usually pressed as Ctrl+Shift+= - e.key would be '+' there, not '=',
       // and checking only '=' silently missed that case.
       e.preventDefault();
-      notebookZoomIn();
+      fNotebookZoomIn();
     }
     else if ((e.ctrlKey || e.metaKey) && (e.code === 'Minus' || e.code === 'NumpadSubtract'))
     {
       e.preventDefault();
-      notebookZoomOut();
+      fNotebookZoomOut();
     }
     else if ((e.ctrlKey || e.metaKey) && (e.code === 'Digit0' || e.code === 'Numpad0'))
     {
       e.preventDefault();
-      notebookZoomReset();
+      fNotebookZoomReset();
     }
     else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z')
     {
       e.preventDefault();
-      notebookUndo();
+      fNotebookUndo();
     }
     else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z')))
     {
       e.preventDefault();
-      notebookRedo();
+      fNotebookRedo();
     }
   }
 );
@@ -1005,14 +1005,14 @@ document.getElementById('notebook-pages').addEventListener
     e.preventDefault();
 
     if (e.deltaY < 0)
-      notebookZoomIn();
+      fNotebookZoomIn();
     else if (e.deltaY > 0)
-      notebookZoomOut();
+      fNotebookZoomOut();
   },
   { passive: false }
 );
 
-function notebookDeleteSelection()
+function fNotebookDeleteSelection()
 {
   const page = nbData.pages[nbCurrentPage],
         byKind = { stroke: [], shape: [], text: [] };
@@ -1032,11 +1032,11 @@ function notebookDeleteSelection()
   nbSelection = [];
 }
 
-function notebookHitTest(page, pt)
+function fNotebookHitTest(page, pt)
 {
   for (let i = page.texts.length - 1; i >= 0; i--)
   {
-    const b = notebookTextBounds(page.texts[i]);
+    const b = fNotebookTextBounds(page.texts[i]);
 
     if (pt.x >= b.x1 && pt.x <= b.x2 && pt.y >= b.y1 && pt.y <= b.y2)
       return { kind: 'text', index: i };
@@ -1044,7 +1044,7 @@ function notebookHitTest(page, pt)
 
   for (let i = page.shapes.length - 1; i >= 0; i--)
   {
-    const b = notebookShapeBounds(page.shapes[i]);
+    const b = fNotebookShapeBounds(page.shapes[i]);
 
     if (pt.x >= b.x1 - 6 && pt.x <= b.x2 + 6 && pt.y >= b.y1 - 6 && pt.y <= b.y2 + 6)
       return { kind: 'shape', index: i };
@@ -1064,7 +1064,7 @@ function notebookHitTest(page, pt)
   return null;
 }
 
-function notebookItemsInRect(page, rect)
+function fNotebookItemsInRect(page, rect)
 {
   const rx1 = Math.min(rect.x1, rect.x2),
         ry1 = Math.min(rect.y1, rect.y2),
@@ -1072,19 +1072,19 @@ function notebookItemsInRect(page, rect)
         ry2 = Math.max(rect.y1, rect.y2),
         result = [];
 
-  function intersects(b)
+  function fIntersects(b)
   {
     return (b.x2 >= rx1) && (b.x1 <= rx2) && (b.y2 >= ry1) && (b.y1 <= ry2);
   }
 
-  page.strokes.forEach(function(s, i){ if (intersects(notebookStrokeBounds(s))) result.push({ kind: 'stroke', index: i }); });
-  page.shapes.forEach(function(s, i){ if (intersects(notebookShapeBounds(s))) result.push({ kind: 'shape', index: i }); });
-  page.texts.forEach(function(s, i){ if (intersects(notebookTextBounds(s))) result.push({ kind: 'text', index: i }); });
+  page.strokes.forEach(function(s, i){ if (fIntersects(fNotebookStrokeBounds(s))) result.push({ kind: 'stroke', index: i }); });
+  page.shapes.forEach(function(s, i){ if (fIntersects(fNotebookShapeBounds(s))) result.push({ kind: 'shape', index: i }); });
+  page.texts.forEach(function(s, i){ if (fIntersects(fNotebookTextBounds(s))) result.push({ kind: 'text', index: i }); });
 
   return result;
 }
 
-function notebookMoveSelection(page, dx, dy)
+function fNotebookMoveSelection(page, dx, dy)
 {
   nbSelection.forEach(function(sel)
   {
@@ -1107,7 +1107,7 @@ function notebookMoveSelection(page, dx, dy)
 
 // ── Text boxes (DOM overlay, not canvas-drawn, so editing stays native) ──
 
-function renderNotebookTextLayerForPage(pageIndex)
+function fRenderNotebookTextLayerForPage(pageIndex)
 {
   const pageEl = document.querySelector('.notebook-page[data-page-index="' + pageIndex + '"]');
 
@@ -1135,14 +1135,14 @@ function renderNotebookTextLayerForPage(pageIndex)
 
     div.addEventListener('focus', function()
     {
-      notebookSnapshotForUndo(pageIndex);
+      fNotebookSnapshotForUndo(pageIndex);
     });
 
     div.addEventListener('blur', function()
     {
       t.text = div.textContent;
       t.height = Math.max(40, div.offsetHeight);
-      commitNotebookChange();
+      fCommitNotebookChange();
     });
 
     div.addEventListener('pointerdown', function(e)
@@ -1154,13 +1154,13 @@ function renderNotebookTextLayerForPage(pageIndex)
   });
 }
 
-function notebookCreateTextBoxAt(pageIndex, x, y)
+function fNotebookCreateTextBoxAt(pageIndex, x, y)
 {
-  notebookSnapshotForUndo(pageIndex);
+  fNotebookSnapshotForUndo(pageIndex);
 
   nbData.pages[pageIndex].texts.push({ x: x, y: y, width: 220, height: 40, color: nbColor, fontSize: 16, text: '' });
 
-  renderNotebookTextLayerForPage(pageIndex);
+  fRenderNotebookTextLayerForPage(pageIndex);
 
   const idx = nbData.pages[pageIndex].texts.length - 1,
         pageEl = document.querySelector('.notebook-page[data-page-index="' + pageIndex + '"]'),
@@ -1172,5 +1172,5 @@ function notebookCreateTextBoxAt(pageIndex, x, y)
   if (el)
     setTimeout(function(){ el.focus(); }, 0);
 
-  setNotebookTool('select');
+  fSetNotebookTool('select');
 }

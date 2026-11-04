@@ -9,7 +9,7 @@
 // Scans backward from the caret for a run of letters - that's the partial
 // function name currently being typed, ignoring everything before it
 // (cell refs, numbers, operators).
-function getTypedWordBounds(text, caretPos)
+function fGetTypedWordBounds(text, caretPos)
 {
   var start = caretPos;
 
@@ -19,13 +19,13 @@ function getTypedWordBounds(text, caretPos)
   return { start: start, end: caretPos, word: text.slice(start, caretPos) };
 }
 
-function updateFunctionSuggestions(name)
+function fUpdateFunctionSuggestions(name)
 {
   var inp = document.getElementById('inp-' + name);
 
   if (!inp || inp.readOnly)
   {
-    hideFunctionSuggestions();
+    fHideFunctionSuggestions();
     return;
   }
 
@@ -34,22 +34,22 @@ function updateFunctionSuggestions(name)
 
   if (!text.startsWith('='))
   {
-    hideFunctionSuggestions();
+    fHideFunctionSuggestions();
     return;
   }
 
-  var bounds = getTypedWordBounds(text, caretPos);
+  var bounds = fGetTypedWordBounds(text, caretPos);
 
   // Show the full list right as '=' is typed (caret at 1, nothing after it
   // yet); otherwise only while there's a letter run to filter against.
   if (!bounds.word && caretPos !== 1)
   {
-    hideFunctionSuggestions();
+    fHideFunctionSuggestions();
     return;
   }
 
   var filter = bounds.word.toUpperCase(),
-      matches = ALL_SHEET_FUNCTIONS.filter
+      matches = cAllSheetFunctions.filter
       (
         function(fn)
         {
@@ -60,14 +60,14 @@ function updateFunctionSuggestions(name)
 
   if (!matches.length)
   {
-    hideFunctionSuggestions();
+    fHideFunctionSuggestions();
     return;
   }
 
-  renderFunctionSuggestions(name, matches, bounds);
+  fRenderFunctionSuggestions(name, matches, bounds);
 }
 
-function renderFunctionSuggestions(name, matches, bounds)
+function fRenderFunctionSuggestions(name, matches, bounds)
 {
   var td = document.getElementById('cell-' + name);
 
@@ -87,9 +87,9 @@ function renderFunctionSuggestions(name, matches, bounds)
   (
     function(fn, i)
     {
-      return  '<div class="function-suggest-item' + (i === 0 ? ' active' : '') + '" onmousedown="pickFunctionSuggestion(event,' + i + ')">'+
-                '<span class="function-suggest-name">' + escHtml(fn.signature) + '</span>'+
-                '<span class="function-suggest-desc">' + escHtml(fn.desc) + '</span>'+
+      return  '<div class="function-suggest-item' + (i === 0 ? ' active' : '') + '" onmousedown="fPickFunctionSuggestion(event,' + i + ')">'+
+                '<span class="function-suggest-name">' + fEscHtml(fn.signature) + '</span>'+
+                '<span class="function-suggest-desc">' + fEscHtml(fn.desc) + '</span>'+
               '</div>';
     }
   ).join('');
@@ -99,7 +99,7 @@ function renderFunctionSuggestions(name, matches, bounds)
   functionSuggestState = { name: name, matches: matches, bounds: bounds, activeIndex: 0 };
 }
 
-function hideFunctionSuggestions()
+function fHideFunctionSuggestions()
 {
   var dropdown = document.getElementById('function-suggest-dropdown');
 
@@ -109,7 +109,7 @@ function hideFunctionSuggestions()
   functionSuggestState = null;
 }
 
-function moveFunctionSuggestion(delta)
+function fMoveFunctionSuggestion(delta)
 {
   if (!functionSuggestState)
     return;
@@ -127,17 +127,17 @@ function moveFunctionSuggestion(delta)
   );
 }
 
-function pickFunctionSuggestion(mouseEvent, index)
+function fPickFunctionSuggestion(mouseEvent, index)
 {
   mouseEvent.preventDefault();
 
   if (!functionSuggestState)
     return;
 
-  insertFunctionSuggestion(functionSuggestState.matches[index]);
+  fInsertFunctionSuggestion(functionSuggestState.matches[index]);
 }
 
-function insertFunctionSuggestion(fn)
+function fInsertFunctionSuggestion(fn)
 {
   var state = functionSuggestState;
 
@@ -161,27 +161,27 @@ function insertFunctionSuggestion(fn)
   inp.setSelectionRange(caretPos, caretPos);
 
   sheetData[state.name] = inp.value;
-  evaluateFormulas(state.name);
-  saveSheetToFile();
+  fEvaluateFormulas(state.name);
+  fSaveSheetToFile();
 
-  hideFunctionSuggestions();
+  fHideFunctionSuggestions();
 }
 
-function onCellFocus(name)
+function fOnCellFocus(name)
 {
-  selectCell(name);
+  fSelectCell(name);
 }
 
-function onCellInput(name)
+function fOnCellInput(name)
 {
   sheetData[name] = document.getElementById('inp-' + name).value;
-  evaluateFormulas(name);
-  saveSheetToFile();
-  updateFunctionSuggestions(name);
-  refreshRefHighlights();
+  fEvaluateFormulas(name);
+  fSaveSheetToFile();
+  fUpdateFunctionSuggestions(name);
+  fRefreshRefHighlights();
 }
 
-function onCellBlur(name)
+function fOnCellBlur(name)
 {
   var inp = document.getElementById('inp-' + name);
 
@@ -190,22 +190,22 @@ function onCellBlur(name)
 
   var val = sheetData[name] || '';
 
-  inp.value = val.startsWith('=') ? evalCell(name, val) : val;
+  inp.value = val.startsWith('=') ? fEvalCell(name, val) : val;
   inp.classList.toggle('formula-result', val.startsWith('='));
   inp.readOnly = true;
 
   if (editingCell === name)
     editingCell = null;
 
-  hideFunctionSuggestions();
-  refreshFillHandle();
-  refreshRefHighlights();
+  fHideFunctionSuggestions();
+  fRefreshFillHandle();
+  fRefreshRefHighlights();
 }
 
-function getSelectionRefs(anchorRef, endRef)
+function fGetSelectionRefs(anchorRef, endRef)
 {
-  var anchor = parseName(anchorRef),
-      end = parseName(endRef || anchorRef);
+  var anchor = fParseName(anchorRef),
+      end = fParseName(endRef || anchorRef);
 
   if (!anchor)
     return [];
@@ -213,8 +213,8 @@ function getSelectionRefs(anchorRef, endRef)
   if (!end)
     end = anchor;
 
-  var anchorCol = colIndex(anchor.col),
-      endCol = colIndex(end.col),
+  var anchorCol = fColIndex(anchor.col),
+      endCol = fColIndex(end.col),
       rowStart = Math.min(anchor.row, end.row),
       rowEnd = Math.max(anchor.row, end.row),
       colStart = Math.min(anchorCol, endCol),
@@ -223,19 +223,19 @@ function getSelectionRefs(anchorRef, endRef)
 
   for (var r = rowStart; r <= rowEnd; r++)
     for (var c = colStart; c <= colEnd; c++)
-      refs.push(colName(c) + r);
+      refs.push(fColName(c) + r);
 
   return refs;
 }
 
-function deleteSelectedCells()
+function fDeleteSelectedCells()
 {
-  var refs = getSelectionRefs(selectionAnchor, selectionEnd);
+  var refs = fGetSelectionRefs(selectionAnchor, selectionEnd);
 
   if (!refs.length)
     return;
 
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 
   refs.forEach
   (
@@ -254,12 +254,12 @@ function deleteSelectedCells()
   );
 
   document.getElementById('formula-bar').value = '';
-  evaluateFormulas();
-  saveSheetToFile();
-  refreshRefHighlights();
+  fEvaluateFormulas();
+  fSaveSheetToFile();
+  fRefreshRefHighlights();
 }
 
-function cellKey(keyEvent, name)
+function fCellKey(keyEvent, name)
 {
   var inp = document.getElementById('inp-' + name);
 
@@ -268,44 +268,44 @@ function cellKey(keyEvent, name)
     if (keyEvent.key === 'ArrowDown')
     {
       keyEvent.preventDefault();
-      moveFunctionSuggestion(1);
+      fMoveFunctionSuggestion(1);
       return;
     }
 
     if (keyEvent.key === 'ArrowUp')
     {
       keyEvent.preventDefault();
-      moveFunctionSuggestion(-1);
+      fMoveFunctionSuggestion(-1);
       return;
     }
 
     if (keyEvent.key === 'Enter' || keyEvent.key === 'Tab')
     {
       keyEvent.preventDefault();
-      insertFunctionSuggestion(functionSuggestState.matches[functionSuggestState.activeIndex]);
+      fInsertFunctionSuggestion(functionSuggestState.matches[functionSuggestState.activeIndex]);
       return;
     }
 
     if (keyEvent.key === 'Escape')
     {
       keyEvent.preventDefault();
-      hideFunctionSuggestions();
+      fHideFunctionSuggestions();
       return;
     }
   }
 
   if (inp && inp.readOnly)
   {
-    if (isTypingKey(keyEvent))
+    if (fIsTypingKey(keyEvent))
     {
-      enterEditMode(name, '');
+      fEnterEditMode(name, '');
       return;
     }
 
     if (keyEvent.key === 'Delete')
     {
       keyEvent.preventDefault();
-      deleteSelectedCells();
+      fDeleteSelectedCells();
       return;
     }
 
@@ -320,9 +320,9 @@ function cellKey(keyEvent, name)
     return;
   }
 
-  var parsedName = parseName(name),
+  var parsedName = fParseName(name),
       currentRow = parsedName.row,
-      currentColumn = colIndex(parsedName.col);
+      currentColumn = fColIndex(parsedName.col);
 
   if (keyEvent.key==='Enter' || keyEvent.key==='ArrowDown')
   {
@@ -350,22 +350,22 @@ function cellKey(keyEvent, name)
   currentRow = Math.max(1, Math.min(ROWS, currentRow));
   currentColumn = Math.max(0, Math.min(COLS - 1, currentColumn));
 
-  var next = colName(currentColumn) + currentRow,
+  var next = fColName(currentColumn) + currentRow,
       nextInput = document.getElementById('inp-' + next);
 
   if (nextInput)
   {
     nextInput.focus();
-    selectCell(next);
+    fSelectCell(next);
   }
 }
 
-function onFormulaBarFocus()
+function fOnFormulaBarFocus()
 {
-  sheetSnapshotForUndo();
+  fSheetSnapshotForUndo();
 }
 
-function formulaBarKey(keyEvent)
+function fFormulaBarKey(keyEvent)
 {
   if (keyEvent.key !== 'Enter')
     return;
@@ -379,15 +379,15 @@ function formulaBarKey(keyEvent)
 
   if (inp)
   {
-    inp.value = evalCell(ref, val);
+    inp.value = fEvalCell(ref, val);
     inp.classList.toggle('formula-result', val.startsWith('='));
   }
 
-  evaluateFormulas();
-  saveSheetToFile();
+  fEvaluateFormulas();
+  fSaveSheetToFile();
 }
 
-function formulaBarInput()
+function fFormulaBarInput()
 {
   var ref = document.getElementById('cell-ref').value,
       val = document.getElementById('formula-bar').value;
@@ -398,12 +398,12 @@ function formulaBarInput()
   if (inp)
     inp.value = val;
 
-  refreshRefHighlights();
+  fRefreshRefHighlights();
 }
 
 // Splits a function's argument list on top-level commas, skipping commas
 // that fall inside quoted strings or (defensively) nested parens.
-function splitTopLevelArgs(text)
+function fSplitTopLevelArgs(text)
 {
   var args = [],
       current = '',
@@ -455,7 +455,7 @@ function splitTopLevelArgs(text)
 
 // Converts a resolved JS value back into text that can be spliced into an
 // expression string and safely re-evaluated (strings need quoting).
-function formatForExpr(value)
+function fFormatForExpr(value)
 {
   if (typeof value === 'string')
     return JSON.stringify(value);
@@ -475,7 +475,7 @@ function formatForExpr(value)
 // the first is a unary negation — "5--3" means 5-(-3), not a decrement),
 // and Excel's '^' power operator becomes JS's '**'. Quoted strings pass
 // through untouched.
-function sanitizeExprForEval(expr)
+function fSanitizeExprForEval(expr)
 {
   return expr.replace
   (
@@ -492,7 +492,7 @@ function sanitizeExprForEval(expr)
 // Replaces cell references with literals usable in a JS expression: numeric
 // cells become bare numbers, "TRUE"/"FALSE" become real booleans, text cells
 // become quoted string literals, and formula cells resolve recursively.
-function substituteCellRefs(exprText)
+function fSubstituteCellRefs(exprText)
 {
   return exprText.replace
   (
@@ -509,21 +509,21 @@ function substituteCellRefs(exprText)
         return '0';
 
       if (v.startsWith('='))
-        v = evalCell(ref, v);
+        v = fEvalCell(ref, v);
 
       var upper = v.toUpperCase();
 
       if (upper === 'TRUE' || upper === 'FALSE')
         return upper.toLowerCase();
 
-      var num = parseFloat(v);
+      var fNum = parseFloat(v);
 
-      if (isNaN(num))
+      if (isNaN(fNum))
         return JSON.stringify(v);
 
       // Parenthesize negatives so "A1-B1" with a negative B1 doesn't
       // collapse into the JS "--" operator.
-      return num < 0 ? '(' + v + ')' : v;
+      return fNum < 0 ? '(' + v + ')' : v;
     }
   );
 }
@@ -539,7 +539,7 @@ function substituteCellRefs(exprText)
 // string and numeric literals (which are data, and may legitimately contain
 // letters like the `e` in `1e5`), then reject any remaining identifier that
 // isn't a boolean literal, and any character outside the operator set.
-function assertSafeEvalExpr(expr)
+function fAssertSafeEvalExpr(expr)
 {
   var stripped = String(expr)
     .replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, ' ')          // string literals
@@ -565,18 +565,18 @@ function assertSafeEvalExpr(expr)
 
 // Validates then evaluates a fully-substituted expression. Every path that
 // feeds assembled formula text to Function() goes through here.
-function evalFinalExpr(expr)
+function fEvalFinalExpr(expr)
 {
-  assertSafeEvalExpr(expr);
+  fAssertSafeEvalExpr(expr);
   return Function('"use strict"; return (' + expr + ')')();
 }
 
 // Evaluates a flat (no nested parens) sub-expression like "A3-A4" or "5*2",
 // resolving any cell references first - used as the argument to scalar
 // functions such as ABS/ROUND/SQRT/IF/etc.
-function resolveValue(exprText)
+function fResolveValue(exprText)
 {
-  return evalFinalExpr(sanitizeExprForEval(substituteCellRefs(exprText)));
+  return fEvalFinalExpr(fSanitizeExprForEval(fSubstituteCellRefs(exprText)));
 }
 
 // Resolves innermost parenthesis groups that are NOT function calls (the
@@ -584,7 +584,7 @@ function resolveValue(exprText)
 // computed value. Ranges (A1:B3) are skipped — those belong to whichever
 // aggregation function wraps them. Groups that fail to evaluate are left
 // untouched, so an unresolvable formula still degrades to #ERR normally.
-function resolveBareGroups(expr)
+function fResolveBareGroups(expr)
 {
   return expr.replace
   (
@@ -594,13 +594,13 @@ function resolveBareGroups(expr)
       if (inner.indexOf(':') !== -1)
         return match;
 
-      try { return formatForExpr(resolveValue(inner)); }
+      try { return fFormatForExpr(fResolveValue(inner)); }
       catch(e) { return match; }
     }
   );
 }
 
-function cellNumericValue(ref)
+function fCellNumericValue(ref)
 {
   var v = sheetData[ref];
 
@@ -608,7 +608,7 @@ function cellNumericValue(ref)
     return 0;
 
   if (v.startsWith('='))
-    v = evalCell(ref, v);
+    v = fEvalCell(ref, v);
 
   var n = parseFloat(v);
 
@@ -618,24 +618,24 @@ function cellNumericValue(ref)
 // The used extent of the active page — whole-column (A:A) and whole-row
 // (4:4) ranges cover this instead of the unbounded grid, so they only walk
 // cells that actually hold something.
-function sheetUsedExtent()
+function fSheetUsedExtent()
 {
   var maxRow = 1, maxCol = 0;
 
   Object.keys(sheetData).forEach(function(ref)
   {
     if (!sheetData[ref]) return;
-    var p = parseName(ref);
+    var p = fParseName(ref);
     if (!p) return;
     if (p.row > maxRow) maxRow = p.row;
-    var c = colIndex(p.col);
+    var c = fColIndex(p.col);
     if (c > maxCol) maxCol = c;
   });
 
   return { maxRow: maxRow, maxCol: maxCol };
 }
 
-function getRangeRefs(range)
+function fGetRangeRefs(range)
 {
   var text = range.trim(), refs, i, j;
 
@@ -643,14 +643,14 @@ function getRangeRefs(range)
   var colRange = text.match(/^\$?([A-Z]{1,2})\s*:\s*\$?([A-Z]{1,2})$/);
   if (colRange)
   {
-    var cLo = colIndex(colRange[1]), cHi = colIndex(colRange[2]);
+    var cLo = fColIndex(colRange[1]), cHi = fColIndex(colRange[2]);
     if (cLo > cHi) { var cT = cLo; cLo = cHi; cHi = cT; }
 
     refs = [];
-    var lastRow = sheetUsedExtent().maxRow;
+    var lastRow = fSheetUsedExtent().maxRow;
     for (i = 1; i <= lastRow; i++)
       for (j = cLo; j <= cHi; j++)
-        refs.push(colName(j) + i);
+        refs.push(fColName(j) + i);
     return refs;
   }
 
@@ -662,10 +662,10 @@ function getRangeRefs(range)
     if (rLo > rHi) { var rT = rLo; rLo = rHi; rHi = rT; }
 
     refs = [];
-    var lastCol = sheetUsedExtent().maxCol;
+    var lastCol = fSheetUsedExtent().maxCol;
     for (i = rLo; i <= rHi; i++)
       for (j = 0; j <= lastCol; j++)
-        refs.push(colName(j) + i);
+        refs.push(fColName(j) + i);
     return refs;
   }
 
@@ -673,12 +673,12 @@ function getRangeRefs(range)
 
   if (parts.length === 1)
   {
-    var single = parseName(parts[0].trim());
+    var single = fParseName(parts[0].trim());
     return single ? [single.col + single.row] : [];
   }
 
-  var pa = parseName(parts[0].trim()),
-      pb = parseName(parts[1].trim());
+  var pa = fParseName(parts[0].trim()),
+      pb = fParseName(parts[1].trim());
 
   if (!pa || !pb)
     return [];
@@ -686,29 +686,29 @@ function getRangeRefs(range)
   var refs = [];
 
   for (var i = pa.row; i <= pb.row; i++)
-    for (var j = colIndex(pa.col); j <= colIndex(pb.col); j++)
-      refs.push(colName(j) + i);
+    for (var j = fColIndex(pa.col); j <= fColIndex(pb.col); j++)
+      refs.push(fColName(j) + i);
 
   return refs;
 }
 
-function getRangeVals(range)
+function fGetRangeVals(range)
 {
-  return getRangeRefs(range).map(cellNumericValue);
+  return fGetRangeRefs(range).map(fCellNumericValue);
 }
 
 // Cell refs covered by one aggregation argument: a range (A1:B3) or a single
 // ref (A1). Returns null for anything else (a literal or an expression), so
 // callers can fall back to value-based handling.
-function argCellRefs(arg)
+function fArgCellRefs(arg)
 {
   if (arg.indexOf(':') !== -1)
   {
-    var refs = getRangeRefs(arg);
+    var refs = fGetRangeRefs(arg);
     return refs.length ? refs : null;
   }
 
-  var single = parseName(arg.trim());
+  var single = fParseName(arg.trim());
   return single ? [single.col + single.row] : null;
 }
 
@@ -716,23 +716,23 @@ function argCellRefs(arg)
 // each argument may be a range, a single ref, a literal, or any expression
 // the resolver can evaluate — so MAX(A1,B2), MAX(3,7), SUM(A1:A4, 10) and
 // AVG(A1, (B1+1)*2) all behave like they do in a real spreadsheet.
-function aggregateArgValues(argText)
+function fAggregateArgValues(argText)
 {
   var vals = [];
 
-  splitTopLevelArgs(argText).forEach(function(arg)
+  fSplitTopLevelArgs(argText).forEach(function(arg)
   {
     if (!arg)
       return;
 
-    var refs = argCellRefs(arg);
+    var refs = fArgCellRefs(arg);
     if (refs)
     {
-      refs.forEach(function(ref) { vals.push(cellNumericValue(ref)); });
+      refs.forEach(function(ref) { vals.push(fCellNumericValue(ref)); });
       return;
     }
 
-    var v = resolveValue(arg),
+    var v = fResolveValue(arg),
         n = (typeof v === 'number') ? v : parseFloat(v);
     vals.push(isNaN(n) ? 0 : n);
   });
@@ -740,9 +740,9 @@ function aggregateArgValues(argText)
   return vals;
 }
 
-function sumRange(r)
+function fSumRange(r)
 {
-  return aggregateArgValues(r).reduce
+  return fAggregateArgValues(r).reduce
   (
     function(a, b)
     {
@@ -752,31 +752,31 @@ function sumRange(r)
   );
 }
 
-function avgRange(r)
+function fAvgRange(r)
 {
-  var vals = aggregateArgValues(r);
+  var vals = fAggregateArgValues(r);
   return vals.length ? vals.reduce(function(a, b){ return a + b; }, 0) / vals.length : 0;
 }
 
-function countRange(r)
+function fCountRange(r)
 {
   var total = 0;
-  splitTopLevelArgs(r).forEach(function(arg)
+  fSplitTopLevelArgs(r).forEach(function(arg)
   {
     if (!arg) return;
-    var refs = argCellRefs(arg);
+    var refs = fArgCellRefs(arg);
     total += refs ? refs.length : 1;
   });
   return total;
 }
 
-function countaRange(r)
+function fCountaRange(r)
 {
   var total = 0;
-  splitTopLevelArgs(r).forEach(function(arg)
+  fSplitTopLevelArgs(r).forEach(function(arg)
   {
     if (!arg) return;
-    var refs = argCellRefs(arg);
+    var refs = fArgCellRefs(arg);
     if (refs)
       total += refs.filter(function(ref) { return (sheetData[ref] || '') !== ''; }).length;
     else
@@ -785,34 +785,34 @@ function countaRange(r)
   return total;
 }
 
-function countBlankRange(r)
+function fCountBlankRange(r)
 {
   var total = 0;
-  splitTopLevelArgs(r).forEach(function(arg)
+  fSplitTopLevelArgs(r).forEach(function(arg)
   {
     if (!arg) return;
-    var refs = argCellRefs(arg);
+    var refs = fArgCellRefs(arg);
     if (refs)
       total += refs.filter(function(ref) { return (sheetData[ref] || '') === ''; }).length;
   });
   return total;
 }
 
-function maxRange(r)
+function fMaxRange(r)
 {
-  var vals = aggregateArgValues(r);
+  var vals = fAggregateArgValues(r);
   return vals.length ? Math.max.apply(null, vals) : 0;
 }
 
-function minRange(r)
+function fMinRange(r)
 {
-  var vals = aggregateArgValues(r);
+  var vals = fAggregateArgValues(r);
   return vals.length ? Math.min.apply(null, vals) : 0;
 }
 
-function medianRange(r)
+function fMedianRange(r)
 {
-  var vals = aggregateArgValues(r).slice().sort(function(a, b) { return a - b; }),
+  var vals = fAggregateArgValues(r).slice().sort(function(a, b) { return a - b; }),
       len = vals.length;
 
   if (!len)
@@ -823,9 +823,9 @@ function medianRange(r)
   return (len % 2) ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
 }
 
-function productRange(r)
+function fProductRange(r)
 {
-  return aggregateArgValues(r).reduce
+  return fAggregateArgValues(r).reduce
   (
     function(a, b)
     {
@@ -835,9 +835,9 @@ function productRange(r)
   );
 }
 
-function varianceRange(r)
+function fVarianceRange(r)
 {
-  var vals = aggregateArgValues(r),
+  var vals = fAggregateArgValues(r),
       n = vals.length;
 
   if (n < 2)
@@ -848,15 +848,15 @@ function varianceRange(r)
   return vals.reduce(function(a, b) { return a + Math.pow(b - mean, 2); }, 0) / (n - 1);
 }
 
-function stdevRange(r)
+function fStdevRange(r)
 {
-  return Math.sqrt(varianceRange(r));
+  return Math.sqrt(fVarianceRange(r));
 }
 
 // A cell's value as an expression literal (numbers bare, TRUE/FALSE bare,
-// text quoted, blanks 0) — the same shape substituteCellRefs produces, so
+// text quoted, blanks 0) — the same shape fSubstituteCellRefs produces, so
 // lookup functions can drop their result straight into the formula text.
-function cellExprLiteral(ref)
+function fCellExprLiteral(ref)
 {
   var v = sheetData[ref];
 
@@ -864,33 +864,33 @@ function cellExprLiteral(ref)
     return '0';
 
   if (v.startsWith('='))
-    v = evalCell(ref, v);
+    v = fEvalCell(ref, v);
 
   var upper = String(v).toUpperCase();
 
   if (upper === 'TRUE' || upper === 'FALSE')
     return upper.toLowerCase();
 
-  var num = parseFloat(v);
+  var fNum = parseFloat(v);
 
-  if (isNaN(num))
+  if (isNaN(fNum))
     return JSON.stringify(v);
 
   // Parenthesize negatives so "A1-B1" with a negative B1 doesn't collapse
   // into the JS "--" operator.
-  return num < 0 ? '(' + v + ')' : v;
+  return fNum < 0 ? '(' + v + ')' : v;
 }
 
-function refsBoundingBox(refs)
+function fRefsBoundingBox(refs)
 {
   var minRow = Infinity, maxRow = 0, minCol = Infinity, maxCol = 0;
 
   refs.forEach(function(ref)
   {
-    var p = parseName(ref);
+    var p = fParseName(ref);
     if (!p) return;
     minRow = Math.min(minRow, p.row); maxRow = Math.max(maxRow, p.row);
-    minCol = Math.min(minCol, colIndex(p.col)); maxCol = Math.max(maxCol, colIndex(p.col));
+    minCol = Math.min(minCol, fColIndex(p.col)); maxCol = Math.max(maxCol, fColIndex(p.col));
   });
 
   return { minRow: minRow, maxRow: maxRow, minCol: minCol, maxCol: maxCol };
@@ -898,7 +898,7 @@ function refsBoundingBox(refs)
 
 // True when a displayed cell value matches a lookup target — numerically
 // when both sides are numbers, case-insensitive text comparison otherwise.
-function lookupValueMatches(value, target)
+function fLookupValueMatches(value, target)
 {
   var targetNum = (typeof target === 'number') ? target : parseFloat(target),
       targetIsNum = (typeof target === 'number') || (String(target).trim() !== '' && !isNaN(targetNum));
@@ -915,22 +915,22 @@ function lookupValueMatches(value, target)
 // argument picks the column (both 1-based, defaulting to 1). The result is
 // formatted like a substituted cell ref, so text comes back quoted and blank
 // cells come back as 0.
-function indexRange(argText)
+function fIndexRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      refs = argCellRefs(args[0]);
+  var args = fSplitTopLevelArgs(argText),
+      refs = fArgCellRefs(args[0]);
 
   if (!refs || !refs.length)
     throw new Error('INDEX needs a range');
 
-  var box = refsBoundingBox(refs),
+  var box = fRefsBoundingBox(refs),
       height = box.maxRow - box.minRow + 1,
       width = box.maxCol - box.minCol + 1,
-      rowNum = args[1] !== undefined ? resolveValue(args[1]) : 1,
+      rowNum = args[1] !== undefined ? fResolveValue(args[1]) : 1,
       colNum;
 
   if (args[2] !== undefined)
-    colNum = resolveValue(args[2]);
+    colNum = fResolveValue(args[2]);
   else if (height === 1 && width > 1)
   {
     colNum = rowNum;
@@ -942,69 +942,69 @@ function indexRange(argText)
   if (rowNum < 1 || rowNum > height || colNum < 1 || colNum > width)
     throw new Error('INDEX out of range');
 
-  return cellExprLiteral(colName(box.minCol + colNum - 1) + (box.minRow + rowNum - 1));
+  return fCellExprLiteral(fColName(box.minCol + colNum - 1) + (box.minRow + rowNum - 1));
 }
 
-// VLOOKUP(value, range, colIndex) — finds the first row whose FIRST-column
-// value matches, then returns that row's value from the 1-based colIndex-th
+// VLOOKUP(value, range, fColIndex) — finds the first row whose FIRST-column
+// value matches, then returns that row's value from the 1-based fColIndex-th
 // column of the range. Exact matching only. HLOOKUP is the same across rows.
-function vlookupRange(argText)
+function fVlookupRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      target = resolveValue(args[0]),
-      refs = argCellRefs(args[1]);
+  var args = fSplitTopLevelArgs(argText),
+      target = fResolveValue(args[0]),
+      refs = fArgCellRefs(args[1]);
 
   if (!refs || !refs.length || args[2] === undefined)
     throw new Error('VLOOKUP needs a value, range, and column index');
 
-  var box = refsBoundingBox(refs),
-      colOffset = resolveValue(args[2]) - 1;
+  var box = fRefsBoundingBox(refs),
+      colOffset = fResolveValue(args[2]) - 1;
 
   if (colOffset < 0 || box.minCol + colOffset > box.maxCol)
     throw new Error('VLOOKUP column index out of range');
 
   for (var r = box.minRow; r <= box.maxRow; r++)
-    if (lookupValueMatches(getDisplayValue(colName(box.minCol) + r), target))
-      return cellExprLiteral(colName(box.minCol + colOffset) + r);
+    if (fLookupValueMatches(fGetDisplayValue(fColName(box.minCol) + r), target))
+      return fCellExprLiteral(fColName(box.minCol + colOffset) + r);
 
   return '"#N/A"';
 }
 
-function hlookupRange(argText)
+function fHlookupRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      target = resolveValue(args[0]),
-      refs = argCellRefs(args[1]);
+  var args = fSplitTopLevelArgs(argText),
+      target = fResolveValue(args[0]),
+      refs = fArgCellRefs(args[1]);
 
   if (!refs || !refs.length || args[2] === undefined)
     throw new Error('HLOOKUP needs a value, range, and row index');
 
-  var box = refsBoundingBox(refs),
-      rowOffset = resolveValue(args[2]) - 1;
+  var box = fRefsBoundingBox(refs),
+      rowOffset = fResolveValue(args[2]) - 1;
 
   if (rowOffset < 0 || box.minRow + rowOffset > box.maxRow)
     throw new Error('HLOOKUP row index out of range');
 
   for (var c = box.minCol; c <= box.maxCol; c++)
-    if (lookupValueMatches(getDisplayValue(colName(c) + box.minRow), target))
-      return cellExprLiteral(colName(c) + (box.minRow + rowOffset));
+    if (fLookupValueMatches(fGetDisplayValue(fColName(c) + box.minRow), target))
+      return fCellExprLiteral(fColName(c) + (box.minRow + rowOffset));
 
   return '"#N/A"';
 }
 
 // MATCH(value, range) — 1-based position of the first exact match walking
 // the range row-major (use a single row or column range, like in Excel).
-function matchRange(argText)
+function fMatchRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      target = resolveValue(args[0]),
-      refs = argCellRefs(args[1]);
+  var args = fSplitTopLevelArgs(argText),
+      target = fResolveValue(args[0]),
+      refs = fArgCellRefs(args[1]);
 
   if (!refs || !refs.length)
     throw new Error('MATCH needs a range');
 
   for (var i = 0; i < refs.length; i++)
-    if (lookupValueMatches(getDisplayValue(refs[i]), target))
+    if (fLookupValueMatches(fGetDisplayValue(refs[i]), target))
       return i + 1;
 
   return '"#N/A"';
@@ -1012,9 +1012,9 @@ function matchRange(argText)
 
 // Excel-style criterion (">5", "<>0", "apples", 12) → a predicate over a
 // cell's displayed value, shared by COUNTIF / SUMIF / AVERAGEIF.
-function makeCriterionTest(rawArg)
+function fMakeCriterionTest(rawArg)
 {
-  var crit = resolveValue(rawArg),
+  var crit = fResolveValue(rawArg),
       s = String(crit),
       m = s.match(/^(>=|<=|<>|=|>|<)([\s\S]*)$/),
       op = m ? m[1] : '=',
@@ -1024,75 +1024,75 @@ function makeCriterionTest(rawArg)
 
   return function(value)
   {
-    var num = parseFloat(value),
-        bothNum = rhsIsNum && value !== '' && !isNaN(num);
+    var fNum = parseFloat(value),
+        bothNum = rhsIsNum && value !== '' && !isNaN(fNum);
 
     switch (op)
     {
-      case '>':  return bothNum && num > rhsNum;
-      case '<':  return bothNum && num < rhsNum;
-      case '>=': return bothNum && num >= rhsNum;
-      case '<=': return bothNum && num <= rhsNum;
-      case '<>': return bothNum ? num !== rhsNum : String(value).toLowerCase() !== rhs.toLowerCase();
-      default:   return bothNum ? num === rhsNum : String(value).toLowerCase() === rhs.toLowerCase();
+      case '>':  return bothNum && fNum > rhsNum;
+      case '<':  return bothNum && fNum < rhsNum;
+      case '>=': return bothNum && fNum >= rhsNum;
+      case '<=': return bothNum && fNum <= rhsNum;
+      case '<>': return bothNum ? fNum !== rhsNum : String(value).toLowerCase() !== rhs.toLowerCase();
+      default:   return bothNum ? fNum === rhsNum : String(value).toLowerCase() === rhs.toLowerCase();
     }
   };
 }
 
-function countifRange(argText)
+function fCountifRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      refs = argCellRefs(args[0]);
+  var args = fSplitTopLevelArgs(argText),
+      refs = fArgCellRefs(args[0]);
 
   if (!refs)
     throw new Error('COUNTIF needs a range');
 
-  var test = makeCriterionTest(args[1]);
+  var test = fMakeCriterionTest(args[1]);
 
-  return refs.filter(function(ref){ return test(getDisplayValue(ref)); }).length;
+  return refs.filter(function(ref){ return test(fGetDisplayValue(ref)); }).length;
 }
 
-// SUMIF(range, criterion, [sumRange]): sums sumRange (default: the range
+// SUMIF(range, criterion, [fSumRange]): sums fSumRange (default: the range
 // itself) wherever the criterion matches the corresponding range cell.
-function sumifRange(argText)
+function fSumifRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      refs = argCellRefs(args[0]);
+  var args = fSplitTopLevelArgs(argText),
+      refs = fArgCellRefs(args[0]);
 
   if (!refs)
     throw new Error('SUMIF needs a range');
 
-  var test = makeCriterionTest(args[1]),
-      sumRefs = args[2] !== undefined ? argCellRefs(args[2]) : refs,
+  var test = fMakeCriterionTest(args[1]),
+      sumRefs = args[2] !== undefined ? fArgCellRefs(args[2]) : refs,
       total = 0;
 
   refs.forEach(function(ref, i)
   {
-    if (test(getDisplayValue(ref)) && sumRefs && sumRefs[i] !== undefined)
-      total += cellNumericValue(sumRefs[i]);
+    if (test(fGetDisplayValue(ref)) && sumRefs && sumRefs[i] !== undefined)
+      total += fCellNumericValue(sumRefs[i]);
   });
 
   return total;
 }
 
-function averageifRange(argText)
+function fAverageifRange(argText)
 {
-  var args = splitTopLevelArgs(argText),
-      refs = argCellRefs(args[0]);
+  var args = fSplitTopLevelArgs(argText),
+      refs = fArgCellRefs(args[0]);
 
   if (!refs)
     throw new Error('AVERAGEIF needs a range');
 
-  var test = makeCriterionTest(args[1]),
-      avgRefs = args[2] !== undefined ? argCellRefs(args[2]) : refs,
+  var test = fMakeCriterionTest(args[1]),
+      avgRefs = args[2] !== undefined ? fArgCellRefs(args[2]) : refs,
       total = 0,
       count = 0;
 
   refs.forEach(function(ref, i)
   {
-    if (test(getDisplayValue(ref)) && avgRefs && avgRefs[i] !== undefined)
+    if (test(fGetDisplayValue(ref)) && avgRefs && avgRefs[i] !== undefined)
     {
-      total += cellNumericValue(avgRefs[i]);
+      total += fCellNumericValue(avgRefs[i]);
       count++;
     }
   });
@@ -1106,19 +1106,19 @@ function averageifRange(argText)
 // LARGE/SMALL(values..., k): the k-th largest/smallest value (1-based). The
 // LAST argument is k and everything before it supplies values — so both
 // LARGE(A1:A9, 2) and an @-expanded LARGE(@A1:A5*@B1:B5, 2) work.
-function largeSmallRange(argText, wantLargest)
+function fLargeSmallRange(argText, wantLargest)
 {
-  var args = splitTopLevelArgs(argText),
+  var args = fSplitTopLevelArgs(argText),
       k = 1,
       valueArgs = args;
 
   if (args.length > 1)
   {
-    k = resolveValue(args[args.length - 1]);
+    k = fResolveValue(args[args.length - 1]);
     valueArgs = args.slice(0, -1);
   }
 
-  var vals = aggregateArgValues(valueArgs.join(',')).slice().sort
+  var vals = fAggregateArgValues(valueArgs.join(',')).slice().sort
       (
         function(a, b) { return wantLargest ? b - a : a - b; }
       );
@@ -1131,40 +1131,40 @@ function largeSmallRange(argText, wantLargest)
 
 // Runs every named-function pattern once. Each pattern requires a function
 // name not preceded by a letter (so e.g. OR doesn't match inside FLOOR, or
-// AND inside RAND) and an argument with no unresolved nested parens. evalCell
+// AND inside RAND) and an argument with no unresolved nested parens. fEvalCell
 // re-runs this pass until the text stops changing, which is what lets calls
 // like ROUND(SUM(A1:A4),2) resolve correctly regardless of nesting order.
-function applyFunctionPass(expr, selfRef)
+function fApplyFunctionPass(expr, selfRef)
 {
   return expr
-    .replace(/(?<![A-Za-z])SUM\(([^()]+)\)/gi, function(_, r) { return sumRange(r); })
-    .replace(/(?<![A-Za-z])AVG\(([^()]+)\)/gi, function(_, r) { return avgRange(r); })
-    .replace(/(?<![A-Za-z])MEAN\(([^()]+)\)/gi, function(_, r) { return avgRange(r); })
-    .replace(/(?<![A-Za-z])COUNTA\(([^()]+)\)/gi, function(_, r) { return countaRange(r); })
-    .replace(/(?<![A-Za-z])COUNTBLANK\(([^()]+)\)/gi, function(_, r) { return countBlankRange(r); })
-    .replace(/(?<![A-Za-z])COUNT\(([^()]+)\)/gi, function(_, r) { return countRange(r); })
-    .replace(/(?<![A-Za-z])MAX\(([^()]+)\)/gi, function(_, r) { return maxRange(r); })
-    .replace(/(?<![A-Za-z])MIN\(([^()]+)\)/gi, function(_, r) { return minRange(r); })
-    .replace(/(?<![A-Za-z])MEDIAN\(([^()]+)\)/gi, function(_, r) { return medianRange(r); })
-    .replace(/(?<![A-Za-z])PRODUCT\(([^()]+)\)/gi, function(_, r) { return productRange(r); })
-    .replace(/(?<![A-Za-z])STDEV\(([^()]+)\)/gi, function(_, r) { return stdevRange(r); })
-    .replace(/(?<![A-Za-z])VAR\(([^()]+)\)/gi, function(_, r) { return varianceRange(r); })
-    .replace(/(?<![A-Za-z])INDEX\(([^()]+)\)/gi, function(_, a) { return indexRange(a); })
-    .replace(/(?<![A-Za-z])VLOOKUP\(([^()]+)\)/gi, function(_, a) { return vlookupRange(a); })
-    .replace(/(?<![A-Za-z])HLOOKUP\(([^()]+)\)/gi, function(_, a) { return hlookupRange(a); })
-    .replace(/(?<![A-Za-z])MATCH\(([^()]+)\)/gi, function(_, a) { return matchRange(a); })
-    .replace(/(?<![A-Za-z])COUNTIF\(([^()]+)\)/gi, function(_, a) { return countifRange(a); })
-    .replace(/(?<![A-Za-z])SUMIF\(([^()]+)\)/gi, function(_, a) { return sumifRange(a); })
-    .replace(/(?<![A-Za-z])AVERAGEIF\(([^()]+)\)/gi, function(_, a) { return averageifRange(a); })
-    .replace(/(?<![A-Za-z])AVERAGE\(([^()]+)\)/gi, function(_, r) { return avgRange(r); })
-    .replace(/(?<![A-Za-z])LARGE\(([^()]+)\)/gi, function(_, a) { return largeSmallRange(a, true); })
-    .replace(/(?<![A-Za-z])SMALL\(([^()]+)\)/gi, function(_, a) { return largeSmallRange(a, false); })
+    .replace(/(?<![A-Za-z])SUM\(([^()]+)\)/gi, function(_, r) { return fSumRange(r); })
+    .replace(/(?<![A-Za-z])AVG\(([^()]+)\)/gi, function(_, r) { return fAvgRange(r); })
+    .replace(/(?<![A-Za-z])MEAN\(([^()]+)\)/gi, function(_, r) { return fAvgRange(r); })
+    .replace(/(?<![A-Za-z])COUNTA\(([^()]+)\)/gi, function(_, r) { return fCountaRange(r); })
+    .replace(/(?<![A-Za-z])COUNTBLANK\(([^()]+)\)/gi, function(_, r) { return fCountBlankRange(r); })
+    .replace(/(?<![A-Za-z])COUNT\(([^()]+)\)/gi, function(_, r) { return fCountRange(r); })
+    .replace(/(?<![A-Za-z])MAX\(([^()]+)\)/gi, function(_, r) { return fMaxRange(r); })
+    .replace(/(?<![A-Za-z])MIN\(([^()]+)\)/gi, function(_, r) { return fMinRange(r); })
+    .replace(/(?<![A-Za-z])MEDIAN\(([^()]+)\)/gi, function(_, r) { return fMedianRange(r); })
+    .replace(/(?<![A-Za-z])PRODUCT\(([^()]+)\)/gi, function(_, r) { return fProductRange(r); })
+    .replace(/(?<![A-Za-z])STDEV\(([^()]+)\)/gi, function(_, r) { return fStdevRange(r); })
+    .replace(/(?<![A-Za-z])VAR\(([^()]+)\)/gi, function(_, r) { return fVarianceRange(r); })
+    .replace(/(?<![A-Za-z])INDEX\(([^()]+)\)/gi, function(_, a) { return fIndexRange(a); })
+    .replace(/(?<![A-Za-z])VLOOKUP\(([^()]+)\)/gi, function(_, a) { return fVlookupRange(a); })
+    .replace(/(?<![A-Za-z])HLOOKUP\(([^()]+)\)/gi, function(_, a) { return fHlookupRange(a); })
+    .replace(/(?<![A-Za-z])MATCH\(([^()]+)\)/gi, function(_, a) { return fMatchRange(a); })
+    .replace(/(?<![A-Za-z])COUNTIF\(([^()]+)\)/gi, function(_, a) { return fCountifRange(a); })
+    .replace(/(?<![A-Za-z])SUMIF\(([^()]+)\)/gi, function(_, a) { return fSumifRange(a); })
+    .replace(/(?<![A-Za-z])AVERAGEIF\(([^()]+)\)/gi, function(_, a) { return fAverageifRange(a); })
+    .replace(/(?<![A-Za-z])AVERAGE\(([^()]+)\)/gi, function(_, r) { return fAvgRange(r); })
+    .replace(/(?<![A-Za-z])LARGE\(([^()]+)\)/gi, function(_, a) { return fLargeSmallRange(a, true); })
+    .replace(/(?<![A-Za-z])SMALL\(([^()]+)\)/gi, function(_, a) { return fLargeSmallRange(a, false); })
     .replace
     (
       /(?<![A-Za-z])ROW\(([^()]*)\)/gi,
       function(match, a)
       {
-        var p = parseName((a.trim() || selfRef || '').replace(/\$/g, '').toUpperCase());
+        var p = fParseName((a.trim() || selfRef || '').replace(/\$/g, '').toUpperCase());
         return p ? p.row : match;
       }
     )
@@ -1173,43 +1173,43 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])COLUMN\(([^()]*)\)/gi,
       function(match, a)
       {
-        var p = parseName((a.trim() || selfRef || '').replace(/\$/g, '').toUpperCase());
-        return p ? colIndex(p.col) + 1 : match;
+        var p = fParseName((a.trim() || selfRef || '').replace(/\$/g, '').toUpperCase());
+        return p ? fColIndex(p.col) + 1 : match;
       }
     )
-    .replace(/(?<![A-Za-z])SIN\(([^()]+)\)/gi, function(_, a) { return Math.sin(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])COS\(([^()]+)\)/gi, function(_, a) { return Math.cos(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])TAN\(([^()]+)\)/gi, function(_, a) { return Math.tan(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])ASIN\(([^()]+)\)/gi, function(_, a) { return Math.asin(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])ACOS\(([^()]+)\)/gi, function(_, a) { return Math.acos(resolveValue(a)); })
+    .replace(/(?<![A-Za-z])SIN\(([^()]+)\)/gi, function(_, a) { return Math.sin(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])COS\(([^()]+)\)/gi, function(_, a) { return Math.cos(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])TAN\(([^()]+)\)/gi, function(_, a) { return Math.tan(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])ASIN\(([^()]+)\)/gi, function(_, a) { return Math.asin(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])ACOS\(([^()]+)\)/gi, function(_, a) { return Math.acos(fResolveValue(a)); })
     .replace(/(?<![A-Za-z])ATAN2\(([^()]+)\)/gi, function(_, a)
     {
       // Excel argument order is (x, y); JS atan2 takes (y, x).
-      var args = splitTopLevelArgs(a);
-      return Math.atan2(resolveValue(args[1]), resolveValue(args[0]));
+      var args = fSplitTopLevelArgs(a);
+      return Math.atan2(fResolveValue(args[1]), fResolveValue(args[0]));
     })
-    .replace(/(?<![A-Za-z])ATAN\(([^()]+)\)/gi, function(_, a) { return Math.atan(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])SINH\(([^()]+)\)/gi, function(_, a) { return Math.sinh(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])COSH\(([^()]+)\)/gi, function(_, a) { return Math.cosh(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])TANH\(([^()]+)\)/gi, function(_, a) { return Math.tanh(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])DEGREES\(([^()]+)\)/gi, function(_, a) { return resolveValue(a) * 180 / Math.PI; })
-    .replace(/(?<![A-Za-z])RADIANS\(([^()]+)\)/gi, function(_, a) { return resolveValue(a) * Math.PI / 180; })
-    .replace(/(?<![A-Za-z])ABS\(([^()]+)\)/gi, function(_, a) { return Math.abs(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])SQRT\(([^()]+)\)/gi, function(_, a) { return Math.sqrt(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])SIGN\(([^()]+)\)/gi, function(_, a) { return Math.sign(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])EXP\(([^()]+)\)/gi, function(_, a) { return Math.exp(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])LN\(([^()]+)\)/gi, function(_, a) { return Math.log(resolveValue(a)); })
-    .replace(/(?<![A-Za-z])LOG10\(([^()]+)\)/gi, function(_, a) { return Math.log10(resolveValue(a)); })
+    .replace(/(?<![A-Za-z])ATAN\(([^()]+)\)/gi, function(_, a) { return Math.atan(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])SINH\(([^()]+)\)/gi, function(_, a) { return Math.sinh(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])COSH\(([^()]+)\)/gi, function(_, a) { return Math.cosh(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])TANH\(([^()]+)\)/gi, function(_, a) { return Math.tanh(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])DEGREES\(([^()]+)\)/gi, function(_, a) { return fResolveValue(a) * 180 / Math.PI; })
+    .replace(/(?<![A-Za-z])RADIANS\(([^()]+)\)/gi, function(_, a) { return fResolveValue(a) * Math.PI / 180; })
+    .replace(/(?<![A-Za-z])ABS\(([^()]+)\)/gi, function(_, a) { return Math.abs(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])SQRT\(([^()]+)\)/gi, function(_, a) { return Math.sqrt(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])SIGN\(([^()]+)\)/gi, function(_, a) { return Math.sign(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])EXP\(([^()]+)\)/gi, function(_, a) { return Math.exp(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])LN\(([^()]+)\)/gi, function(_, a) { return Math.log(fResolveValue(a)); })
+    .replace(/(?<![A-Za-z])LOG10\(([^()]+)\)/gi, function(_, a) { return Math.log10(fResolveValue(a)); })
     .replace
     (
       /(?<![A-Za-z])LOG\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            base = args[1] !== undefined ? resolveValue(args[1]) : 10;
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            base = args[1] !== undefined ? fResolveValue(args[1]) : 10;
 
-        return Math.log(num) / Math.log(base);
+        return Math.log(fNum) / Math.log(base);
       }
     )
     .replace(/(?<![A-Za-z])PI\(\)/gi, function() { return Math.PI; })
@@ -1219,9 +1219,9 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])RANDBETWEEN\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            lo = resolveValue(args[0]),
-            hi = resolveValue(args[1]);
+        var args = fSplitTopLevelArgs(a),
+            lo = fResolveValue(args[0]),
+            hi = fResolveValue(args[1]);
 
         return Math.floor(Math.random() * (hi - lo + 1)) + lo;
       }
@@ -1231,8 +1231,8 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])POWER\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a);
-        return Math.pow(resolveValue(args[0]), resolveValue(args[1]));
+        var args = fSplitTopLevelArgs(a);
+        return Math.pow(fResolveValue(args[0]), fResolveValue(args[1]));
       }
     )
     .replace
@@ -1240,8 +1240,8 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])MOD\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a);
-        return resolveValue(args[0]) % resolveValue(args[1]);
+        var args = fSplitTopLevelArgs(a);
+        return fResolveValue(args[0]) % fResolveValue(args[1]);
       }
     )
     .replace
@@ -1249,25 +1249,25 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])TRUNC\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            digits = args[1] !== undefined ? resolveValue(args[1]) : 0,
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            digits = args[1] !== undefined ? fResolveValue(args[1]) : 0,
             factor = Math.pow(10, digits);
 
-        return Math.trunc(num * factor) / factor;
+        return Math.trunc(fNum * factor) / factor;
       }
     )
-    .replace(/(?<![A-Za-z])INT\(([^()]+)\)/gi, function(_, a) { return Math.floor(resolveValue(a)); })
+    .replace(/(?<![A-Za-z])INT\(([^()]+)\)/gi, function(_, a) { return Math.floor(fResolveValue(a)); })
     .replace
     (
       /(?<![A-Za-z])CEILING\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            sig = args[1] !== undefined ? resolveValue(args[1]) : 1;
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            sig = args[1] !== undefined ? fResolveValue(args[1]) : 1;
 
-        return sig ? Math.ceil(num / sig) * sig : 0;
+        return sig ? Math.ceil(fNum / sig) * sig : 0;
       }
     )
     .replace
@@ -1275,11 +1275,11 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])FLOOR\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            sig = args[1] !== undefined ? resolveValue(args[1]) : 1;
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            sig = args[1] !== undefined ? fResolveValue(args[1]) : 1;
 
-        return sig ? Math.floor(num / sig) * sig : 0;
+        return sig ? Math.floor(fNum / sig) * sig : 0;
       }
     )
     .replace
@@ -1287,7 +1287,7 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])CONCATENATE\(([^()]+)\)/gi,
       function(_, a)
       {
-        return formatForExpr(splitTopLevelArgs(a).map(resolveValue).join(''));
+        return fFormatForExpr(fSplitTopLevelArgs(a).map(fResolveValue).join(''));
       }
     )
     .replace
@@ -1295,23 +1295,23 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])CONCAT\(([^()]+)\)/gi,
       function(_, a)
       {
-        return formatForExpr(splitTopLevelArgs(a).map(resolveValue).join(''));
+        return fFormatForExpr(fSplitTopLevelArgs(a).map(fResolveValue).join(''));
       }
     )
-    .replace(/(?<![A-Za-z])LEN\(([^()]+)\)/gi, function(_, a) { return String(resolveValue(a)).length; })
-    .replace(/(?<![A-Za-z])UPPER\(([^()]+)\)/gi, function(_, a) { return formatForExpr(String(resolveValue(a)).toUpperCase()); })
-    .replace(/(?<![A-Za-z])LOWER\(([^()]+)\)/gi, function(_, a) { return formatForExpr(String(resolveValue(a)).toLowerCase()); })
-    .replace(/(?<![A-Za-z])TRIM\(([^()]+)\)/gi, function(_, a) { return formatForExpr(String(resolveValue(a)).trim()); })
+    .replace(/(?<![A-Za-z])LEN\(([^()]+)\)/gi, function(_, a) { return String(fResolveValue(a)).length; })
+    .replace(/(?<![A-Za-z])UPPER\(([^()]+)\)/gi, function(_, a) { return fFormatForExpr(String(fResolveValue(a)).toUpperCase()); })
+    .replace(/(?<![A-Za-z])LOWER\(([^()]+)\)/gi, function(_, a) { return fFormatForExpr(String(fResolveValue(a)).toLowerCase()); })
+    .replace(/(?<![A-Za-z])TRIM\(([^()]+)\)/gi, function(_, a) { return fFormatForExpr(String(fResolveValue(a)).trim()); })
     .replace
     (
       /(?<![A-Za-z])LEFT\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            text = String(resolveValue(args[0])),
-            n = args[1] !== undefined ? resolveValue(args[1]) : 1;
+        var args = fSplitTopLevelArgs(a),
+            text = String(fResolveValue(args[0])),
+            n = args[1] !== undefined ? fResolveValue(args[1]) : 1;
 
-        return formatForExpr(text.slice(0, n));
+        return fFormatForExpr(text.slice(0, n));
       }
     )
     .replace
@@ -1319,11 +1319,11 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])RIGHT\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            text = String(resolveValue(args[0])),
-            n = args[1] !== undefined ? resolveValue(args[1]) : 1;
+        var args = fSplitTopLevelArgs(a),
+            text = String(fResolveValue(args[0])),
+            n = args[1] !== undefined ? fResolveValue(args[1]) : 1;
 
-        return formatForExpr(n ? text.slice(-n) : '');
+        return fFormatForExpr(n ? text.slice(-n) : '');
       }
     )
     .replace
@@ -1331,12 +1331,12 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])MID\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            text = String(resolveValue(args[0])),
-            start = resolveValue(args[1]),
-            count = resolveValue(args[2]);
+        var args = fSplitTopLevelArgs(a),
+            text = String(fResolveValue(args[0])),
+            start = fResolveValue(args[1]),
+            count = fResolveValue(args[2]);
 
-        return formatForExpr(text.substr(start - 1, count));
+        return fFormatForExpr(text.substr(start - 1, count));
       }
     )
     .replace
@@ -1344,18 +1344,18 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])SUBSTITUTE\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            text = String(resolveValue(args[0])),
-            oldText = String(resolveValue(args[1])),
-            newText = String(resolveValue(args[2]));
+        var args = fSplitTopLevelArgs(a),
+            text = String(fResolveValue(args[0])),
+            oldText = String(fResolveValue(args[1])),
+            newText = String(fResolveValue(args[2]));
 
         if (!oldText)
-          return formatForExpr(text);
+          return fFormatForExpr(text);
 
         // Optional 4th argument: replace only the n-th occurrence.
         if (args[3] !== undefined)
         {
-          var n = resolveValue(args[3]),
+          var n = fResolveValue(args[3]),
               at = -1;
 
           for (var i = 0; i < n; i++)
@@ -1364,10 +1364,10 @@ function applyFunctionPass(expr, selfRef)
             if (at === -1) break;
           }
 
-          return formatForExpr(at === -1 ? text : text.slice(0, at) + newText + text.slice(at + oldText.length));
+          return fFormatForExpr(at === -1 ? text : text.slice(0, at) + newText + text.slice(at + oldText.length));
         }
 
-        return formatForExpr(text.split(oldText).join(newText));
+        return fFormatForExpr(text.split(oldText).join(newText));
       }
     )
     .replace
@@ -1375,11 +1375,11 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])REPT\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            text = String(resolveValue(args[0])),
-            times = Math.max(0, Math.floor(resolveValue(args[1])));
+        var args = fSplitTopLevelArgs(a),
+            text = String(fResolveValue(args[0])),
+            times = Math.max(0, Math.floor(fResolveValue(args[1])));
 
-        return formatForExpr(new Array(times + 1).join(text));
+        return fFormatForExpr(new Array(times + 1).join(text));
       }
     )
     .replace
@@ -1387,10 +1387,10 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])FIND\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            needle = String(resolveValue(args[0])),
-            hay = String(resolveValue(args[1])),
-            start = args[2] !== undefined ? resolveValue(args[2]) : 1,
+        var args = fSplitTopLevelArgs(a),
+            needle = String(fResolveValue(args[0])),
+            hay = String(fResolveValue(args[1])),
+            start = args[2] !== undefined ? fResolveValue(args[2]) : 1,
             at = hay.indexOf(needle, start - 1);
 
         if (at === -1)
@@ -1404,10 +1404,10 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])SEARCH\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            needle = String(resolveValue(args[0])).toLowerCase(),
-            hay = String(resolveValue(args[1])).toLowerCase(),
-            start = args[2] !== undefined ? resolveValue(args[2]) : 1,
+        var args = fSplitTopLevelArgs(a),
+            needle = String(fResolveValue(args[0])).toLowerCase(),
+            hay = String(fResolveValue(args[1])).toLowerCase(),
+            start = args[2] !== undefined ? fResolveValue(args[2]) : 1,
             at = hay.indexOf(needle, start - 1);
 
         if (at === -1)
@@ -1421,13 +1421,13 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])PROPER\(([^()]+)\)/gi,
       function(_, a)
       {
-        var text = String(resolveValue(a)).replace
+        var text = String(fResolveValue(a)).replace
         (
           /[A-Za-z]+/g,
           function(word) { return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(); }
         );
 
-        return formatForExpr(text);
+        return fFormatForExpr(text);
       }
     )
     .replace
@@ -1435,8 +1435,8 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])EXACT\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a);
-        return String(resolveValue(args[0])) === String(resolveValue(args[1]));
+        var args = fSplitTopLevelArgs(a);
+        return String(fResolveValue(args[0])) === String(fResolveValue(args[1]));
       }
     )
     .replace
@@ -1444,20 +1444,20 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])IFERROR\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a);
+        var args = fSplitTopLevelArgs(a);
 
         try
         {
-          var primary = resolveValue(args[0]);
+          var primary = fResolveValue(args[0]);
 
           if (typeof primary === 'number' && (isNaN(primary) || !isFinite(primary)))
             throw new Error('bad number');
 
-          return formatForExpr(primary);
+          return fFormatForExpr(primary);
         }
         catch (e)
         {
-          return formatForExpr(resolveValue(args[1]));
+          return fFormatForExpr(fResolveValue(args[1]));
         }
       }
     )
@@ -1466,10 +1466,10 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])IF\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            cond = resolveValue(args[0]);
+        var args = fSplitTopLevelArgs(a),
+            cond = fResolveValue(args[0]);
 
-        return formatForExpr(cond ? resolveValue(args[1]) : resolveValue(args[2]));
+        return fFormatForExpr(cond ? fResolveValue(args[1]) : fResolveValue(args[2]));
       }
     )
     .replace
@@ -1477,7 +1477,7 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])AND\(([^()]+)\)/gi,
       function(_, a)
       {
-        return splitTopLevelArgs(a).every(function(x) { return !!resolveValue(x); });
+        return fSplitTopLevelArgs(a).every(function(x) { return !!fResolveValue(x); });
       }
     )
     .replace
@@ -1485,16 +1485,16 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])OR\(([^()]+)\)/gi,
       function(_, a)
       {
-        return splitTopLevelArgs(a).some(function(x) { return !!resolveValue(x); });
+        return fSplitTopLevelArgs(a).some(function(x) { return !!fResolveValue(x); });
       }
     )
-    .replace(/(?<![A-Za-z])NOT\(([^()]+)\)/gi, function(_, a) { return !resolveValue(a); })
+    .replace(/(?<![A-Za-z])NOT\(([^()]+)\)/gi, function(_, a) { return !fResolveValue(a); })
     .replace
     (
       /(?<![A-Za-z])XOR\(([^()]+)\)/gi,
       function(_, a)
       {
-        return splitTopLevelArgs(a).filter(function(x) { return !!resolveValue(x); }).length % 2 === 1;
+        return fSplitTopLevelArgs(a).filter(function(x) { return !!fResolveValue(x); }).length % 2 === 1;
       }
     )
     .replace
@@ -1502,13 +1502,13 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])ROUNDUP\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            digits = args[1] !== undefined ? resolveValue(args[1]) : 0,
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            digits = args[1] !== undefined ? fResolveValue(args[1]) : 0,
             factor = Math.pow(10, digits);
 
         // Away from zero, like Excel.
-        return Math.sign(num) * Math.ceil(Math.abs(num) * factor) / factor;
+        return Math.sign(fNum) * Math.ceil(Math.abs(fNum) * factor) / factor;
       }
     )
     .replace
@@ -1516,13 +1516,13 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])ROUNDDOWN\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            digits = args[1] !== undefined ? resolveValue(args[1]) : 0,
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            digits = args[1] !== undefined ? fResolveValue(args[1]) : 0,
             factor = Math.pow(10, digits);
 
         // Toward zero, like Excel.
-        return Math.sign(num) * Math.floor(Math.abs(num) * factor) / factor;
+        return Math.sign(fNum) * Math.floor(Math.abs(fNum) * factor) / factor;
       }
     )
     .replace
@@ -1530,7 +1530,7 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])FACT\(([^()]+)\)/gi,
       function(_, a)
       {
-        var n = Math.floor(resolveValue(a));
+        var n = Math.floor(fResolveValue(a));
 
         if (n < 0)
           throw new Error('FACT of a negative number');
@@ -1547,8 +1547,8 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])EVEN\(([^()]+)\)/gi,
       function(_, a)
       {
-        var num = resolveValue(a);
-        return Math.sign(num) * Math.ceil(Math.abs(num) / 2) * 2;
+        var fNum = fResolveValue(a);
+        return Math.sign(fNum) * Math.ceil(Math.abs(fNum) / 2) * 2;
       }
     )
     .replace
@@ -1556,9 +1556,9 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])ODD\(([^()]+)\)/gi,
       function(_, a)
       {
-        var num = resolveValue(a);
-        if (!num) return 1;
-        return Math.sign(num) * (2 * Math.ceil((Math.abs(num) + 1) / 2) - 1);
+        var fNum = fResolveValue(a);
+        if (!fNum) return 1;
+        return Math.sign(fNum) * (2 * Math.ceil((Math.abs(fNum) + 1) / 2) - 1);
       }
     )
     .replace
@@ -1566,11 +1566,11 @@ function applyFunctionPass(expr, selfRef)
       /(?<![A-Za-z])ROUND\(([^()]+)\)/gi,
       function(_, a)
       {
-        var args = splitTopLevelArgs(a),
-            num = resolveValue(args[0]),
-            decimals = args[1] !== undefined ? resolveValue(args[1]) : 0;
+        var args = fSplitTopLevelArgs(a),
+            fNum = fResolveValue(args[0]),
+            decimals = args[1] !== undefined ? fResolveValue(args[1]) : 0;
 
-        return Number(num.toFixed(decimals));
+        return Number(fNum.toFixed(decimals));
       }
     );
 }
@@ -1579,22 +1579,22 @@ function applyFunctionPass(expr, selfRef)
 // the global sheetData, so swap the alias for the duration of the call. The
 // eval cache is keyed by bare refs, so it must not survive the swap in
 // either direction.
-function evalCellOnPage(page, ref, val)
+function fEvalCellOnPage(page, ref, val)
 {
   if (page.data === sheetData)
-    return evalCell(ref, val);
+    return fEvalCell(ref, val);
 
   var saved = sheetData;
   sheetData = page.data;
-  clearEvalCache();
-  try { return evalCell(ref, val); }
-  finally { sheetData = saved; clearEvalCache(); }
+  fClearEvalCache();
+  try { return fEvalCell(ref, val); }
+  finally { sheetData = saved; fClearEvalCache(); }
 }
 
 // Cross-tab references use the link-like syntax [Tab name](A1). Resolved
 // before anything else so they compose with functions: =SUM([Costs](B2), 5).
 // Unknown tab names come back as "#REF".
-function substitutePageRefs(exprText)
+function fSubstitutePageRefs(exprText)
 {
   return exprText.replace
   (
@@ -1613,20 +1613,20 @@ function substitutePageRefs(exprText)
         return '0';
 
       if (v.startsWith('='))
-        v = evalCellOnPage(page, ref, v);
+        v = fEvalCellOnPage(page, ref, v);
 
       var upper = String(v).toUpperCase();
       if (upper === 'TRUE' || upper === 'FALSE')
         return upper.toLowerCase();
 
-      var num = parseFloat(v);
+      var fNum = parseFloat(v);
 
-      if (isNaN(num))
+      if (isNaN(fNum))
         return JSON.stringify(v);
 
       // Parenthesize negatives so "A1-B1" with a negative B1 doesn't
       // collapse into the JS "--" operator.
-      return num < 0 ? '(' + v + ')' : v;
+      return fNum < 0 ? '(' + v + ')' : v;
     }
   );
 }
@@ -1644,7 +1644,7 @@ var evalCellInProgress = {};
 // alias switches pages, so entries can never outlive the data they came from.
 var evalCellCache = {};
 
-function clearEvalCache()
+function fClearEvalCache()
 {
   evalCellCache = {};
 }
@@ -1660,30 +1660,30 @@ function clearEvalCache()
 //  2. Anywhere else, @range picks the one value on the formula's own
 //     row/column, so =@A1:A9*@B1:B9 filled down computes each line's pair.
 
-var AT_EXPANDING_FUNCTIONS = {
+var cAtExpandingFunctions = {
   SUM: 1, AVG: 1, AVERAGE: 1, MEAN: 1, MAX: 1, MIN: 1, MEDIAN: 1,
   PRODUCT: 1, STDEV: 1, VAR: 1, COUNT: 1, COUNTA: 1, LARGE: 1, SMALL: 1
 };
 
 // Matches quoted strings (passed through) or an @range (captured).
-var AT_RANGE_RE = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|@\s*(\$?[A-Z]{1,2}\$?\d+\s*:\s*\$?[A-Z]{1,2}\$?\d+|\$?[A-Z]{1,2}\s*:\s*\$?[A-Z]{1,2}|\$?\d+\s*:\s*\$?\d+)/g;
+var cAtRangeRe = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|@\s*(\$?[A-Z]{1,2}\$?\d+\s*:\s*\$?[A-Z]{1,2}\$?\d+|\$?[A-Z]{1,2}\s*:\s*\$?[A-Z]{1,2}|\$?\d+\s*:\s*\$?\d+)/g;
 
 // Rewrites one paren/comma-free argument segment ("@A1:A3*@B1:B3+2") into a
 // comma-separated element list ("A1*B1+2,A2*B2+2,A3*B3+2"). Scalars repeat
 // on every line; all @ranges in the segment must have the same size.
-function expandAtSegment(segment)
+function fExpandAtSegment(segment)
 {
   var ranges = [],
       m;
 
-  AT_RANGE_RE.lastIndex = 0;
-  while ((m = AT_RANGE_RE.exec(segment)))
+  cAtRangeRe.lastIndex = 0;
+  while ((m = cAtRangeRe.exec(segment)))
     if (m[1] !== undefined) ranges.push(m[1]);
 
   if (!ranges.length)
     return segment; // only @A5-style single refs — implicit intersection's job
 
-  var refLists = ranges.map(function(r){ return getRangeRefs(r.replace(/[\s$]/g, '')); }),
+  var refLists = ranges.map(function(r){ return fGetRangeRefs(r.replace(/[\s$]/g, '')); }),
       len = refLists[0].length;
 
   refLists.forEach(function(list)
@@ -1700,7 +1700,7 @@ function expandAtSegment(segment)
   for (var k = 0; k < len; k++)
   {
     var idx = 0;
-    elements.push(segment.replace(AT_RANGE_RE, function(match, r)
+    elements.push(segment.replace(cAtRangeRe, function(match, r)
     {
       return r === undefined ? match : refLists[idx++][k];
     }));
@@ -1712,7 +1712,7 @@ function expandAtSegment(segment)
 // Walks the formula tracking which function call each piece sits inside;
 // @-bearing segments whose innermost enclosing call is an aggregate get
 // elementwise expansion. Everything else is left for implicit intersection.
-function expandArrayOps(expr)
+function fExpandArrayOps(expr)
 {
   if (expr.indexOf('@') === -1)
     return expr;
@@ -1722,12 +1722,12 @@ function expandArrayOps(expr)
       stack = [],
       i = 0;
 
-  function flush()
+  function fFlush()
   {
     var context = stack.length ? stack[stack.length - 1] : null;
 
     if (context && context.agg && segment.indexOf('@') !== -1)
-      result += expandAtSegment(segment);
+      result += fExpandAtSegment(segment);
     else
       result += segment;
 
@@ -1754,16 +1754,16 @@ function expandArrayOps(expr)
     {
       var nameMatch = /([A-Za-z]+)\s*$/.exec(segment),
           fnName = nameMatch ? nameMatch[1].toUpperCase() : null;
-      flush();
+      fFlush();
       result += '(';
-      stack.push({ agg: !!(fnName && AT_EXPANDING_FUNCTIONS[fnName]) });
+      stack.push({ agg: !!(fnName && cAtExpandingFunctions[fnName]) });
       i++;
       continue;
     }
 
     if (ch === ')')
     {
-      flush();
+      fFlush();
       result += ')';
       stack.pop();
       i++;
@@ -1772,7 +1772,7 @@ function expandArrayOps(expr)
 
     if (ch === ',')
     {
-      flush();
+      fFlush();
       result += ',';
       i++;
       continue;
@@ -1782,7 +1782,7 @@ function expandArrayOps(expr)
     i++;
   }
 
-  flush();
+  fFlush();
   return result;
 }
 
@@ -1792,9 +1792,9 @@ function expandArrayOps(expr)
 // the data and each row multiplies its own pair; whole columns work too
 // (=@A:A*@B:B). A range that doesn't cross the formula's line is an error,
 // like Excel's #VALUE!.
-function substituteImplicitIntersection(exprText, selfRef)
+function fSubstituteImplicitIntersection(exprText, selfRef)
 {
-  var self = parseName((selfRef || '').replace(/\$/g, ''));
+  var self = fParseName((selfRef || '').replace(/\$/g, ''));
 
   return exprText.replace
   (
@@ -1814,21 +1814,21 @@ function substituteImplicitIntersection(exprText, selfRef)
       if ((m = clean.match(/^([A-Z]{1,2})(\d+)$/)))
         return m[1] + m[2];
 
-      var selfCol = colIndex(self.col),
+      var selfCol = fColIndex(self.col),
           rowLo = null, rowHi = null,
           colLo = null, colHi = null;
 
       if ((m = clean.match(/^([A-Z]{1,2})(\d+):([A-Z]{1,2})(\d+)$/)))
       {
-        colLo = Math.min(colIndex(m[1]), colIndex(m[3]));
-        colHi = Math.max(colIndex(m[1]), colIndex(m[3]));
+        colLo = Math.min(fColIndex(m[1]), fColIndex(m[3]));
+        colHi = Math.max(fColIndex(m[1]), fColIndex(m[3]));
         rowLo = Math.min(+m[2], +m[4]);
         rowHi = Math.max(+m[2], +m[4]);
       }
       else if ((m = clean.match(/^([A-Z]{1,2}):([A-Z]{1,2})$/)))
       {
-        colLo = Math.min(colIndex(m[1]), colIndex(m[2]));
-        colHi = Math.max(colIndex(m[1]), colIndex(m[2]));
+        colLo = Math.min(fColIndex(m[1]), fColIndex(m[2]));
+        colHi = Math.max(fColIndex(m[1]), fColIndex(m[2]));
       }
       else if ((m = clean.match(/^(\d+):(\d+)$/)))
       {
@@ -1856,12 +1856,12 @@ function substituteImplicitIntersection(exprText, selfRef)
       else
         throw new Error('@' + rangeText + ' does not reach column ' + self.col);
 
-      return colName(col) + row;
+      return fColName(col) + row;
     }
   );
 }
 
-function evalCell(ref, val)
+function fEvalCell(ref, val)
 {
   if (!val || !val.startsWith('='))
     return val;
@@ -1879,27 +1879,27 @@ function evalCell(ref, val)
 
   try
   {
-    var expr = substituteImplicitIntersection(expandArrayOps(substitutePageRefs(val.slice(1))), ref),
+    var expr = fSubstituteImplicitIntersection(fExpandArrayOps(fSubstitutePageRefs(val.slice(1))), ref),
         previous,
         iterations = 25;
 
     do
     {
       previous = expr;
-      expr = applyFunctionPass(expr, ref);
+      expr = fApplyFunctionPass(expr, ref);
 
       // When no function matched (their arg regexes require paren-free
       // arguments), collapse innermost BARE (…) groups to values so e.g.
       // MAX((A1+1)*2, 5) flattens to MAX(4,5) for the next pass — plain
       // parenthesised sub-expressions resolve before anything around them.
       if (expr === previous)
-        expr = resolveBareGroups(expr);
+        expr = fResolveBareGroups(expr);
     }
     while (expr !== previous && --iterations > 0);
 
-    expr = sanitizeExprForEval(substituteCellRefs(expr));
+    expr = fSanitizeExprForEval(fSubstituteCellRefs(expr));
 
-    var result = evalFinalExpr(expr);
+    var result = fEvalFinalExpr(expr);
 
     if (typeof result === 'boolean')
       out = result ? 'TRUE' : 'FALSE';
@@ -1926,10 +1926,10 @@ function evalCell(ref, val)
   return out;
 }
 
-function evaluateFormulas(skipRef)
+function fEvaluateFormulas(skipRef)
 {
   // Fresh pass: anything might have changed since the last one.
-  clearEvalCache();
+  fClearEvalCache();
 
   Object.keys(sheetData).forEach
   (
@@ -1947,14 +1947,14 @@ function evaluateFormulas(skipRef)
         var inp = document.getElementById('inp-' + ref);
         if (inp)
         {
-          inp.value = evalCell(ref, val);
+          inp.value = fEvalCell(ref, val);
           inp.classList.add('formula-result');
         }
       }
     }
   );
 
-  refreshSheetCharts();
+  fRefreshSheetCharts();
 }
 
 // Strips the cell-decoration suffixes off a serialized cell line's payload
@@ -1963,7 +1963,7 @@ function evaluateFormulas(skipRef)
 // merged into this one. They may be chained in any order
 // (B1=5:B2,B3;#FAFAFA == B1=5;#FAFAFA:B2,B3) — all parse the same because
 // stripping repeats from the end until nothing matches.
-function stripCellSuffixes(rest)
+function fStripCellSuffixes(rest)
 {
   var color = null,
       textColor = null,

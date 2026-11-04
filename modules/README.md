@@ -8,7 +8,7 @@ app's behaviour changed.
 ## How they load
 
 `auth-gate.js` loads `main.js`, and `main.js` loads these in the order its
-`MODULES` list gives. They are **plain classic scripts sharing one global
+`cModules` list gives. They are **plain classic scripts sharing one global
 scope** — the same arrangement as when they were consecutive sections of a
 single file. A function defined in one is callable from any other with no
 imports, no exports, no bundler and no build step.
@@ -22,8 +22,8 @@ four repositories share.
 
 **Order matters.** The list in `main.js` is the original file's order. A module
 only sees what earlier modules have already defined, so anything running at
-load time — the `addEventListener` wiring, `configureMermaid()`,
-`configureChartJs()` — must come after what it uses. Appending a new module is
+load time — the `addEventListener` wiring, `fConfigureMermaid()`,
+`fConfigureChartJs()` — must come after what it uses. Appending a new module is
 safe. Reordering the existing ones is not.
 
 **`async = false` is load-bearing.** A script element created with
@@ -39,7 +39,7 @@ by then.
 ## Adding to a module
 
 Add functions wherever they belong; there is nothing to register. If you add a
-module, append it to `MODULES` in `main.js` — at the end unless it defines
+module, append it to `cModules` in `main.js` — at the end unless it defines
 something an earlier module needs at load time.
 
 Bump the `?v=` number in `index.html`'s `auth-gate.js` tag when shipping

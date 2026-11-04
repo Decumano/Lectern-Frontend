@@ -9,7 +9,7 @@ reference for what is actually written to disk, so a file stays readable even if
 this app disappears.
 
 Everything here is implemented in [`main.js`](main.js); the Markdown extensions
-specifically live in `configureMarkedExtensions`. The base parser is
+specifically live in `fConfigureMarkedExtensions`. The base parser is
 [marked](https://github.com/markedjs/marked) v9.1.6 with GFM enabled, so
 **everything CommonMark and GitHub Flavored Markdown support works unchanged** —
 tables, task lists, strikethrough, fenced code, autolinks. The extensions below
@@ -345,7 +345,7 @@ definitions and the current cell values on every render.
 79 functions across six categories — Aggregate, Math, Trigonometry, Lookup, Text
 and Logical. The in-app function reference (the `fx` button) is generated from
 the same table that implements them, so it is always current;
-`SHEET_FUNCTION_GROUPS` in `main.js` is the source of truth.
+`cSheetFunctionGroups` in `main.js` is the source of truth.
 
 Ranges use the usual `A1:B8` notation, with `$` absolute markers.
 

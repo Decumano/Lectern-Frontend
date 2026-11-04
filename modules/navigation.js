@@ -9,7 +9,7 @@
 var globalSearchActive  = false;
 var globalSearchLoadTmr = null;
 
-function extractSearchableText(id)
+function fExtractSearchableText(id)
 {
   var f = files[id];
   if (!f || !f.content) return '';
@@ -68,7 +68,7 @@ function extractSearchableText(id)
   {
     try
     {
-      var deck = parseSlides(c), words = [];
+      var deck = fParseSlides(c), words = [];
       deck.slides.forEach(function(s) { s.blocks.forEach(function(b) { words.push(b.text); }); });
       return words.join('\n');
     }
@@ -88,16 +88,16 @@ function extractSearchableText(id)
   return c; // doc: raw markdown; graph/notebook: JSON that contains label/text strings
 }
 
-function gsEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function fGsEscRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-function gsHighlight(text, query)
+function fGsHighlight(text, query)
 {
-  if (!text || !query) return escHtml(text || '');
-  var re = new RegExp('(' + gsEscRe(query) + ')', 'gi');
-  return escHtml(text).replace(re, '<mark class="gs-hl">$1</mark>');
+  if (!text || !query) return fEscHtml(text || '');
+  var re = new RegExp('(' + fGsEscRe(query) + ')', 'gi');
+  return fEscHtml(text).replace(re, '<mark class="gs-hl">$1</mark>');
 }
 
-function gsSnippet(raw, query)
+function fGsSnippet(raw, query)
 {
   if (!raw) return '';
   var lc  = raw.toLowerCase();
@@ -107,14 +107,14 @@ function gsSnippet(raw, query)
   var s   = Math.max(0, idx - 50);
   var e   = Math.min(raw.length, idx + query.length + 90);
   var txt = (s > 0 ? '…' : '') + raw.slice(s, e) + (e < raw.length ? '…' : '');
-  return gsHighlight(txt, query);
+  return fGsHighlight(txt, query);
 }
 
-function runGlobalSearch(query)
+function fRunGlobalSearch(query)
 {
   var q   = query.trim();
   var qlo = q.toLowerCase();
-  if (!q) { hideGlobalSearch(); return; }
+  if (!q) { fHideGlobalSearch(); return; }
 
   var results = [];
   Object.keys(files).forEach(function(id)
@@ -122,8 +122,8 @@ function runGlobalSearch(query)
     var f = files[id];
     if (!f) return;
     var nameHit = f.name.toLowerCase().indexOf(qlo) >= 0;
-    var text    = extractSearchableText(id);
-    var snippet = gsSnippet(text, q);
+    var text    = fExtractSearchableText(id);
+    var snippet = fGsSnippet(text, q);
     if (nameHit || snippet)
       results.push({ id: id, file: f, nameHit: nameHit, snippet: snippet });
   });
@@ -143,7 +143,7 @@ function runGlobalSearch(query)
 
   if (!results.length)
   {
-    panel.innerHTML = '<div class="gs-empty">No results for <strong>' + escHtml(q) + '</strong></div>';
+    panel.innerHTML = '<div class="gs-empty">No results for <strong>' + fEscHtml(q) + '</strong></div>';
     return;
   }
 
@@ -151,28 +151,28 @@ function runGlobalSearch(query)
     '<div class="gs-count">' + results.length + ' result' + (results.length !== 1 ? 's' : '') + '</div>' +
     results.map(function(r)
     {
-      return '<div class="gs-result" onclick="openFile(\'' + escAttr(r.id) + '\');clearGlobalSearch();">' +
+      return '<div class="gs-result" onclick="fOpenFile(\'' + fEscAttr(r.id) + '\');fClearGlobalSearch();">' +
         '<div class="gs-result-name">' +
-          '<span class="gs-file-icon">' + fileTypeIcon(r.file.type) + '</span>' +
-          '<span class="gs-name">' + gsHighlight(r.file.name, q) + '</span>' +
+          '<span class="gs-file-icon">' + fFileTypeIcon(r.file.type) + '</span>' +
+          '<span class="gs-name">' + fGsHighlight(r.file.name, q) + '</span>' +
         '</div>' +
         (r.snippet ? '<div class="gs-snippet">' + r.snippet + '</div>' : '') +
       '</div>';
     }).join('');
 }
 
-function hideGlobalSearch()
+function fHideGlobalSearch()
 {
   globalSearchActive = false;
   document.getElementById('global-search-results').style.display    = 'none';
   document.getElementById('file-list').style.display                = '';
   document.getElementById('sidebar-search-clear').style.display     = 'none';
-  renderFileList();
+  fRenderFileList();
 }
 
 // Work-folder mode: background-load any unread files, then call `done` so
 // the caller can re-run its filter over the full content set.
-function scheduleUnloadedContentLoad(done)
+function fScheduleUnloadedContentLoad(done)
 {
   if (!workFolderRoot) return;
   globalSearchLoadTmr = setTimeout(async function()
@@ -183,7 +183,7 @@ function scheduleUnloadedContentLoad(done)
     {
       try
       {
-        var _r = await Platform.readWorkFile(workFolderRoot, id);
+        var _r = await Platform.fReadWorkFile(workFolderRoot, id);
         if (files[id]) { files[id].content = _r; files[id].contentLoaded = true; }
       }
       catch(err) {}
@@ -192,13 +192,13 @@ function scheduleUnloadedContentLoad(done)
   }, 150);
 }
 
-function onGlobalSearch(value)
+function fOnGlobalSearch(value)
 {
   clearTimeout(globalSearchLoadTmr);
   var q = value.trim();
-  if (!q) { hideGlobalSearch(); return; }
+  if (!q) { fHideGlobalSearch(); return; }
 
-  // '#tag' queries filter the sidebar file list in place (renderFileList
+  // '#tag' queries filter the sidebar file list in place (fRenderFileList
   // understands them) instead of opening the global results panel.
   if (q.charAt(0) === '#')
   {
@@ -206,34 +206,34 @@ function onGlobalSearch(value)
     document.getElementById('global-search-results').style.display    = 'none';
     document.getElementById('file-list').style.display                = '';
     document.getElementById('sidebar-search-clear').style.display     = '';
-    renderFileList();
-    scheduleUnloadedContentLoad(function(){ if (sidebarSearch.trim() === q) renderFileList(); });
+    fRenderFileList();
+    fScheduleUnloadedContentLoad(function(){ if (sidebarSearch.trim() === q) fRenderFileList(); });
     return;
   }
 
-  runGlobalSearch(q); // immediate pass — searches already-loaded content
+  fRunGlobalSearch(q); // immediate pass — searches already-loaded content
 
-  scheduleUnloadedContentLoad(function(){ if (sidebarSearch.trim() === q) runGlobalSearch(q); }); // re-render with full content
+  fScheduleUnloadedContentLoad(function(){ if (sidebarSearch.trim() === q) fRunGlobalSearch(q); }); // re-render with full content
 }
 
-function clearGlobalSearch()
+function fClearGlobalSearch()
 {
   var inp = document.getElementById('sidebar-search');
   if (inp) inp.value = '';
   sidebarSearch = '';
-  hideGlobalSearch();
+  fHideGlobalSearch();
 }
 
 // ── SIDEBAR COLLAPSE ───────────────────────────────────────
 
-function toggleSidebarCollapse()
+function fToggleSidebarCollapse()
 {
   sidebarCollapsed = !sidebarCollapsed;
   document.getElementById('sidebar').classList.toggle('sidebar--rail', sidebarCollapsed);
   try { localStorage.setItem('lk_sidebar_rail', sidebarCollapsed ? '1' : '0'); } catch(e) {}
 }
 
-function applySidebarCollapse()
+function fApplySidebarCollapse()
 {
   try { sidebarCollapsed = localStorage.getItem('lk_sidebar_rail') === '1'; } catch(e) {}
   document.getElementById('sidebar').classList.toggle('sidebar--rail', sidebarCollapsed);
@@ -243,20 +243,20 @@ function applySidebarCollapse()
 // On narrow screens the sidebar is off-canvas; a floating button slides it
 // in over a backdrop, and picking a file slides it back out.
 
-function toggleMobileSidebar()
+function fToggleMobileSidebar()
 {
   var sidebar = document.getElementById('sidebar'),
       open = !sidebar.classList.contains('mobile-open');
 
   // The rail (icons-only) state is a desktop concept — a drawer opens full.
   if (open && sidebarCollapsed)
-    toggleSidebarCollapse();
+    fToggleSidebarCollapse();
 
   sidebar.classList.toggle('mobile-open', open);
   document.getElementById('mobile-backdrop').classList.toggle('open', open);
 }
 
-function closeMobileSidebar()
+function fCloseMobileSidebar()
 {
   var sidebar = document.getElementById('sidebar'),
       backdrop = document.getElementById('mobile-backdrop');
@@ -273,13 +273,13 @@ function closeMobileSidebar()
 
 var backlinksIndex = {};
 
-async function loadBacklinksIndex()
+async function fLoadBacklinksIndex()
 {
   if (workFolderRoot)
   {
     try
     {
-      var raw = await Platform.readWorkFile(workFolderRoot, '_lkbl.json');
+      var raw = await Platform.fReadWorkFile(workFolderRoot, '_lkbl.json');
       backlinksIndex = JSON.parse(raw) || {};
     }
     catch(e) { backlinksIndex = {}; }
@@ -291,11 +291,11 @@ async function loadBacklinksIndex()
   }
 }
 
-async function saveBacklinksIndex()
+async function fSaveBacklinksIndex()
 {
   if (workFolderRoot)
   {
-    try { await Platform.writeWorkFile(workFolderRoot, '_lkbl.json', JSON.stringify(backlinksIndex, null, 2)); }
+    try { await Platform.fWriteWorkFile(workFolderRoot, '_lkbl.json', JSON.stringify(backlinksIndex, null, 2)); }
     catch(e) {}
   }
   else
@@ -307,10 +307,10 @@ async function saveBacklinksIndex()
 // Returns list of file ids that sourceId currently mentions by name.
 // Outside Work Folder mode content always lives in memory, so only the
 // lazily-loaded work-folder files can be "not loaded yet".
-function computeMentionsListFor(sourceId)
+function fComputeMentionsListFor(sourceId)
 {
   if (!files[sourceId] || (workFolderRoot && !files[sourceId].contentLoaded)) return [];
-  var text = extractSearchableText(sourceId).toLowerCase();
+  var text = fExtractSearchableText(sourceId).toLowerCase();
   var out  = [];
   Object.keys(files).forEach(function(targetId)
   {
@@ -322,11 +322,11 @@ function computeMentionsListFor(sourceId)
 }
 
 // Called when a file is opened or saved — updates only changed entries in the index.
-async function updateBacklinksForFile(sourceId)
+async function fUpdateBacklinksForFile(sourceId)
 {
   if (!files[sourceId] || (workFolderRoot && !files[sourceId].contentLoaded)) return;
 
-  var newMentions = computeMentionsListFor(sourceId);
+  var newMentions = fComputeMentionsListFor(sourceId);
   var oldMentions = files[sourceId].lkMentions || [];
   var removed     = oldMentions.filter(function(t) { return newMentions.indexOf(t) < 0; });
   var added       = newMentions.filter(function(t) { return oldMentions.indexOf(t) < 0; });
@@ -348,12 +348,12 @@ async function updateBacklinksForFile(sourceId)
     if (backlinksIndex[tid].indexOf(sourceId) < 0) backlinksIndex[tid].push(sourceId);
   });
 
-  await saveBacklinksIndex();
+  await fSaveBacklinksIndex();
 }
 
 // ── BACKLINKS (live scan) ───────────────────────────────────
 
-function computeBacklinks(fileId)
+function fComputeBacklinks(fileId)
 {
   if (!fileId || !files[fileId]) return [];
   var targetName = files[fileId].name.toLowerCase();
@@ -362,7 +362,7 @@ function computeBacklinks(fileId)
   {
     if (id === fileId || !files[id]) return;
     var f    = files[id];
-    var text = f.name + ' ' + extractSearchableText(id);
+    var text = f.name + ' ' + fExtractSearchableText(id);
     if (text.toLowerCase().indexOf(targetName) >= 0)
       results.push({ id: id, file: f });
   });
@@ -370,12 +370,12 @@ function computeBacklinks(fileId)
 }
 
 
-function toggleFolderExpanded(path)
+function fToggleFolderExpanded(path)
 {
   if (expandedFolders.has(path))
     expandedFolders.delete(path);
   else
     expandedFolders.add(path);
 
-  renderFileList();
+  fRenderFileList();
 }

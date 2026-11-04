@@ -5,20 +5,20 @@
 // scope, exactly as when this was a single file.
 
 // ── GRAPH (Mermaid diagrams, stored as Markdown) ──
-var graphTextUndo = makeTextUndo(function(){ return document.getElementById('graph-editor'); });
+var graphTextUndo = fMakeTextUndo(function(){ return document.getElementById('graph-editor'); });
 
-function loadGraphFile(file)
+function fLoadGraphFile(file)
 {
   graphTextUndo.reset();
   document.getElementById('graph-title-input').value = file.name;
   document.getElementById('graph-editor').value = file.content || '';
 
-  updateGraphPreview();
+  fUpdateGraphPreview();
 }
 
-function handleGraphEditorKey(keyEvent)
+function fHandleGraphEditorKey(keyEvent)
 {
-  graphTextUndo.noteKeydown(keyEvent);
+  graphTextUndo.fNoteKeydown(keyEvent);
 
   if (!(keyEvent.ctrlKey || keyEvent.metaKey))
     return;
@@ -28,57 +28,57 @@ function handleGraphEditorKey(keyEvent)
     keyEvent.preventDefault();
 
     if (graphTextUndo.undo())
-      onGraphEditorChange();
+      fOnGraphEditorChange();
   }
   else if (keyEvent.key.toLowerCase() === 'y' || (keyEvent.shiftKey && keyEvent.key.toLowerCase() === 'z'))
   {
     keyEvent.preventDefault();
 
     if (graphTextUndo.redo())
-      onGraphEditorChange();
+      fOnGraphEditorChange();
   }
 }
 
-function onGraphTitleChange()
+function fOnGraphTitleChange()
 {
   if ((!currentFileId) || (files[currentFileId].type !== 'graph'))
     return;
 
   files[currentFileId].name = (document.getElementById('graph-title-input').value || files[currentFileId].name);
-  scheduleSave();
-  renderFileList();
+  fScheduleSave();
+  fRenderFileList();
 }
 
-function onGraphEditorChange()
+function fOnGraphEditorChange()
 {
   if (!currentFileId || !files[currentFileId] || files[currentFileId].type !== 'graph')
     return;
 
   files[currentFileId].content = document.getElementById('graph-editor').value;
 
-  updateGraphPreview();
-  scheduleSave();
+  fUpdateGraphPreview();
+  fScheduleSave();
 }
 
-function updateGraphPreview()
+function fUpdateGraphPreview()
 {
   var source = document.getElementById('graph-editor').value,
-      html = escHtml(source);
+      html = fEscHtml(source);
 
   if (typeof marked !== 'undefined')
     html = marked.parser(marked.lexer(source));
 
   var container = document.getElementById('graph-preview-content');
 
-  container.innerHTML = sanitizeHtml(html);
+  container.innerHTML = fSanitizeHtml(html);
 
-  renderMermaidDiagrams(container);
+  fRenderMermaidDiagrams(container);
 }
 
 // Renders any `.mermaid` placeholder divs produced by the marked code-block
 // override into actual diagrams. Re-running on freshly-built markup is safe
 // since each call works on brand-new, unprocessed nodes.
-function renderMermaidDiagrams(container)
+function fRenderMermaidDiagrams(container)
 {
   if ((typeof mermaid === 'undefined') || !container)
     return;
@@ -98,7 +98,7 @@ function renderMermaidDiagrams(container)
   }
 }
 
-function setGraphView(newView)
+function fSetGraphView(newView)
 {
   graphEditorView = newView;
 
@@ -116,10 +116,10 @@ function setGraphView(newView)
   );
 
   if (newView !== 'write')
-    updateGraphPreview();
+    fUpdateGraphPreview();
 }
 
-var MERMAID_SNIPPETS =
+var cMermaidSnippets =
 [
   {
     name: 'Flowchart',
@@ -173,7 +173,7 @@ var MERMAID_SNIPPETS =
   }
 ];
 
-function renderMermaidHelp()
+function fRenderMermaidHelp()
 {
   var panel = document.getElementById('mermaid-help-panel');
 
@@ -185,13 +185,13 @@ function renderMermaidHelp()
                 'Click a diagram type below to insert a starter template at the cursor.'+
               '</div>';
 
-  var rows = MERMAID_SNIPPETS.map
+  var rows = cMermaidSnippets.map
   (
     function(s, i)
     {
-      return  '<div class="fx-help-row mermaid-help-row" onclick="insertMermaidSnippet(' + i + ')">'+
-                '<div class="fx-help-name">' + escHtml(s.name) + '</div>'+
-                '<div class="fx-help-desc">' + escHtml(s.desc) + '</div>'+
+      return  '<div class="fx-help-row mermaid-help-row" onclick="fInsertMermaidSnippet(' + i + ')">'+
+                '<div class="fx-help-name">' + fEscHtml(s.name) + '</div>'+
+                '<div class="fx-help-desc">' + fEscHtml(s.desc) + '</div>'+
               '</div>';
     }
   ).join('');
@@ -199,7 +199,7 @@ function renderMermaidHelp()
   panel.innerHTML = intro + rows;
 }
 
-function toggleMermaidHelp(clickEvent)
+function fToggleMermaidHelp(clickEvent)
 {
   if (clickEvent)
     clickEvent.stopPropagation();
@@ -210,7 +210,7 @@ function toggleMermaidHelp(clickEvent)
     return;
 
   if (!panel.classList.contains('open'))
-    renderMermaidHelp();
+    fRenderMermaidHelp();
 
   panel.classList.toggle('open');
 }
@@ -232,14 +232,14 @@ document.addEventListener
   }
 );
 
-function insertMermaidSnippet(index)
+function fInsertMermaidSnippet(index)
 {
-  var snippet = MERMAID_SNIPPETS[index];
+  var snippet = cMermaidSnippets[index];
 
   if (!snippet)
     return;
 
-  graphTextUndo.forceSnapshot();
+  graphTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('graph-editor'),
       start = editor.selectionStart,
@@ -255,7 +255,7 @@ function insertMermaidSnippet(index)
   editor.setSelectionRange(caretPos, caretPos);
   editor.focus();
 
-  onGraphEditorChange();
+  fOnGraphEditorChange();
 
   document.getElementById('mermaid-help-panel').classList.remove('open');
 }

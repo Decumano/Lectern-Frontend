@@ -30,16 +30,16 @@
 // The in-memory model is parsed from the file and written back on every
 // edit, so the visual editor and the source view are two faces of one text.
 
-var SLIDE_DEFAULT_W = 1280;
-var SLIDE_DEFAULT_H = 720;
+var cSlideDefaultW = 1280;
+var cSlideDefaultH = 720;
 
-var SLIDE_HEADER_RE = /^---[ \t]*(\d+)[ \t]*---[ \t]*$/;
-var SLIDE_BLOCK_RE = /^\[[ \t]*(-?\d+(?:\.\d+)?)[ \t]*,[ \t]*(-?\d+(?:\.\d+)?)[ \t]*,[ \t]*(\d+(?:\.\d+)?)[ \t]*,[ \t]*(\d+(?:\.\d+)?)[ \t]*,[ \t]?/;
+var cSlideHeaderRe = /^---[ \t]*(\d+)[ \t]*---[ \t]*$/;
+var cSlideBlockRe = /^\[[ \t]*(-?\d+(?:\.\d+)?)[ \t]*,[ \t]*(-?\d+(?:\.\d+)?)[ \t]*,[ \t]*(\d+(?:\.\d+)?)[ \t]*,[ \t]*(\d+(?:\.\d+)?)[ \t]*,[ \t]?/;
 
 // Declarations applied to the slide element as CSS. Anything else in the
 // style block is kept in the file but has no effect, the way a browser
 // ignores a property it doesn't know.
-var SLIDE_CSS_PROPS =
+var cSlideCssProps =
 [
   'background', 'background-color', 'background-image', 'background-size',
   'background-position', 'background-repeat', 'background-blend-mode',
@@ -49,7 +49,7 @@ var SLIDE_CSS_PROPS =
 
 // Drawing declarations: decorations painted over the background, under the
 // text, in the order they appear.
-var SLIDE_DECO_PROPS = ['line', 'rect', 'ellipse', 'stroke'];
+var cSlideDecoProps = ['line', 'rect', 'ellipse', 'stroke'];
 
 let slDeck = null;
 let slIndex = 0;
@@ -71,22 +71,22 @@ let slAssetCache = {};      // asset path -> { url, state }
 
 // ── Parsing and serialization ──
 
-function defaultSlidesContent()
+function fDefaultSlidesContent()
 {
-  return  '---\ntype: presentation\nsize: ' + SLIDE_DEFAULT_W + 'x' + SLIDE_DEFAULT_H + '\n---\n\n' +
+  return  '---\ntype: presentation\nsize: ' + cSlideDefaultW + 'x' + cSlideDefaultH + '\n---\n\n' +
           '--- 1 ---\n' +
           '{\nbackground-color: #ffffff;\ncolor: #1a1a1a;\n}\n' +
           '[120, 260, 1040, 200, ;;\n# Title\n;;]\n';
 }
 
-function newSlideModel()
+function fNewSlideModel()
 {
   return { decls: [], blocks: [], loose: [] };
 }
 
 // Splits a declaration list on ';', ignoring the ones inside parentheses —
 // a data: URL (url(data:image/png;base64,…)) carries its own.
-function splitSlideDecls(text)
+function fSplitSlideDecls(text)
 {
   var out = [], depth = 0, quote = null, start = 0;
 
@@ -109,9 +109,9 @@ function splitSlideDecls(text)
   return out;
 }
 
-function parseSlideDecls(text, into)
+function fParseSlideDecls(text, into)
 {
-  splitSlideDecls(text).forEach(function(part)
+  fSplitSlideDecls(text).forEach(function(part)
   {
     var colon = part.indexOf(':');
     if (colon <= 0) return;
@@ -127,10 +127,10 @@ function parseSlideDecls(text, into)
   });
 }
 
-function parseSlides(content)
+function fParseSlides(content)
 {
   var lines = String(content || '').replace(/\r\n?/g, '\n').split('\n'),
-      deck = { meta: [], width: SLIDE_DEFAULT_W, height: SLIDE_DEFAULT_H, slides: [] },
+      deck = { meta: [], width: cSlideDefaultW, height: cSlideDefaultH, slides: [] },
       i = 0;
 
   if (lines.length && lines[0].trim() === '---')
@@ -161,7 +161,7 @@ function parseSlides(content)
 
   var slide = null, block = null, inStyle = false;
 
-  function finishBlock()
+  function fFinishBlock()
   {
     if (!block) return;
 
@@ -181,10 +181,10 @@ function parseSlides(content)
   {
     var line = lines[i];
 
-    if (SLIDE_HEADER_RE.test(line.trim()))
+    if (cSlideHeaderRe.test(line.trim()))
     {
-      finishBlock();
-      slide = newSlideModel();
+      fFinishBlock();
+      slide = fNewSlideModel();
       deck.slides.push(slide);
       inStyle = false;
       continue;
@@ -195,22 +195,22 @@ function parseSlides(content)
       var close = line.indexOf('}');
       if (close !== -1)
       {
-        parseSlideDecls(line.slice(0, close), slide.decls);
+        fParseSlideDecls(line.slice(0, close), slide.decls);
         inStyle = false;
       }
       else
-        parseSlideDecls(line, slide.decls);
+        fParseSlideDecls(line, slide.decls);
       continue;
     }
 
-    var bm = SLIDE_BLOCK_RE.exec(line);
+    var bm = cSlideBlockRe.exec(line);
 
     if (bm)
     {
       // Text before the first header still deserves a slide to live on.
-      if (!slide) { slide = newSlideModel(); deck.slides.push(slide); }
+      if (!slide) { slide = fNewSlideModel(); deck.slides.push(slide); }
 
-      finishBlock();
+      fFinishBlock();
       block =
       {
         x: parseFloat(bm[1]), y: parseFloat(bm[2]),
@@ -235,10 +235,10 @@ function parseSlides(content)
           closeAt = body.indexOf('}');
 
       if (closeAt !== -1)
-        parseSlideDecls(body.slice(0, closeAt), slide.decls);
+        fParseSlideDecls(body.slice(0, closeAt), slide.decls);
       else
       {
-        parseSlideDecls(body, slide.decls);
+        fParseSlideDecls(body, slide.decls);
         inStyle = true;
       }
       continue;
@@ -246,25 +246,25 @@ function parseSlides(content)
 
     if (line.trim())
     {
-      if (!slide) { slide = newSlideModel(); deck.slides.push(slide); }
+      if (!slide) { slide = fNewSlideModel(); deck.slides.push(slide); }
       slide.loose.push(line);
     }
   }
 
-  finishBlock();
+  fFinishBlock();
 
   if (!deck.slides.length)
-    deck.slides.push(newSlideModel());
+    deck.slides.push(fNewSlideModel());
 
   return deck;
 }
 
-function slNum(n)
+function fSlNum(n)
 {
   return String(Math.round(n * 100) / 100);
 }
 
-function serializeSlides(deck)
+function fSerializeSlides(deck)
 {
   var meta = deck.meta.slice(),
       hasType = false,
@@ -293,7 +293,7 @@ function serializeSlides(deck)
 
     slide.blocks.forEach(function(b)
     {
-      out += '[' + slNum(b.x) + ', ' + slNum(b.y) + ', ' + slNum(b.w) + ', ' + slNum(b.h) + ', ' + (b.text || '') + ']\n';
+      out += '[' + fSlNum(b.x) + ', ' + fSlNum(b.y) + ', ' + fSlNum(b.w) + ', ' + fSlNum(b.h) + ', ' + (b.text || '') + ']\n';
     });
   });
 
@@ -302,14 +302,14 @@ function serializeSlides(deck)
 
 // ── Declarations ──
 
-function slDeclValue(slide, prop)
+function fSlDeclValue(slide, prop)
 {
   for (var i = slide.decls.length - 1; i >= 0; i--)
     if (slide.decls[i].prop === prop) return slide.decls[i].value;
   return null;
 }
 
-function slSetDecl(slide, prop, value)
+function fSlSetDecl(slide, prop, value)
 {
   var found = false;
 
@@ -325,21 +325,21 @@ function slSetDecl(slide, prop, value)
   if (!found && value !== null)
   {
     // Styling goes before the drawings, which read better at the end.
-    var at = slide.decls.findIndex(function(d){ return SLIDE_DECO_PROPS.indexOf(d.prop) !== -1; });
+    var at = slide.decls.findIndex(function(d){ return cSlideDecoProps.indexOf(d.prop) !== -1; });
     if (at === -1) slide.decls.push({ prop: prop, value: value });
     else slide.decls.splice(at, 0, { prop: prop, value: value });
   }
 }
 
-function slDecoIndices(slide)
+function fSlDecoIndices(slide)
 {
   var out = [];
-  slide.decls.forEach(function(d, i){ if (SLIDE_DECO_PROPS.indexOf(d.prop) !== -1) out.push(i); });
+  slide.decls.forEach(function(d, i){ if (cSlideDecoProps.indexOf(d.prop) !== -1) out.push(i); });
   return out;
 }
 
 // A decoration's declaration as data: { kind, nums: [...], colors: [...] }.
-function parseSlideDeco(decl)
+function fParseSlideDeco(decl)
 {
   var parts = decl.value.split(',').map(function(s){ return s.trim(); });
 
@@ -366,18 +366,18 @@ function parseSlideDeco(decl)
           };
 }
 
-function serializeSlideDeco(d)
+function fSerializeSlideDeco(d)
 {
   if (d.kind === 'stroke')
-    return { prop: 'stroke', value: d.color + ', ' + slNum(d.width) + ', ' + d.points.map(function(p){ return slNum(p.x) + ' ' + slNum(p.y); }).join(', ') };
+    return { prop: 'stroke', value: d.color + ', ' + fSlNum(d.width) + ', ' + d.points.map(function(p){ return fSlNum(p.x) + ' ' + fSlNum(p.y); }).join(', ') };
 
   if (d.kind === 'line')
-    return { prop: 'line', value: [d.x1, d.y1, d.x2, d.y2].map(slNum).join(', ') + ', ' + d.color + ', ' + slNum(d.width) };
+    return { prop: 'line', value: [d.x1, d.y1, d.x2, d.y2].map(fSlNum).join(', ') + ', ' + d.color + ', ' + fSlNum(d.width) };
 
-  return { prop: d.kind, value: [d.x, d.y, d.w, d.h].map(slNum).join(', ') + ', ' + d.fill + ', ' + d.color + ', ' + slNum(d.width) };
+  return { prop: d.kind, value: [d.x, d.y, d.w, d.h].map(fSlNum).join(', ') + ', ' + d.fill + ', ' + d.color + ', ' + fSlNum(d.width) };
 }
 
-function slDecoBounds(d)
+function fSlDecoBounds(d)
 {
   if (d.kind === 'line')
     return { x: Math.min(d.x1, d.x2), y: Math.min(d.y1, d.y2), w: Math.abs(d.x2 - d.x1), h: Math.abs(d.y2 - d.y1) };
@@ -393,7 +393,7 @@ function slDecoBounds(d)
   return { x: d.x, y: d.y, w: d.w, h: d.h };
 }
 
-function slMoveDeco(d, dx, dy)
+function fSlMoveDeco(d, dx, dy)
 {
   if (d.kind === 'line') { d.x1 += dx; d.y1 += dy; d.x2 += dx; d.y2 += dy; }
   else if (d.kind === 'stroke') d.points.forEach(function(p){ p.x += dx; p.y += dy; });
@@ -406,27 +406,27 @@ function slMoveDeco(d, dx, dy)
 // Without a work folder there is no project to put them in, and the image is
 // embedded in the file as a data: URL instead.
 
-var SLIDE_IMAGE_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', avif: 'image/avif' };
+var cSlideImageTypes = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', avif: 'image/avif' };
 
-function slAssetPath(raw)
+function fSlAssetPath(raw)
 {
   return String(raw || '').trim().replace(/^\.\//, '').replace(/^\/+/, '');
 }
 
-function slIsExternalUrl(ref)
+function fSlIsExternalUrl(ref)
 {
   return /^(data:|https?:|blob:)/i.test(ref);
 }
 
 // The displayable URL for an asset reference, or '' while it loads (the
 // slide is re-rendered once it arrives).
-function slAssetUrl(ref)
+function fSlAssetUrl(ref)
 {
   ref = String(ref || '').trim();
   if (!ref) return '';
-  if (slIsExternalUrl(ref)) return ref;
+  if (fSlIsExternalUrl(ref)) return ref;
 
-  var path = slAssetPath(ref),
+  var path = fSlAssetPath(ref),
       entry = slAssetCache[path];
 
   if (entry) return entry.url || '';
@@ -436,11 +436,11 @@ function slAssetUrl(ref)
 
   var ext = (path.split('.').pop() || '').toLowerCase();
 
-  Platform.readWorkFileBinary(workFolderRoot, path, SLIDE_IMAGE_TYPES[ext] || '')
+  Platform.fReadWorkFileBinary(workFolderRoot, path, cSlideImageTypes[ext] || '')
     .then(function(blob)
     {
       slAssetCache[path] = { url: URL.createObjectURL(blob), state: 'ready' };
-      slRenderAll();
+      fSlRenderAll();
     })
     .catch(function(e)
     {
@@ -452,18 +452,18 @@ function slAssetUrl(ref)
 }
 
 // Rewrites every url(…) in a CSS value to something the page can display.
-function slResolveCssUrls(value)
+function fSlResolveCssUrls(value)
 {
   return String(value).replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi, function(_, q, ref)
   {
-    var url = slAssetUrl(ref);
+    var url = fSlAssetUrl(ref);
     return url ? 'url("' + url.replace(/["\\\n]/g, '') + '")' : 'none';
   });
 }
 
 // The spec allows the bare forms `background-image: [path]` and a plain path;
 // both mean url(path).
-function slNormalizeImageValue(value)
+function fSlNormalizeImageValue(value)
 {
   var v = String(value || '').trim(),
       bracket = /^\[(.*)\]$/.exec(v);
@@ -473,19 +473,19 @@ function slNormalizeImageValue(value)
   return v;
 }
 
-function slExtensionForBlob(blob, name)
+function fSlExtensionForBlob(blob, name)
 {
   var fromName = /\.([a-z0-9]+)$/i.exec(name || '');
-  if (fromName && SLIDE_IMAGE_TYPES[fromName[1].toLowerCase()]) return fromName[1].toLowerCase();
+  if (fromName && cSlideImageTypes[fromName[1].toLowerCase()]) return fromName[1].toLowerCase();
 
   var type = (blob.type || '').toLowerCase();
-  for (var ext in SLIDE_IMAGE_TYPES)
-    if (SLIDE_IMAGE_TYPES[ext] === type) return ext === 'jpeg' ? 'jpg' : ext;
+  for (var ext in cSlideImageTypes)
+    if (cSlideImageTypes[ext] === type) return ext === 'jpeg' ? 'jpg' : ext;
 
   return 'png';
 }
 
-function slBlobToDataUrl(blob)
+function fSlBlobToDataUrl(blob)
 {
   return new Promise(function(resolve, reject)
   {
@@ -498,7 +498,7 @@ function slBlobToDataUrl(blob)
 
 // Stores an image for the open deck and resolves the reference to write into
 // it: a work-folder path, or (with no work folder) a data: URL.
-async function slStoreImage(blob, sourceName)
+async function fSlStoreImage(blob, sourceName)
 {
   if (blob.size > 20 * 1024 * 1024)
     throw new Error('the image is larger than 20 MB');
@@ -507,18 +507,18 @@ async function slStoreImage(blob, sourceName)
     throw new Error('that file is not an image');
 
   if (!workFolderRoot)
-    return await slBlobToDataUrl(blob);
+    return await fSlBlobToDataUrl(blob);
 
-  var deckName = sanitizeFileName(files[currentFileId] && files[currentFileId].name) || 'Slides',
-      ext = slExtensionForBlob(blob, sourceName),
-      base = sanitizeFileName(String(sourceName || 'image').replace(/\.[^.]*$/, '').replace(/[?#].*$/, '')).replace(/\s+/g, '-') || 'image',
+  var deckName = fSanitizeFileName(files[currentFileId] && files[currentFileId].name) || 'Slides',
+      ext = fSlExtensionForBlob(blob, sourceName),
+      base = fSanitizeFileName(String(sourceName || 'image').replace(/\.[^.]*$/, '').replace(/[?#].*$/, '')).replace(/\s+/g, '-') || 'image',
       dir = 'assets/' + deckName,
       rel = dir + '/' + base.slice(0, 60) + '-' + Math.random().toString(16).slice(2, 8) + '.' + ext;
 
-  try { await Platform.createWorkFolder(workFolderRoot, 'assets'); } catch(e) {}
-  try { await Platform.createWorkFolder(workFolderRoot, dir); } catch(e) {}
+  try { await Platform.fCreateWorkFolder(workFolderRoot, 'assets'); } catch(e) {}
+  try { await Platform.fCreateWorkFolder(workFolderRoot, dir); } catch(e) {}
 
-  await Platform.writeWorkFileBinary(workFolderRoot, rel, blob);
+  await Platform.fWriteWorkFileBinary(workFolderRoot, rel, blob);
 
   slAssetCache[rel] = { url: URL.createObjectURL(blob), state: 'ready' };
   return rel;
@@ -529,10 +529,10 @@ async function slStoreImage(blob, sourceName)
 // Markdown+ for one text box. The document renderer numbers headings and
 // checkboxes through shared counters; those are saved and restored so
 // rendering slides never disturbs an open document's preview.
-function slRenderMarkdown(text)
+function fSlRenderMarkdown(text)
 {
   if (typeof marked === 'undefined')
-    return escHtml(text || '');
+    return fEscHtml(text || '');
 
   var saved = [documentHeadings, slugCounts, headingRenderCursor, checkboxRenderIndex];
 
@@ -543,11 +543,11 @@ function slRenderMarkdown(text)
 
   try
   {
-    return sanitizeHtml(marked.parser(marked.lexer(text || '')));
+    return fSanitizeHtml(marked.parser(marked.lexer(text || '')));
   }
   catch(e)
   {
-    return escHtml(text || '');
+    return fEscHtml(text || '');
   }
   finally
   {
@@ -558,7 +558,7 @@ function slRenderMarkdown(text)
   }
 }
 
-function slSvg(tag, attrs)
+function fSlSvg(tag, attrs)
 {
   var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
   for (var k in attrs) el.setAttribute(k, attrs[k]);
@@ -567,7 +567,7 @@ function slSvg(tag, attrs)
 
 // The notebook's smoothing: a quadratic through each midpoint, so freehand
 // lines look drawn rather than faceted.
-function slStrokePath(points)
+function fSlStrokePath(points)
 {
   if (!points.length) return '';
   if (points.length === 1) return 'M' + points[0].x + ' ' + points[0].y + 'l0.01 0';
@@ -584,25 +584,25 @@ function slStrokePath(points)
   return d + 'L' + last.x + ' ' + last.y;
 }
 
-function slDecoElement(d)
+function fSlDecoElement(d)
 {
   var el;
 
   if (d.kind === 'line')
-    el = slSvg('line', { x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, stroke: d.color, 'stroke-width': d.width, 'stroke-linecap': 'round' });
+    el = fSlSvg('line', { x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, stroke: d.color, 'stroke-width': d.width, 'stroke-linecap': 'round' });
   else if (d.kind === 'stroke')
-    el = slSvg('path', { d: slStrokePath(d.points), fill: 'none', stroke: d.color, 'stroke-width': d.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+    el = fSlSvg('path', { d: fSlStrokePath(d.points), fill: 'none', stroke: d.color, 'stroke-width': d.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
   else if (d.kind === 'rect')
-    el = slSvg('rect', { x: d.x, y: d.y, width: Math.max(0, d.w), height: Math.max(0, d.h), fill: d.fill, stroke: d.color, 'stroke-width': d.width });
+    el = fSlSvg('rect', { x: d.x, y: d.y, width: Math.max(0, d.w), height: Math.max(0, d.h), fill: d.fill, stroke: d.color, 'stroke-width': d.width });
   else
-    el = slSvg('ellipse', { cx: d.x + d.w / 2, cy: d.y + d.h / 2, rx: Math.max(0, d.w / 2), ry: Math.max(0, d.h / 2), fill: d.fill, stroke: d.color, 'stroke-width': d.width });
+    el = fSlSvg('ellipse', { cx: d.x + d.w / 2, cy: d.y + d.h / 2, rx: Math.max(0, d.w / 2), ry: Math.max(0, d.h / 2), fill: d.fill, stroke: d.color, 'stroke-width': d.width });
 
   return el;
 }
 
 // Builds a slide's DOM at full size (deck.width × deck.height). `interactive`
 // adds the hooks the editor needs (indices, selection, handles).
-function slBuildSlide(deck, slide, interactive)
+function fSlBuildSlide(deck, slide, interactive)
 {
   var el = document.createElement('div');
   el.className = 'sl-slide';
@@ -619,23 +619,23 @@ function slBuildSlide(deck, slide, interactive)
 
   slide.decls.forEach(function(d)
   {
-    if (SLIDE_CSS_PROPS.indexOf(d.prop) === -1) return;
+    if (cSlideCssProps.indexOf(d.prop) === -1) return;
 
     var value = d.value;
-    if (d.prop === 'background-image') value = slNormalizeImageValue(value);
-    if (/url\(/i.test(value)) value = slResolveCssUrls(value);
+    if (d.prop === 'background-image') value = fSlNormalizeImageValue(value);
+    if (/url\(/i.test(value)) value = fSlResolveCssUrls(value);
 
     el.style.setProperty(d.prop, value);
   });
 
-  var svg = slSvg('svg', { class: 'sl-deco', width: deck.width, height: deck.height, viewBox: '0 0 ' + deck.width + ' ' + deck.height });
+  var svg = fSlSvg('svg', { class: 'sl-deco', width: deck.width, height: deck.height, viewBox: '0 0 ' + deck.width + ' ' + deck.height });
 
-  slDecoIndices(slide).forEach(function(declIdx)
+  fSlDecoIndices(slide).forEach(function(declIdx)
   {
-    var d = parseSlideDeco(slide.decls[declIdx]);
+    var d = fParseSlideDeco(slide.decls[declIdx]);
     if (!d) return;
 
-    var shape = slDecoElement(d);
+    var shape = fSlDecoElement(d);
     if (interactive) shape.setAttribute('data-decl', declIdx);
     svg.appendChild(shape);
   });
@@ -653,24 +653,24 @@ function slBuildSlide(deck, slide, interactive)
 
     var content = document.createElement('div');
     content.className = 'sl-block-content';
-    content.innerHTML = slRenderMarkdown(b.text);
+    content.innerHTML = fSlRenderMarkdown(b.text);
     box.appendChild(content);
 
     if (interactive) box.setAttribute('data-block', i);
     el.appendChild(box);
   });
 
-  if (typeof renderMermaidDiagrams === 'function' && el.querySelector('.mermaid'))
+  if (typeof fRenderMermaidDiagrams === 'function' && el.querySelector('.mermaid'))
   {
     // Mermaid measures text as it lays out, so it needs the node in the page.
-    setTimeout(function(){ if (el.isConnected) renderMermaidDiagrams(el); }, 0);
+    setTimeout(function(){ if (el.isConnected) fRenderMermaidDiagrams(el); }, 0);
   }
 
   return el;
 }
 
 // Places a full-size slide inside `host`, scaled to fit it.
-function slMountScaled(host, slideEl, deck, maxW, maxH)
+function fSlMountScaled(host, slideEl, deck, maxW, maxH)
 {
   var scale = Math.min(maxW / deck.width, maxH / deck.height);
   if (!isFinite(scale) || scale <= 0) scale = 1;
@@ -685,21 +685,21 @@ function slMountScaled(host, slideEl, deck, maxW, maxH)
   return scale;
 }
 
-function slCurrentSlide()
+function fSlCurrentSlide()
 {
   return slDeck && slDeck.slides[slIndex];
 }
 
 var slStageScale = 1;
 
-function slRenderStage()
+function fSlRenderStage()
 {
   var stage = document.getElementById('slides-stage'),
       host = document.getElementById('slides-canvas');
 
   if (!stage || !host || !slDeck) return;
 
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
 
   // A text box being edited survives the rebuild with what was typed so far.
@@ -708,18 +708,18 @@ function slRenderStage()
                ? { value: openEditor.value, start: openEditor.selectionStart, end: openEditor.selectionEnd, focused: document.activeElement === openEditor }
                : null;
 
-  var el = slBuildSlide(slDeck, slide, true),
+  var el = fSlBuildSlide(slDeck, slide, true),
       pad = 48;
 
-  slStageScale = slMountScaled(host, el, slDeck, Math.max(80, stage.clientWidth - pad), Math.max(60, stage.clientHeight - pad));
+  slStageScale = fSlMountScaled(host, el, slDeck, Math.max(80, stage.clientWidth - pad), Math.max(60, stage.clientHeight - pad));
 
   host.classList.toggle('sl-tool-draw', slTool !== 'select');
 
-  slRenderSelection();
+  fSlRenderSelection();
 
   if (slEditing !== null)
   {
-    slOpenBlockEditor(slEditing, false, !typing || typing.focused);
+    fSlOpenBlockEditor(slEditing, false, !typing || typing.focused);
 
     var ta = host.querySelector('.sl-block-editor');
     if (ta && typing)
@@ -730,7 +730,7 @@ function slRenderStage()
   }
 }
 
-function slRenderSelection()
+function fSlRenderSelection()
 {
   var host = document.getElementById('slides-canvas'),
       slideEl = host && host.querySelector('.sl-slide');
@@ -740,7 +740,7 @@ function slRenderSelection()
   slideEl.querySelectorAll('.sl-sel-box').forEach(function(n){ n.remove(); });
   slideEl.querySelectorAll('.sl-block.sl-selected').forEach(function(n){ n.classList.remove('sl-selected'); });
 
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slSelection || !slide) return;
 
   var box;
@@ -756,9 +756,9 @@ function slRenderSelection()
   else
   {
     var decl = slide.decls[slSelection.index],
-        d = decl && parseSlideDeco(decl);
+        d = decl && fParseSlideDeco(decl);
     if (!d) { slSelection = null; return; }
-    box = slDecoBounds(d);
+    box = fSlDecoBounds(d);
   }
 
   var sel = document.createElement('div'),
@@ -773,7 +773,7 @@ function slRenderSelection()
 
   // Text boxes and shapes with an area resize from the corners; lines and
   // freehand strokes only move.
-  var d2 = slSelection.kind === 'deco' ? parseSlideDeco(slide.decls[slSelection.index]) : null;
+  var d2 = slSelection.kind === 'deco' ? fParseSlideDeco(slide.decls[slSelection.index]) : null;
 
   if (slSelection.kind === 'block' || (d2 && (d2.kind === 'rect' || d2.kind === 'ellipse')))
   {
@@ -791,7 +791,7 @@ function slRenderSelection()
   slideEl.appendChild(sel);
 }
 
-function slRenderStrip()
+function fSlRenderStrip()
 {
   var strip = document.getElementById('slides-strip');
   if (!strip || !slDeck) return;
@@ -809,15 +809,15 @@ function slRenderStrip()
     item.setAttribute('data-index', i);
     item.title = 'Slide ' + (i + 1);
 
-    var num = document.createElement('span');
-    num.className = 'sl-thumb-num';
-    num.textContent = i + 1;
+    var fNum = document.createElement('span');
+    fNum.className = 'sl-thumb-num';
+    fNum.textContent = i + 1;
 
     var host = document.createElement('div');
     host.className = 'sl-thumb-frame';
-    slMountScaled(host, slBuildSlide(slDeck, slide, false), slDeck, thumbW, thumbW);
+    fSlMountScaled(host, fSlBuildSlide(slDeck, slide, false), slDeck, thumbW, thumbW);
 
-    item.appendChild(num);
+    item.appendChild(fNum);
     item.appendChild(host);
     strip.appendChild(item);
   });
@@ -826,26 +826,26 @@ function slRenderStrip()
   add.type = 'button';
   add.className = 'sl-thumb-add';
   add.textContent = '+ Slide';
-  add.onclick = slAddSlide;
+  add.onclick = fSlAddSlide;
   strip.appendChild(add);
 
   var active = strip.querySelector('.sl-thumb.active');
   if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
 }
 
-function slScheduleStrip()
+function fSlScheduleStrip()
 {
   clearTimeout(slThumbTimer);
-  slThumbTimer = setTimeout(slRenderStrip, 250);
+  slThumbTimer = setTimeout(fSlRenderStrip, 250);
 }
 
-function slSyncToolbar()
+function fSlSyncToolbar()
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
 
-  var bg = slDeclValue(slide, 'background-color'),
-      fg = slDeclValue(slide, 'color'),
+  var bg = fSlDeclValue(slide, 'background-color'),
+      fg = fSlDeclValue(slide, 'color'),
       bgInput = document.getElementById('slides-bg-color'),
       fgInput = document.getElementById('slides-text-color');
 
@@ -864,24 +864,24 @@ function slSyncToolbar()
   if (del) del.disabled = !slSelection;
 }
 
-function slRenderAll()
+function fSlRenderAll()
 {
   if (!slDeck || currentAppType !== 'slides') return;
 
   if (slView === 'visual')
   {
-    slRenderStage();
-    slRenderStrip();
+    fSlRenderStage();
+    fSlRenderStrip();
   }
 
-  slSyncToolbar();
+  fSlSyncToolbar();
 
-  if (slPresenting) slRenderPresent();
+  if (slPresenting) fSlRenderPresent();
 }
 
 // ── Load / save / undo ──
 
-function loadSlidesFile(file)
+function fLoadSlidesFile(file)
 {
   document.getElementById('slides-title-input').value = file.name;
 
@@ -889,7 +889,7 @@ function loadSlidesFile(file)
   // from another window) stays on the same slide; another deck starts at 1.
   var sameFile = slDeck && slDeck.__file === currentFileId;
 
-  slDeck = parseSlides(file.content || defaultSlidesContent());
+  slDeck = fParseSlides(file.content || fDefaultSlidesContent());
   slIndex = sameFile ? Math.max(0, Math.min(slIndex, slDeck.slides.length - 1)) : 0;
   slDeck.__file = currentFileId;
 
@@ -899,29 +899,29 @@ function loadSlidesFile(file)
   slRedoStack = [];
 
   document.getElementById('slides-source').value = file.content || '';
-  slApplyView();
-  slRenderAll();
+  fSlApplyView();
+  fSlRenderAll();
 }
 
-function onSlidesTitleChange()
+function fOnSlidesTitleChange()
 {
   if (!currentFileId || !files[currentFileId] || files[currentFileId].type !== 'slides')
     return;
 
   files[currentFileId].name = (document.getElementById('slides-title-input').value || files[currentFileId].name);
-  scheduleSave();
-  renderFileList();
+  fScheduleSave();
+  fRenderFileList();
 }
 
 // Takes what's typed in an open text box into the model (as its own undo
 // step) and ends the edit. Runs before any other change, so an edit in
 // progress is never lost to a toolbar action or a slide switch.
-function slFlushEditor()
+function fSlFlushEditor()
 {
   if (slEditing === null) return false;
 
   var index = slEditing,
-      slide = slCurrentSlide(),
+      slide = fSlCurrentSlide(),
       ta = document.querySelector('#slides-canvas .sl-block-editor');
 
   slEditing = null;
@@ -929,78 +929,78 @@ function slFlushEditor()
   if (!ta || !slide || !slide.blocks[index] || ta.value === slide.blocks[index].text)
     return false;
 
-  slUndoStack.push(serializeSlides(slDeck));
+  slUndoStack.push(fSerializeSlides(slDeck));
   if (slUndoStack.length > 100) slUndoStack.shift();
   slRedoStack = [];
   slide.blocks[index].text = ta.value;
   return true;
 }
 
-function slSnapshot()
+function fSlSnapshot()
 {
   if (!slDeck) return;
-  slFlushEditor();
-  slUndoStack.push(serializeSlides(slDeck));
+  fSlFlushEditor();
+  slUndoStack.push(fSerializeSlides(slDeck));
   if (slUndoStack.length > 100) slUndoStack.shift();
   slRedoStack = [];
 }
 
 // Writes the model back to the file. `structural` re-renders everything;
 // otherwise only what the edit could have changed.
-function slCommit(structural)
+function fSlCommit(structural)
 {
   if (!slDeck || !currentFileId || !files[currentFileId] || files[currentFileId].type !== 'slides')
     return;
 
-  var text = serializeSlides(slDeck);
+  var text = fSerializeSlides(slDeck);
   files[currentFileId].content = text;
   document.getElementById('slides-source').value = text;
-  scheduleSave();
+  fScheduleSave();
 
-  if (structural) slRenderAll();
+  if (structural) fSlRenderAll();
   else
   {
-    slRenderStage();
-    slSyncToolbar();
-    slScheduleStrip();
+    fSlRenderStage();
+    fSlSyncToolbar();
+    fSlScheduleStrip();
   }
 }
 
-function slRestore(from, to)
+function fSlRestore(from, to)
 {
   if (!from.length || !slDeck) return;
 
-  to.push(serializeSlides(slDeck));
+  to.push(fSerializeSlides(slDeck));
 
   var keepFile = slDeck.__file;
-  slDeck = parseSlides(from.pop());
+  slDeck = fParseSlides(from.pop());
   slDeck.__file = keepFile;
   slIndex = Math.min(slIndex, slDeck.slides.length - 1);
   slSelection = null;
   slEditing = null;
-  slCommit(true);
+  fSlCommit(true);
 }
 
-function slUndo() { slRestore(slUndoStack, slRedoStack); }
-function slRedo() { slRestore(slRedoStack, slUndoStack); }
+function fSlUndo() { fSlRestore(slUndoStack, slRedoStack); }
+function fSlRedo() { fSlRestore(slRedoStack, slUndoStack); }
 
 // ── Views ──
 
-function setSlidesView(view)
+function fSetSlidesView(view)
 {
   if (view === slView) return;
 
   if (slView === 'source')
-    slApplySourceNow();
+    fSlApplySourceNow();
   else
-    slCloseBlockEditor(true);
+    fSlCloseBlockEditor(true);
 
   slView = view;
-  slApplyView();
-  slRenderAll();
+  fSlApplyView();
+  fSlRenderAll();
 }
 
-function slApplyView()
+function fSlApplyView()
 {
   var visual = slView === 'visual';
 
@@ -1011,19 +1011,19 @@ function slApplyView()
   document.querySelectorAll('#slides-toolbar .sl-visual-only').forEach(function(el){ el.style.display = visual ? '' : 'none'; });
 }
 
-function onSlidesSourceInput()
+function fOnSlidesSourceInput()
 {
   if (!currentFileId || !files[currentFileId] || files[currentFileId].type !== 'slides')
     return;
 
   files[currentFileId].content = document.getElementById('slides-source').value;
-  scheduleSave();
+  fScheduleSave();
 
   clearTimeout(slSourceTimer);
-  slSourceTimer = setTimeout(slApplySourceNow, 300);
+  slSourceTimer = setTimeout(fSlApplySourceNow, 300);
 }
 
-function slApplySourceNow()
+function fSlApplySourceNow()
 {
   clearTimeout(slSourceTimer);
 
@@ -1031,58 +1031,58 @@ function slApplySourceNow()
     return;
 
   var keepFile = slDeck && slDeck.__file;
-  slDeck = parseSlides(document.getElementById('slides-source').value);
+  slDeck = fParseSlides(document.getElementById('slides-source').value);
   slDeck.__file = keepFile;
   slIndex = Math.min(slIndex, slDeck.slides.length - 1);
   slSelection = null;
-  slSyncToolbar();
+  fSlSyncToolbar();
 }
 
 // ── Slides: add, remove, reorder ──
 
-function slGoTo(i)
+function fSlGoTo(i)
 {
   if (!slDeck) return;
-  slCloseBlockEditor(true);
+  fSlCloseBlockEditor(true);
   slIndex = Math.max(0, Math.min(slDeck.slides.length - 1, i));
   slSelection = null;
-  slRenderAll();
+  fSlRenderAll();
 }
 
-function slAddSlide()
+function fSlAddSlide()
 {
   if (!slDeck) return;
-  slSnapshot();
+  fSlSnapshot();
 
   // A new slide keeps the look of the current one, but not its content.
-  var cur = slCurrentSlide(),
-      slide = newSlideModel();
+  var cur = fSlCurrentSlide(),
+      slide = fNewSlideModel();
 
   if (cur)
     cur.decls.forEach(function(d)
     {
-      if (SLIDE_DECO_PROPS.indexOf(d.prop) === -1) slide.decls.push({ prop: d.prop, value: d.value });
+      if (cSlideDecoProps.indexOf(d.prop) === -1) slide.decls.push({ prop: d.prop, value: d.value });
     });
 
   slDeck.slides.splice(slIndex + 1, 0, slide);
   slIndex++;
   slSelection = null;
-  slCommit(true);
+  fSlCommit(true);
 }
 
-function slDuplicateSlide()
+function fSlDuplicateSlide()
 {
-  var cur = slCurrentSlide();
+  var cur = fSlCurrentSlide();
   if (!cur) return;
-  slSnapshot();
+  fSlSnapshot();
 
   slDeck.slides.splice(slIndex + 1, 0, JSON.parse(JSON.stringify(cur)));
   slIndex++;
   slSelection = null;
-  slCommit(true);
+  fSlCommit(true);
 }
 
-function slDeleteSlide()
+function fSlDeleteSlide()
 {
   if (!slDeck) return;
 
@@ -1094,86 +1094,86 @@ function slDeleteSlide()
 
   if (!confirm('Delete slide ' + (slIndex + 1) + '?')) return;
 
-  slSnapshot();
+  fSlSnapshot();
   slDeck.slides.splice(slIndex, 1);
   slIndex = Math.min(slIndex, slDeck.slides.length - 1);
   slSelection = null;
-  slCommit(true);
+  fSlCommit(true);
 }
 
-function slMoveSlide(from, to)
+function fSlMoveSlide(from, to)
 {
   if (!slDeck || from === to || from < 0 || to < 0 || from >= slDeck.slides.length || to >= slDeck.slides.length) return;
-  slSnapshot();
+  fSlSnapshot();
 
   var moved = slDeck.slides.splice(from, 1)[0];
   slDeck.slides.splice(to, 0, moved);
   slIndex = to;
   slSelection = null;
-  slCommit(true);
+  fSlCommit(true);
 }
 
 // ── Slide style: background, text color ──
 
-function slSetBackgroundColor(value)
+function fSlSetBackgroundColor(value)
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
-  slSnapshot();
-  slSetDecl(slide, 'background-color', value);
-  slCommit(false);
+  fSlSnapshot();
+  fSlSetDecl(slide, 'background-color', value);
+  fSlCommit(false);
 }
 
-function slSetTextColor(value)
+function fSlSetTextColor(value)
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
-  slSnapshot();
-  slSetDecl(slide, 'color', value);
-  slCommit(false);
+  fSlSnapshot();
+  fSlSetDecl(slide, 'color', value);
+  fSlCommit(false);
 }
 
-function slApplyBackgroundToAll()
+function fSlApplyBackgroundToAll()
 {
-  var cur = slCurrentSlide();
+  var cur = fSlCurrentSlide();
   if (!cur || !slDeck) return;
-  slSnapshot();
+  fSlSnapshot();
 
   var props = ['background', 'background-color', 'background-image', 'background-size', 'background-position', 'background-repeat', 'color'];
 
   slDeck.slides.forEach(function(s)
   {
     if (s === cur) return;
-    props.forEach(function(p){ slSetDecl(s, p, slDeclValue(cur, p)); });
+    props.forEach(function(p){ fSlSetDecl(s, p, fSlDeclValue(cur, p)); });
   });
 
-  slCloseBgMenu();
-  slCommit(true);
+  fSlCloseBgMenu();
+  fSlCommit(true);
 }
 
-function toggleSlidesBgMenu(e)
+function fToggleSlidesBgMenu(e)
 {
   if (e) e.stopPropagation();
   var menu = document.getElementById('slides-bg-menu');
   menu.classList.toggle('open');
 }
 
-function slCloseBgMenu()
+function fSlCloseBgMenu()
 {
   var menu = document.getElementById('slides-bg-menu');
   if (menu) menu.classList.remove('open');
 }
 
-async function slUseImageBlob(blob, name)
+async function fSlUseImageBlob(blob, name)
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
 
   var ref;
 
   try
   {
-    ref = await slStoreImage(blob, name);
+    ref = await fSlStoreImage(blob, name);
   }
   catch(e)
   {
@@ -1181,27 +1181,27 @@ async function slUseImageBlob(blob, name)
     return;
   }
 
-  slSnapshot();
-  slSetDecl(slide, 'background-image', 'url(' + ref + ')');
-  slCommit(true);
+  fSlSnapshot();
+  fSlSetDecl(slide, 'background-image', 'url(' + ref + ')');
+  fSlCommit(true);
 }
 
-function slPickImageFile()
+function fSlPickImageFile()
 {
-  slCloseBgMenu();
+  fSlCloseBgMenu();
   document.getElementById('slides-image-input').click();
 }
 
-function onSlidesImageChosen(e)
+function fOnSlidesImageChosen(e)
 {
   var file = e.target.files && e.target.files[0];
   e.target.value = '';
-  if (file) slUseImageBlob(file, file.name);
+  if (file) fSlUseImageBlob(file, file.name);
 }
 
-async function slPickImageUrl()
+async function fSlPickImageUrl()
 {
-  slCloseBgMenu();
+  fSlCloseBgMenu();
 
   var url = prompt('Image address (it is downloaded and stored with this presentation):', 'https://');
   if (!url || !/^https?:\/\/\S+$/i.test(url.trim())) return;
@@ -1212,7 +1212,7 @@ async function slPickImageUrl()
 
   try
   {
-    blob = await Platform.fetchRemoteFile(url);
+    blob = await Platform.fFetchRemoteFile(url);
   }
   catch(e)
   {
@@ -1223,85 +1223,85 @@ async function slPickImageUrl()
   }
 
   var name = decodeURIComponent((url.split(/[?#]/)[0].split('/').pop() || 'image'));
-  slUseImageBlob(blob, name);
+  fSlUseImageBlob(blob, name);
 }
 
-function slRemoveImage()
+function fSlRemoveImage()
 {
-  var slide = slCurrentSlide();
-  slCloseBgMenu();
+  var slide = fSlCurrentSlide();
+  fSlCloseBgMenu();
   if (!slide) return;
-  slSnapshot();
-  slSetDecl(slide, 'background-image', null);
-  slCommit(true);
+  fSlSnapshot();
+  fSlSetDecl(slide, 'background-image', null);
+  fSlCommit(true);
 }
 
 // ── Tools ──
 
-function setSlidesTool(tool)
+function fSetSlidesTool(tool)
 {
-  slCloseBlockEditor(true);
+  fSlCloseBlockEditor(true);
   slTool = tool;
   if (tool !== 'select') slSelection = null;
-  slRenderStage();
-  slSyncToolbar();
+  fSlRenderStage();
+  fSlSyncToolbar();
 }
 
-function setSlidesStrokeColor(v) { slStrokeColor = v; slApplyStyleToSelection(); }
-function setSlidesFillColor(v) { slFillColor = v; slFillNone = false; document.getElementById('slides-fill-none').checked = false; slApplyStyleToSelection(); }
-function setSlidesFillNone(none) { slFillNone = none; slApplyStyleToSelection(); }
-function setSlidesLineWidth(v) { slLineWidth = Math.max(1, Math.min(60, parseFloat(v) || 1)); slApplyStyleToSelection(); }
+function fSetSlidesStrokeColor(v) { slStrokeColor = v; fSlApplyStyleToSelection(); }
+function fSetSlidesFillColor(v) { slFillColor = v; slFillNone = false; document.getElementById('slides-fill-none').checked = false; fSlApplyStyleToSelection(); }
+function fSetSlidesFillNone(none) { slFillNone = none; fSlApplyStyleToSelection(); }
+function fSetSlidesLineWidth(v) { slLineWidth = Math.max(1, Math.min(60, parseFloat(v) || 1)); fSlApplyStyleToSelection(); }
 
 // Changing a color or width with a shape selected restyles that shape.
-function slApplyStyleToSelection()
+function fSlApplyStyleToSelection()
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide || !slSelection || slSelection.kind !== 'deco') return;
 
-  var d = parseSlideDeco(slide.decls[slSelection.index]);
+  var d = fParseSlideDeco(slide.decls[slSelection.index]);
   if (!d) return;
 
-  slSnapshot();
+  fSlSnapshot();
   d.color = slStrokeColor;
   d.width = slLineWidth;
   if (d.kind === 'rect' || d.kind === 'ellipse') d.fill = slFillNone ? 'none' : slFillColor;
-  slide.decls[slSelection.index] = serializeSlideDeco(d);
-  slCommit(false);
+  slide.decls[slSelection.index] = fSerializeSlideDeco(d);
+  fSlCommit(false);
 }
 
-function slAddTextBox()
+function fSlAddTextBox()
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
-  slSnapshot();
+  fSlSnapshot();
 
   var w = Math.round(slDeck.width * 0.6), h = Math.round(slDeck.height * 0.2);
   slide.blocks.push({ x: Math.round((slDeck.width - w) / 2), y: Math.round((slDeck.height - h) / 2), w: w, h: h, text: 'Text' });
   slSelection = { kind: 'block', index: slide.blocks.length - 1 };
   slTool = 'select';
-  slCommit(false);
-  slOpenBlockEditor(slSelection.index, true);
+  fSlCommit(false);
+  fSlOpenBlockEditor(slSelection.index, true);
 }
 
-function slDeleteSelection()
+function fSlDeleteSelection()
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide || !slSelection) return;
-  slSnapshot();
+  fSlSnapshot();
 
   if (slSelection.kind === 'block') slide.blocks.splice(slSelection.index, 1);
   else slide.decls.splice(slSelection.index, 1);
 
   slSelection = null;
-  slCommit(false);
+  fSlCommit(false);
 }
 
 // Bring the selected item to the front (end of its list) or send it back.
-function slReorderSelection(toFront)
+function fSlReorderSelection(toFront)
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide || !slSelection) return;
-  slSnapshot();
+  fSlSnapshot();
 
   if (slSelection.kind === 'block')
   {
@@ -1311,9 +1311,9 @@ function slReorderSelection(toFront)
   }
   else
   {
-    var decos = slDecoIndices(slide),
+    var decos = fSlDecoIndices(slide),
         d = slide.decls.splice(slSelection.index, 1)[0];
-    decos = slDecoIndices(slide);
+    decos = fSlDecoIndices(slide);
 
     var at = toFront ? (decos.length ? decos[decos.length - 1] + 1 : slide.decls.length)
                      : (decos.length ? decos[0] : slide.decls.length);
@@ -1321,14 +1321,14 @@ function slReorderSelection(toFront)
     slSelection.index = at;
   }
 
-  slCommit(false);
+  fSlCommit(false);
 }
 
 // ── Text box editing ──
 
-function slOpenBlockEditor(index, selectAll, focus)
+function fSlOpenBlockEditor(index, selectAll, focus)
 {
-  var slide = slCurrentSlide(),
+  var slide = fSlCurrentSlide(),
       host = document.getElementById('slides-canvas'),
       slideEl = host && host.querySelector('.sl-slide'),
       blockEl = slideEl && slideEl.querySelector('.sl-block[data-block="' + index + '"]');
@@ -1356,13 +1356,13 @@ function slOpenBlockEditor(index, selectAll, focus)
     if (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && e.key === 'Enter'))
     {
       e.preventDefault();
-      slCloseBlockEditor(true);
+      fSlCloseBlockEditor(true);
     }
   });
   ta.addEventListener('mousedown', function(e){ e.stopPropagation(); });
   // A re-render replaces the textarea, and the old one may report a blur on
   // its way out; only the live one ends the edit.
-  ta.addEventListener('blur', function(){ setTimeout(function(){ if (ta.isConnected && document.activeElement !== ta) slCloseBlockEditor(true); }, 0); });
+  ta.addEventListener('blur', function(){ setTimeout(function(){ if (ta.isConnected && document.activeElement !== ta) fSlCloseBlockEditor(true); }, 0); });
 
   blockEl.appendChild(ta);
   if (focus === false) return;
@@ -1371,23 +1371,23 @@ function slOpenBlockEditor(index, selectAll, focus)
   else ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 
-function slCloseBlockEditor(commit)
+function fSlCloseBlockEditor(fCommit)
 {
   if (slEditing === null) return;
 
-  if (commit && slFlushEditor())
+  if (fCommit && fSlFlushEditor())
   {
-    slCommit(false);
+    fSlCommit(false);
     return;
   }
 
   slEditing = null;
-  slRenderStage();
+  fSlRenderStage();
 }
 
 // ── Pointer interaction on the slide ──
 
-function slPointFromEvent(e)
+function fSlPointFromEvent(e)
 {
   var slideEl = document.querySelector('#slides-canvas .sl-slide');
   if (!slideEl) return { x: 0, y: 0 };
@@ -1396,20 +1396,20 @@ function slPointFromEvent(e)
   return { x: (e.clientX - r.left) / slStageScale, y: (e.clientY - r.top) / slStageScale };
 }
 
-function slRound(v) { return Math.round(v); }
+function fSlRound(v) { return Math.round(v); }
 
-function onSlidesCanvasMouseDown(e)
+function fOnSlidesCanvasMouseDown(e)
 {
   if (e.button !== 0 || !slDeck) return;
 
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
 
   if (e.target.closest('.sl-block-editor')) return;
 
-  slCloseBlockEditor(true);
+  fSlCloseBlockEditor(true);
 
-  var pt = slPointFromEvent(e);
+  var pt = fSlPointFromEvent(e);
 
   if (slTool === 'select')
   {
@@ -1418,7 +1418,7 @@ function onSlidesCanvasMouseDown(e)
     if (handle && slSelection)
     {
       e.preventDefault();
-      var item = slSelection.kind === 'block' ? slide.blocks[slSelection.index] : parseSlideDeco(slide.decls[slSelection.index]);
+      var item = slSelection.kind === 'block' ? slide.blocks[slSelection.index] : fParseSlideDeco(slide.decls[slSelection.index]);
       slDrag = { mode: 'resize', corner: handle.getAttribute('data-handle'), start: pt, orig: JSON.parse(JSON.stringify(item)), snapped: false };
       return;
     }
@@ -1433,14 +1433,14 @@ function onSlidesCanvasMouseDown(e)
     else
     {
       slSelection = null;
-      slRenderSelection();
-      slSyncToolbar();
+      fSlRenderSelection();
+      fSlSyncToolbar();
       return;
     }
 
     e.preventDefault();
 
-    var target = slSelection.kind === 'block' ? slide.blocks[slSelection.index] : parseSlideDeco(slide.decls[slSelection.index]);
+    var target = slSelection.kind === 'block' ? slide.blocks[slSelection.index] : fParseSlideDeco(slide.decls[slSelection.index]);
     slDrag = { mode: 'move', start: pt, orig: JSON.parse(JSON.stringify(target)), snapped: false };
 
     if (slSelection.kind === 'deco' && target)
@@ -1452,8 +1452,8 @@ function onSlidesCanvasMouseDown(e)
       if (lw) lw.value = slLineWidth;
     }
 
-    slRenderSelection();
-    slSyncToolbar();
+    fSlRenderSelection();
+    fSlSyncToolbar();
     return;
   }
 
@@ -1463,12 +1463,12 @@ function onSlidesCanvasMouseDown(e)
   slDrag = { mode: 'create', tool: slTool, start: pt, points: [pt], snapped: false };
 }
 
-function onSlidesMouseMove(e)
+function fOnSlidesMouseMove(e)
 {
   if (!slDrag || !slDeck) return;
 
-  var slide = slCurrentSlide(),
-      pt = slPointFromEvent(e),
+  var slide = fSlCurrentSlide(),
+      pt = fSlPointFromEvent(e),
       dx = pt.x - slDrag.start.x,
       dy = pt.y - slDrag.start.y;
 
@@ -1476,7 +1476,7 @@ function onSlidesMouseMove(e)
   {
     if (Math.abs(dx) * slStageScale < 3 && Math.abs(dy) * slStageScale < 3) return;
     slDrag.snapped = true;
-    if (slDrag.mode !== 'create') slSnapshot();
+    if (slDrag.mode !== 'create') fSlSnapshot();
   }
 
   if (slDrag.mode === 'move' && slSelection)
@@ -1484,16 +1484,16 @@ function onSlidesMouseMove(e)
     if (slSelection.kind === 'block')
     {
       var b = slide.blocks[slSelection.index];
-      b.x = slRound(slDrag.orig.x + dx);
-      b.y = slRound(slDrag.orig.y + dy);
+      b.x = fSlRound(slDrag.orig.x + dx);
+      b.y = fSlRound(slDrag.orig.y + dy);
     }
     else
     {
       var d = JSON.parse(JSON.stringify(slDrag.orig));
-      slMoveDeco(d, slRound(dx), slRound(dy));
-      slide.decls[slSelection.index] = serializeSlideDeco(d);
+      fSlMoveDeco(d, fSlRound(dx), fSlRound(dy));
+      slide.decls[slSelection.index] = fSerializeSlideDeco(d);
     }
-    slRenderStage();
+    fSlRenderStage();
     return;
   }
 
@@ -1508,7 +1508,7 @@ function onSlidesMouseMove(e)
     if (c.indexOf('n') !== -1) y1 = Math.min(y2 - 20, o.y + dy);
     if (c.indexOf('s') !== -1) y2 = Math.max(y1 + 20, o.y + o.h + dy);
 
-    var r = { x: slRound(x1), y: slRound(y1), w: slRound(x2 - x1), h: slRound(y2 - y1) };
+    var r = { x: fSlRound(x1), y: fSlRound(y1), w: fSlRound(x2 - x1), h: fSlRound(y2 - y1) };
 
     if (slSelection.kind === 'block')
       Object.assign(slide.blocks[slSelection.index], r);
@@ -1516,9 +1516,9 @@ function onSlidesMouseMove(e)
     {
       var shape = JSON.parse(JSON.stringify(o));
       Object.assign(shape, r);
-      slide.decls[slSelection.index] = serializeSlideDeco(shape);
+      slide.decls[slSelection.index] = fSerializeSlideDeco(shape);
     }
-    slRenderStage();
+    fSlRenderStage();
     return;
   }
 
@@ -1531,29 +1531,29 @@ function onSlidesMouseMove(e)
         slDrag.points.push(pt);
     }
     slDrag.current = pt;
-    slRenderDraft();
+    fSlRenderDraft();
   }
 }
 
 // The shape being drawn, before it is committed to the file.
-function slDraftItem()
+function fSlDraftItem()
 {
   var s = slDrag.start, p = slDrag.current || s;
 
   if (slDrag.tool === 'pen')
-    return { kind: 'stroke', color: slStrokeColor, width: slLineWidth, points: slDrag.points.map(function(q){ return { x: slRound(q.x), y: slRound(q.y) }; }) };
+    return { kind: 'stroke', color: slStrokeColor, width: slLineWidth, points: slDrag.points.map(function(q){ return { x: fSlRound(q.x), y: fSlRound(q.y) }; }) };
 
   if (slDrag.tool === 'line')
-    return { kind: 'line', x1: slRound(s.x), y1: slRound(s.y), x2: slRound(p.x), y2: slRound(p.y), color: slStrokeColor, width: slLineWidth };
+    return { kind: 'line', x1: fSlRound(s.x), y1: fSlRound(s.y), x2: fSlRound(p.x), y2: fSlRound(p.y), color: slStrokeColor, width: slLineWidth };
 
-  var rect = { x: slRound(Math.min(s.x, p.x)), y: slRound(Math.min(s.y, p.y)), w: slRound(Math.abs(p.x - s.x)), h: slRound(Math.abs(p.y - s.y)) };
+  var rect = { x: fSlRound(Math.min(s.x, p.x)), y: fSlRound(Math.min(s.y, p.y)), w: fSlRound(Math.abs(p.x - s.x)), h: fSlRound(Math.abs(p.y - s.y)) };
 
   if (slDrag.tool === 'text') return Object.assign({ kind: 'text' }, rect);
 
   return Object.assign({ kind: slDrag.tool, fill: slFillNone ? 'none' : slFillColor, color: slStrokeColor, width: slLineWidth }, rect);
 }
 
-function slRenderDraft()
+function fSlRenderDraft()
 {
   var slideEl = document.querySelector('#slides-canvas .sl-slide'),
       svg = slideEl && slideEl.querySelector('svg.sl-deco');
@@ -1563,76 +1563,76 @@ function slRenderDraft()
   var old = svg.querySelector('.sl-draft');
   if (old) old.remove();
 
-  var item = slDraftItem(), el;
+  var item = fSlDraftItem(), el;
 
   if (item.kind === 'text')
-    el = slSvg('rect', { x: item.x, y: item.y, width: item.w, height: item.h, fill: 'none', stroke: '#d4a843', 'stroke-dasharray': '8 6', 'stroke-width': 2 / slStageScale });
+    el = fSlSvg('rect', { x: item.x, y: item.y, width: item.w, height: item.h, fill: 'none', stroke: '#d4a843', 'stroke-dasharray': '8 6', 'stroke-width': 2 / slStageScale });
   else
-    el = slDecoElement(item);
+    el = fSlDecoElement(item);
 
   el.classList.add('sl-draft');
   svg.appendChild(el);
 }
 
-function onSlidesMouseUp()
+function fOnSlidesMouseUp()
 {
   if (!slDrag || !slDeck) return;
 
   var drag = slDrag;
   slDrag = null;
 
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide) return;
 
   if (drag.mode === 'move' || drag.mode === 'resize')
   {
-    if (drag.snapped) slCommit(false);
+    if (drag.snapped) fSlCommit(false);
     return;
   }
 
   // create
   if (!drag.current) drag.current = drag.start;
   slDrag = drag;
-  var item = slDraftItem();
+  var item = fSlDraftItem();
   slDrag = null;
 
-  var tiny = function(w, h){ return w * slStageScale < 4 && h * slStageScale < 4; };
+  var fTiny = function(w, h){ return w * slStageScale < 4 && h * slStageScale < 4; };
 
   if (item.kind === 'text')
   {
     // A click (no drag) drops a default-sized box at the pointer.
-    if (tiny(item.w, item.h)) { item.w = Math.round(slDeck.width * 0.4); item.h = Math.round(slDeck.height * 0.15); }
-    slSnapshot();
+    if (fTiny(item.w, item.h)) { item.w = Math.round(slDeck.width * 0.4); item.h = Math.round(slDeck.height * 0.15); }
+    fSlSnapshot();
     slide.blocks.push({ x: item.x, y: item.y, w: item.w, h: item.h, text: '' });
     slSelection = { kind: 'block', index: slide.blocks.length - 1 };
     slTool = 'select';
-    slCommit(false);
-    slOpenBlockEditor(slSelection.index);
+    fSlCommit(false);
+    fSlOpenBlockEditor(slSelection.index);
     return;
   }
 
-  if (item.kind === 'stroke' ? item.points.length < 2 && !drag.snapped : (item.kind === 'line' ? tiny(Math.abs(item.x2 - item.x1), Math.abs(item.y2 - item.y1)) : tiny(item.w, item.h)))
+  if (item.kind === 'stroke' ? item.points.length < 2 && !drag.snapped : (item.kind === 'line' ? fTiny(Math.abs(item.x2 - item.x1), Math.abs(item.y2 - item.y1)) : fTiny(item.w, item.h)))
   {
-    slRenderStage();
+    fSlRenderStage();
     return;
   }
 
-  slSnapshot();
-  slide.decls.push(serializeSlideDeco(item));
-  slCommit(false);
+  fSlSnapshot();
+  slide.decls.push(fSerializeSlideDeco(item));
+  fSlCommit(false);
 }
 
-function onSlidesCanvasDblClick(e)
+function fOnSlidesCanvasDblClick(e)
 {
   if (slTool !== 'select') return;
 
   var blockEl = e.target.closest('.sl-block');
   if (!blockEl || blockEl.classList.contains('sl-editing')) return;
 
-  slOpenBlockEditor(parseInt(blockEl.getAttribute('data-block'), 10));
+  fSlOpenBlockEditor(parseInt(blockEl.getAttribute('data-block'), 10));
 }
 
-function onSlidesKeyDown(e)
+function fOnSlidesKeyDown(e)
 {
   if (currentAppType !== 'slides' || !slDeck || slView !== 'visual' || slPresenting) return;
 
@@ -1644,17 +1644,17 @@ function onSlidesKeyDown(e)
 
   var mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
 
-  if (mod && !e.shiftKey && key === 'z') { e.preventDefault(); slUndo(); return; }
-  if (mod && (key === 'y' || (e.shiftKey && key === 'z'))) { e.preventDefault(); slRedo(); return; }
-  if (mod && key === 'd' && slSelection) { e.preventDefault(); slDuplicateSelection(); return; }
+  if (mod && !e.shiftKey && key === 'z') { e.preventDefault(); fSlUndo(); return; }
+  if (mod && (key === 'y' || (e.shiftKey && key === 'z'))) { e.preventDefault(); fSlRedo(); return; }
+  if (mod && key === 'd' && slSelection) { e.preventDefault(); fSlDuplicateSelection(); return; }
 
-  if ((e.key === 'Delete' || e.key === 'Backspace') && slSelection) { e.preventDefault(); slDeleteSelection(); return; }
-  if (e.key === 'Enter' && slSelection && slSelection.kind === 'block') { e.preventDefault(); slOpenBlockEditor(slSelection.index); return; }
-  if (e.key === 'Escape') { slSelection = null; setSlidesTool('select'); return; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && slSelection) { e.preventDefault(); fSlDeleteSelection(); return; }
+  if (e.key === 'Enter' && slSelection && slSelection.kind === 'block') { e.preventDefault(); fSlOpenBlockEditor(slSelection.index); return; }
+  if (e.key === 'Escape') { slSelection = null; fSetSlidesTool('select'); return; }
 
-  if (e.key === 'PageDown') { e.preventDefault(); slGoTo(slIndex + 1); return; }
-  if (e.key === 'PageUp') { e.preventDefault(); slGoTo(slIndex - 1); return; }
-  if (e.key === 'F5') { e.preventDefault(); startSlidesPresentation(e.shiftKey ? slIndex : 0); return; }
+  if (e.key === 'PageDown') { e.preventDefault(); fSlGoTo(slIndex + 1); return; }
+  if (e.key === 'PageUp') { e.preventDefault(); fSlGoTo(slIndex - 1); return; }
+  if (e.key === 'F5') { e.preventDefault(); fStartSlidesPresentation(e.shiftKey ? slIndex : 0); return; }
 
   if (slSelection && /^Arrow/.test(e.key))
   {
@@ -1662,29 +1662,29 @@ function onSlidesKeyDown(e)
     var step = e.shiftKey ? 10 : 1,
         dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0,
         dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0,
-        slide = slCurrentSlide();
+        slide = fSlCurrentSlide();
 
-    slSnapshot();
+    fSlSnapshot();
     if (slSelection.kind === 'block') { slide.blocks[slSelection.index].x += dx; slide.blocks[slSelection.index].y += dy; }
     else
     {
-      var d = parseSlideDeco(slide.decls[slSelection.index]);
-      slMoveDeco(d, dx, dy);
-      slide.decls[slSelection.index] = serializeSlideDeco(d);
+      var d = fParseSlideDeco(slide.decls[slSelection.index]);
+      fSlMoveDeco(d, dx, dy);
+      slide.decls[slSelection.index] = fSerializeSlideDeco(d);
     }
-    slCommit(false);
+    fSlCommit(false);
     return;
   }
 
-  if (!slSelection && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) { e.preventDefault(); slGoTo(slIndex + 1); }
-  else if (!slSelection && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) { e.preventDefault(); slGoTo(slIndex - 1); }
+  if (!slSelection && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) { e.preventDefault(); fSlGoTo(slIndex + 1); }
+  else if (!slSelection && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) { e.preventDefault(); fSlGoTo(slIndex - 1); }
 }
 
-function slDuplicateSelection()
+function fSlDuplicateSelection()
 {
-  var slide = slCurrentSlide();
+  var slide = fSlCurrentSlide();
   if (!slide || !slSelection) return;
-  slSnapshot();
+  fSlSnapshot();
 
   if (slSelection.kind === 'block')
   {
@@ -1695,23 +1695,23 @@ function slDuplicateSelection()
   }
   else
   {
-    var d = parseSlideDeco(slide.decls[slSelection.index]);
-    slMoveDeco(d, 20, 20);
-    slide.decls.push(serializeSlideDeco(d));
+    var d = fParseSlideDeco(slide.decls[slSelection.index]);
+    fSlMoveDeco(d, 20, 20);
+    slide.decls.push(fSerializeSlideDeco(d));
     slSelection = { kind: 'deco', index: slide.decls.length - 1 };
   }
 
-  slCommit(false);
+  fSlCommit(false);
 }
 
 // ── Present ──
 
-function startSlidesPresentation(from)
+function fStartSlidesPresentation(from)
 {
   if (!slDeck) return;
 
-  if (slView === 'source') slApplySourceNow();
-  slCloseBlockEditor(true);
+  if (slView === 'source') fSlApplySourceNow();
+  fSlCloseBlockEditor(true);
 
   slPresenting = true;
   slIndex = Math.max(0, Math.min(slDeck.slides.length - 1, typeof from === 'number' ? from : slIndex));
@@ -1726,10 +1726,10 @@ function startSlidesPresentation(from)
   }
   catch(e) {}
 
-  slRenderPresent();
+  fSlRenderPresent();
 }
 
-function stopSlidesPresentation()
+function fStopSlidesPresentation()
 {
   if (!slPresenting) return;
   slPresenting = false;
@@ -1742,37 +1742,37 @@ function stopSlidesPresentation()
   }
   catch(e) {}
 
-  slRenderAll();
+  fSlRenderAll();
 }
 
-function slRenderPresent()
+function fSlRenderPresent()
 {
   var overlay = document.getElementById('slides-present'),
       host = document.getElementById('slides-present-frame'),
-      slide = slCurrentSlide();
+      slide = fSlCurrentSlide();
 
   if (!overlay || !host || !slide) return;
 
-  slMountScaled(host, slBuildSlide(slDeck, slide, false), slDeck, overlay.clientWidth || window.innerWidth, overlay.clientHeight || window.innerHeight);
+  fSlMountScaled(host, fSlBuildSlide(slDeck, slide, false), slDeck, overlay.clientWidth || window.innerWidth, overlay.clientHeight || window.innerHeight);
 
   var counter = document.getElementById('slides-present-counter');
   if (counter) counter.textContent = (slIndex + 1) + ' / ' + slDeck.slides.length;
 }
 
-function slPresentStep(delta)
+function fSlPresentStep(delta)
 {
   if (!slDeck) return;
   var next = slIndex + delta;
   if (next < 0 || next >= slDeck.slides.length) return;
   slIndex = next;
-  slRenderPresent();
+  fSlRenderPresent();
 }
 
 // ── Export ──
 // One page per slide at the deck's own size. Images are inlined as data:
 // URLs, so the exported file stands on its own.
 
-async function slInlineAssetsFor(deck)
+async function fSlInlineAssetsFor(deck)
 {
   var refs = {};
 
@@ -1780,8 +1780,8 @@ async function slInlineAssetsFor(deck)
   {
     s.decls.forEach(function(d)
     {
-      var v = d.prop === 'background-image' ? slNormalizeImageValue(d.value) : d.value;
-      String(v).replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi, function(_, q, ref){ if (!slIsExternalUrl(ref)) refs[slAssetPath(ref)] = 1; return _; });
+      var v = d.prop === 'background-image' ? fSlNormalizeImageValue(d.value) : d.value;
+      String(v).replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi, function(_, q, ref){ if (!fSlIsExternalUrl(ref)) refs[fSlAssetPath(ref)] = 1; return _; });
     });
   });
 
@@ -1792,8 +1792,8 @@ async function slInlineAssetsFor(deck)
     try
     {
       var ext = (path.split('.').pop() || '').toLowerCase(),
-          blob = await Platform.readWorkFileBinary(workFolderRoot, path, SLIDE_IMAGE_TYPES[ext] || '');
-      inlined[path] = await slBlobToDataUrl(blob);
+          blob = await Platform.fReadWorkFileBinary(workFolderRoot, path, cSlideImageTypes[ext] || '');
+      inlined[path] = await fSlBlobToDataUrl(blob);
     }
     catch(e) { console.warn('Export: could not inline ' + path, e); }
   }
@@ -1801,14 +1801,14 @@ async function slInlineAssetsFor(deck)
   return inlined;
 }
 
-async function buildSlidesExportHtml(file)
+async function fBuildSlidesExportHtml(file)
 {
-  var deck = parseSlides(file.content || ''),
+  var deck = fParseSlides(file.content || ''),
       saved = slAssetCache;
 
   if (workFolderRoot)
   {
-    var inlined = await slInlineAssetsFor(deck);
+    var inlined = await fSlInlineAssetsFor(deck);
     slAssetCache = {};
     Object.keys(inlined).forEach(function(p){ slAssetCache[p] = { url: inlined[p], state: 'ready' }; });
   }
@@ -1819,7 +1819,7 @@ async function buildSlidesExportHtml(file)
   {
     deck.slides.forEach(function(slide)
     {
-      var el = slBuildSlide(deck, slide, false);
+      var el = fSlBuildSlide(deck, slide, false);
       pages += '<section class="page">' + el.outerHTML + '</section>\n';
     });
   }
@@ -1828,21 +1828,21 @@ async function buildSlidesExportHtml(file)
     slAssetCache = saved;
   }
 
-  pages = await inlineMermaidSvgs(pages);
+  pages = await fInlineMermaidSvgs(pages);
 
   return  '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n' +
-          '<title>' + escHtml(file.name) + '</title>\n<style>\n' +
+          '<title>' + fEscHtml(file.name) + '</title>\n<style>\n' +
           '@page{size:' + deck.width + 'px ' + deck.height + 'px;margin:0;}\n' +
           'html,body{margin:0;padding:0;background:#555;}\n' +
           '.page{width:' + deck.width + 'px;height:' + deck.height + 'px;margin:0 auto 24px;overflow:hidden;break-after:page;position:relative;}\n' +
           '.page:last-child{break-after:auto;}\n' +
-          SLIDE_EXPORT_CSS +
+          cSlideExportCss +
           '@media print{html,body{background:none;}.page{margin:0;}}\n' +
           '</style>\n</head>\n<body>\n' + pages + '</body>\n</html>';
 }
 
 // The slide look, shared by the editor stylesheet and exported files.
-var SLIDE_EXPORT_CSS =
+var cSlideExportCss =
   '.sl-slide{position:relative;overflow:hidden;background-color:#ffffff;color:#1a1a1a;font-family:Georgia,"Times New Roman",serif;font-size:28px;line-height:1.35;-webkit-print-color-adjust:exact;print-color-adjust:exact;}\n' +
   '.sl-deco{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;}\n' +
   '.sl-block{position:absolute;box-sizing:border-box;overflow:hidden;}\n' +
@@ -1869,7 +1869,7 @@ var SLIDE_EXPORT_CSS =
 (function()
 {
   var style = document.createElement('style');
-  style.textContent = SLIDE_EXPORT_CSS;
+  style.textContent = cSlideExportCss;
   document.head.appendChild(style);
 })();
 
@@ -1884,22 +1884,22 @@ var SLIDE_EXPORT_CSS =
 
   if (!canvas) return;
 
-  canvas.addEventListener('mousedown', onSlidesCanvasMouseDown);
-  canvas.addEventListener('dblclick', onSlidesCanvasDblClick);
-  document.addEventListener('mousemove', onSlidesMouseMove);
-  document.addEventListener('mouseup', onSlidesMouseUp);
-  document.addEventListener('keydown', onSlidesKeyDown);
+  canvas.addEventListener('mousedown', fOnSlidesCanvasMouseDown);
+  canvas.addEventListener('dblclick', fOnSlidesCanvasDblClick);
+  document.addEventListener('mousemove', fOnSlidesMouseMove);
+  document.addEventListener('mouseup', fOnSlidesMouseUp);
+  document.addEventListener('keydown', fOnSlidesKeyDown);
 
   document.addEventListener('click', function(e)
   {
     var menu = document.getElementById('slides-bg-menu');
-    if (menu && menu.classList.contains('open') && !menu.contains(e.target)) slCloseBgMenu();
+    if (menu && menu.classList.contains('open') && !menu.contains(e.target)) fSlCloseBgMenu();
   });
 
   // Clicking the grey around the slide clears the selection.
   stage.addEventListener('mousedown', function(e)
   {
-    if (e.target === stage && slSelection) { slSelection = null; slRenderSelection(); slSyncToolbar(); }
+    if (e.target === stage && slSelection) { slSelection = null; fSlRenderSelection(); fSlSyncToolbar(); }
   });
 
   // Dropping an image file on the slide makes it the background.
@@ -1916,18 +1916,18 @@ var SLIDE_EXPORT_CSS =
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f || !/^image\//.test(f.type)) return;
     e.preventDefault();
-    slUseImageBlob(f, f.name);
+    fSlUseImageBlob(f, f.name);
   });
 
   strip.addEventListener('click', function(e)
   {
     var item = e.target.closest('.sl-thumb');
-    if (item) slGoTo(parseInt(item.getAttribute('data-index'), 10));
+    if (item) fSlGoTo(parseInt(item.getAttribute('data-index'), 10));
   });
   strip.addEventListener('dblclick', function(e)
   {
     var item = e.target.closest('.sl-thumb');
-    if (item) startSlidesPresentation(parseInt(item.getAttribute('data-index'), 10));
+    if (item) fStartSlidesPresentation(parseInt(item.getAttribute('data-index'), 10));
   });
 
   // Drag a thumbnail to reorder.
@@ -1958,11 +1958,11 @@ var SLIDE_EXPORT_CSS =
     var item = e.target.closest('.sl-thumb'),
         from = stripDragFrom;
     stripDragFrom = null;
-    if (!item) { slRenderStrip(); return; }
+    if (!item) { fSlRenderStrip(); return; }
     var r = item.getBoundingClientRect(),
         to = parseInt(item.getAttribute('data-index'), 10) + (e.clientY < r.top + r.height / 2 ? 0 : 1);
     if (to > from) to--;
-    slMoveSlide(from, Math.max(0, Math.min(slDeck.slides.length - 1, to)));
+    fSlMoveSlide(from, Math.max(0, Math.min(slDeck.slides.length - 1, to)));
   });
   strip.addEventListener('dragend', function()
   {
@@ -1975,33 +1975,33 @@ var SLIDE_EXPORT_CSS =
     if (!slPresenting) return;
     e.preventDefault();
     e.stopPropagation();
-    if (e.key === 'Escape') stopSlidesPresentation();
-    else if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'n'].indexOf(e.key) !== -1) slPresentStep(1);
-    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p'].indexOf(e.key) !== -1) slPresentStep(-1);
-    else if (e.key === 'Home') { slIndex = 0; slRenderPresent(); }
-    else if (e.key === 'End') { slIndex = slDeck.slides.length - 1; slRenderPresent(); }
+    if (e.key === 'Escape') fStopSlidesPresentation();
+    else if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'n'].indexOf(e.key) !== -1) fSlPresentStep(1);
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p'].indexOf(e.key) !== -1) fSlPresentStep(-1);
+    else if (e.key === 'Home') { slIndex = 0; fSlRenderPresent(); }
+    else if (e.key === 'End') { slIndex = slDeck.slides.length - 1; fSlRenderPresent(); }
   });
   present.addEventListener('click', function(e)
   {
-    if (e.target.closest('.sl-present-exit')) { stopSlidesPresentation(); return; }
-    slPresentStep(e.clientX < window.innerWidth / 4 ? -1 : 1);
+    if (e.target.closest('.sl-present-exit')) { fStopSlidesPresentation(); return; }
+    fSlPresentStep(e.clientX < window.innerWidth / 4 ? -1 : 1);
   });
 
   document.addEventListener('fullscreenchange', function()
   {
-    if (slPresenting && !document.fullscreenElement) stopSlidesPresentation();
-    else if (slPresenting) slRenderPresent();
+    if (slPresenting && !document.fullscreenElement) fStopSlidesPresentation();
+    else if (slPresenting) fSlRenderPresent();
   });
 
   window.addEventListener('resize', function()
   {
-    if (slPresenting) slRenderPresent();
-    else if (currentAppType === 'slides' && slView === 'visual') slRenderStage();
+    if (slPresenting) fSlRenderPresent();
+    else if (currentAppType === 'slides' && slView === 'visual') fSlRenderStage();
   });
 
   if (typeof ResizeObserver !== 'undefined')
     new ResizeObserver(function()
     {
-      if (currentAppType === 'slides' && slView === 'visual' && !slDrag && !slPresenting) slRenderStage();
+      if (currentAppType === 'slides' && slView === 'visual' && !slDrag && !slPresenting) fSlRenderStage();
     }).observe(stage);
 })();

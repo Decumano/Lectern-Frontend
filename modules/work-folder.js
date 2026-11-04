@@ -10,9 +10,9 @@
 // refresh after any structural change (create/delete/move) rather than
 // hand-patching the in-memory tree - simpler and safe at the scale of a
 // person clicking buttons rather than a hot path.
-var WORK_ASSET_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?|pdf|zip|7z|rar|gz|mp3|wav|ogg|flac|mp4|webm|mov|woff2?|ttf|otf|eot|exe|dll|bin)$/i;
+var cWorkAssetExtRe = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?|pdf|zip|7z|rar|gz|mp3|wav|ogg|flac|mp4|webm|mov|woff2?|ttf|otf|eot|exe|dll|bin)$/i;
 
-async function loadWorkFolderTree()
+async function fLoadWorkFolderTree()
 {
   if (!workFolderRoot)
     return;
@@ -29,7 +29,7 @@ async function loadWorkFolderTree()
 
   try
   {
-    entries = await Platform.listWorkFolder(workFolderRoot);
+    entries = await Platform.fListWorkFolder(workFolderRoot);
   }
   catch(e)
   {
@@ -41,14 +41,14 @@ async function loadWorkFolderTree()
   const newFiles = {},
         newFolders = {};
 
-  function walk(list, parent)
+  function fWalk(list, parent)
   {
     list.forEach(function(entry)
     {
       if (entry.isDir)
       {
         newFolders[entry.relPath] = { name: entry.name, parent: parent };
-        walk(entry.children, entry.relPath);
+        fWalk(entry.children, entry.relPath);
         return;
       }
 
@@ -61,7 +61,7 @@ async function loadWorkFolderTree()
       // Neither are images and other binary assets (a presentation's
       // backgrounds live in the work folder too); opened as a document they
       // would show as garbage, and saving one would destroy it.
-      if (WORK_ASSET_EXT_RE.test(entry.name))
+      if (cWorkAssetExtRe.test(entry.name))
         return;
 
       const dot = entry.name.lastIndexOf('.'),
@@ -83,7 +83,7 @@ async function loadWorkFolderTree()
     });
   }
 
-  walk(entries, '');
+  fWalk(entries, '');
 
   files = newFiles;
   folders = newFolders;
@@ -91,19 +91,19 @@ async function loadWorkFolderTree()
   if (currentFileId && !files[currentFileId])
     currentFileId = null;
 
-  pruneOpenTabs(); // ids are rel paths; anything renamed/moved/deleted on disk is gone
-  renderFileList();
+  fPruneOpenTabs(); // ids are rel paths; anything renamed/moved/deleted on disk is gone
+  fRenderFileList();
 }
 
-async function createWorkFile(name, type, content)
+async function fCreateWorkFile(name, type, content)
 {
-  const ext = fileExtensionFor(type),
-        base = sanitizeFileName(name) || 'Untitled',
-        relPath = uniqueRelPath('', base, ext);
+  const ext = fFileExtensionFor(type),
+        base = fSanitizeFileName(name) || 'Untitled',
+        relPath = fUniqueRelPath('', base, ext);
 
   try
   {
-    await Platform.writeWorkFile(workFolderRoot, relPath, content !== undefined ? content : defaultContentForType(type, name));
+    await Platform.fWriteWorkFile(workFolderRoot, relPath, content !== undefined ? content : fDefaultContentForType(type, name));
   }
   catch(e)
   {
@@ -112,7 +112,7 @@ async function createWorkFile(name, type, content)
     return null;
   }
 
-  await loadWorkFolderTree();
+  await fLoadWorkFolderTree();
 
   return relPath;
 }
@@ -121,14 +121,14 @@ async function createWorkFile(name, type, content)
 // both by the autosave debounce (acting on currentFileId) and by sidebar
 // inline-rename (which may target a file that isn't the open one). A rename
 // is implemented as a move within the same parent folder.
-async function persistFileEntry(id)
+async function fPersistFileEntry(id)
 {
   if (!files[id])
     return;
 
   // Files opened from "Shared with me" never touch my own workspace: they're
   // written back through the share (edit permission) or not at all.
-  if (id === SHARED_TMP_ID)
+  if (id === cSharedTmpId)
   {
     if (sharedCtx && sharedCtx.permission === 'edit')
     {
@@ -136,9 +136,9 @@ async function persistFileEntry(id)
       {
         var sharedContent = files[id].content || '';
         if (sharedCtx.link)
-          await Platform.writeLinkFile(sharedCtx.link, sharedCtx.subPath, sharedContent);
+          await Platform.fWriteLinkFile(sharedCtx.link, sharedCtx.subPath, sharedContent);
         else
-          await Platform.writeSharedFile(sharedCtx.shareId, sharedCtx.subPath, sharedContent);
+          await Platform.fWriteSharedFile(sharedCtx.shareId, sharedCtx.subPath, sharedContent);
         if (id === liveSyncFileId) { liveSyncBase = sharedContent; liveSyncServerHash = null; }
       }
       catch(e) { console.warn('Shared write error', e); }
@@ -148,15 +148,15 @@ async function persistFileEntry(id)
 
   if (!workFolderRoot)
   {
-    await updateBacklinksForFile(id);
-    saveToStorage();
-    renderFileList();
+    await fUpdateBacklinksForFile(id);
+    fSaveToStorage();
+    fRenderFileList();
     return;
   }
 
   const file = files[id],
-        ext = fileExtensionFor(file.type),
-        desiredRelPath = uniqueRelPath(file.folder || '', sanitizeFileName(file.name) || 'Untitled', ext, id);
+        ext = fFileExtensionFor(file.type),
+        desiredRelPath = fUniqueRelPath(file.folder || '', fSanitizeFileName(file.name) || 'Untitled', ext, id);
 
   let activeId = id;
 
@@ -164,7 +164,7 @@ async function persistFileEntry(id)
   {
     try
     {
-      await Platform.moveWorkEntry(workFolderRoot, id, desiredRelPath);
+      await Platform.fMoveWorkEntry(workFolderRoot, id, desiredRelPath);
 
       files[desiredRelPath] = file;
       delete files[id];
@@ -172,13 +172,13 @@ async function persistFileEntry(id)
       if (currentFileId === id)
         currentFileId = desiredRelPath;
 
-      remapOpenTab(id, desiredRelPath);
+      fRemapOpenTab(id, desiredRelPath);
 
       activeId = desiredRelPath;
 
       // Best-effort: keep the version-history sidecar attached to the file
       // it documents. Fails quietly if there's no history yet.
-      Platform.moveWorkEntry(workFolderRoot, id + '.history.json', desiredRelPath + '.history.json').catch(function(){});
+      Platform.fMoveWorkEntry(workFolderRoot, id + '.history.json', desiredRelPath + '.history.json').catch(function(){});
     }
     catch(e)
     {
@@ -188,16 +188,16 @@ async function persistFileEntry(id)
 
   try
   {
-    await Platform.writeWorkFile(workFolderRoot, activeId, files[activeId].content || '');
+    await Platform.fWriteWorkFile(workFolderRoot, activeId, files[activeId].content || '');
     if (activeId === liveSyncFileId) { liveSyncBase = files[activeId].content || ''; liveSyncServerHash = null; }
-    await updateBacklinksForFile(activeId);
+    await fUpdateBacklinksForFile(activeId);
   }
   catch(e)
   {
     console.warn('Work folder write error', e);
   }
 
-  renderFileList();
+  fRenderFileList();
 
   if (currentFileId === activeId)
   {
@@ -212,21 +212,21 @@ async function persistFileEntry(id)
   }
 }
 
-async function renameFolderEntry(path, newName)
+async function fRenameFolderEntry(path, newName)
 {
   const folder = folders[path],
-        base = sanitizeFileName(newName) || folder.name,
-        desiredRelPath = uniqueFolderRelPath(folder.parent, base, path);
+        base = fSanitizeFileName(newName) || folder.name,
+        desiredRelPath = fUniqueFolderRelPath(folder.parent, base, path);
 
   if (desiredRelPath === path)
   {
-    renderFileList();
+    fRenderFileList();
     return;
   }
 
   try
   {
-    await Platform.moveWorkEntry(workFolderRoot, path, desiredRelPath);
+    await Platform.fMoveWorkEntry(workFolderRoot, path, desiredRelPath);
   }
   catch(e)
   {
@@ -236,10 +236,10 @@ async function renameFolderEntry(path, newName)
   expandedFolders.delete(path);
   expandedFolders.add(desiredRelPath);
 
-  await loadWorkFolderTree();
+  await fLoadWorkFolderTree();
 }
 
-function startInlineRename(e, nameEl, id)
+function fStartInlineRename(e, nameEl, id)
 {
   e.stopPropagation();
 
@@ -257,16 +257,16 @@ function startInlineRename(e, nameEl, id)
 
   let committed = false;
 
-  function commit()
+  function fCommit()
   {
     if (committed)
       return;
 
     committed = true;
-    finishInlineRename(id, input.value.trim());
+    fFinishInlineRename(id, input.value.trim());
   }
 
-  input.addEventListener('blur', commit);
+  input.addEventListener('blur', fCommit);
   input.addEventListener('keydown', function(ke)
   {
     if (ke.key === 'Enter')
@@ -277,12 +277,12 @@ function startInlineRename(e, nameEl, id)
     else if (ke.key === 'Escape')
     {
       committed = true;
-      renderFileList();
+      fRenderFileList();
     }
   });
 }
 
-function finishInlineRename(id, newName)
+function fFinishInlineRename(id, newName)
 {
   if (files[id])
   {
@@ -290,11 +290,11 @@ function finishInlineRename(id, newName)
     {
       files[id].name = newName;
       files[id].modified = Date.now();
-      persistFileEntry(id);
+      fPersistFileEntry(id);
       return;
     }
 
-    renderFileList();
+    fRenderFileList();
     return;
   }
 
@@ -302,15 +302,15 @@ function finishInlineRename(id, newName)
   {
     if (newName && newName !== folders[id].name)
     {
-      renameFolderEntry(id, newName);
+      fRenameFolderEntry(id, newName);
       return;
     }
 
-    renderFileList();
+    fRenderFileList();
   }
 }
 
-function handleDragStart(e, id)
+function fHandleDragStart(e, id)
 {
   draggedEntryId = id;
   e.dataTransfer.effectAllowed = 'move';
@@ -318,7 +318,7 @@ function handleDragStart(e, id)
   e.currentTarget.classList.add('dragging');
 }
 
-function handleDragEnd(e)
+function fHandleDragEnd(e)
 {
   e.currentTarget.classList.remove('dragging');
   draggedEntryId = null;
@@ -333,7 +333,7 @@ function handleDragEnd(e)
 // some engines only honor the dragenter on the very first frame a drag enters
 // an element, so it's handled defensively alongside dragover rather than relying
 // on dragover alone.
-function handleDragEnter(e)
+function fHandleDragEnter(e)
 {
   if (!workFolderRoot || !draggedEntryId)
     return;
@@ -343,7 +343,7 @@ function handleDragEnter(e)
   e.currentTarget.classList.add('drag-over');
 }
 
-function handleDragOver(e)
+function fHandleDragOver(e)
 {
   if (!workFolderRoot || !draggedEntryId)
     return;
@@ -354,14 +354,14 @@ function handleDragOver(e)
   e.currentTarget.classList.add('drag-over');
 }
 
-function handleDragLeave(e)
+function fHandleDragLeave(e)
 {
   e.stopPropagation();
   e.currentTarget.classList.remove('drag-over');
 }
 
 // Core move used by both drag-and-drop and the right-click "Move to" menu.
-async function moveEntryToFolder(id, targetFolderPath)
+async function fMoveEntryToFolder(id, targetFolderPath)
 {
   const isDir = !!folders[id];
 
@@ -378,16 +378,16 @@ async function moveEntryToFolder(id, targetFolderPath)
 
   const toRelPath = isDir
                       ?
-                        uniqueFolderRelPath(targetFolderPath, folders[id].name)
+                        fUniqueFolderRelPath(targetFolderPath, folders[id].name)
                       :
-                        uniqueRelPath(targetFolderPath, sanitizeFileName(files[id].name) || 'Untitled', fileExtensionFor(files[id].type));
+                        fUniqueRelPath(targetFolderPath, fSanitizeFileName(files[id].name) || 'Untitled', fFileExtensionFor(files[id].type));
 
   try
   {
-    await Platform.moveWorkEntry(workFolderRoot, id, toRelPath);
+    await Platform.fMoveWorkEntry(workFolderRoot, id, toRelPath);
 
     if (!isDir)
-      Platform.moveWorkEntry(workFolderRoot, id + '.history.json', toRelPath + '.history.json').catch(function(){});
+      Platform.fMoveWorkEntry(workFolderRoot, id + '.history.json', toRelPath + '.history.json').catch(function(){});
   }
   catch(err)
   {
@@ -409,19 +409,19 @@ async function moveEntryToFolder(id, targetFolderPath)
     {
       return t.indexOf(id + '/') === 0 ? toRelPath + t.slice(id.length) : t;
     });
-    persistOpenTabs();
+    fPersistOpenTabs();
 
     expandedFolders.delete(id);
     expandedFolders.add(toRelPath);
   }
   else
-    remapOpenTab(id, toRelPath);
+    fRemapOpenTab(id, toRelPath);
 
-  await loadWorkFolderTree();
+  await fLoadWorkFolderTree();
   return true;
 }
 
-async function handleDrop(e, targetFolderPath)
+async function fHandleDrop(e, targetFolderPath)
 {
   e.preventDefault();
   e.stopPropagation();
@@ -433,13 +433,13 @@ async function handleDrop(e, targetFolderPath)
   if (!id || !workFolderRoot)
     return;
 
-  await moveEntryToFolder(id, targetFolderPath);
+  await fMoveEntryToFolder(id, targetFolderPath);
 }
 
 // ── RIGHT-CLICK CONTEXT MENU (folder creation + "Move to" as a drag-and-drop alternative) ──
 let contextMenuTarget = null; // { kind: 'file'|'folder'|'root', id }
 
-function openContextMenu(e, kind, id)
+function fOpenContextMenu(e, kind, id)
 {
   e.preventDefault();
   e.stopPropagation();
@@ -448,7 +448,7 @@ function openContextMenu(e, kind, id)
     return;
 
   contextMenuTarget = { kind: kind, id: id };
-  renderContextMenu();
+  fRenderContextMenu();
 
   const menu = document.getElementById('context-menu');
 
@@ -461,7 +461,7 @@ function openContextMenu(e, kind, id)
   menu.style.top = Math.max(4, Math.min(e.clientY, maxTop)) + 'px';
 }
 
-function closeContextMenu()
+function fCloseContextMenu()
 {
   document.getElementById('context-menu').classList.remove('open');
   contextMenuTarget = null;
@@ -475,20 +475,20 @@ document.addEventListener
     const menu = document.getElementById('context-menu');
 
     if (menu.classList.contains('open') && !menu.contains(e.target))
-      closeContextMenu();
+      fCloseContextMenu();
   }
 );
 
-function renderContextMenu()
+function fRenderContextMenu()
 {
   const menu = document.getElementById('context-menu'),
         t = contextMenuTarget;
 
-  let html = '<button class="file-menu-item" onclick="contextMenuNewFolder()">New Folder</button>';
+  let html = '<button class="file-menu-item" onclick="fContextMenuNewFolder()">New Folder</button>';
 
   if (t.kind !== 'root' && !Platform.isNative)
     html += '<div class="file-menu-divider"></div>' +
-            '<button class="file-menu-item" onclick="openShareModal()">Share&hellip;</button>';
+            '<button class="file-menu-item" onclick="fOpenShareModal()">Share&hellip;</button>';
 
   if (t.kind !== 'root')
   {
@@ -497,7 +497,7 @@ function renderContextMenu()
     html += '<div class="file-menu-divider"></div>';
 
     if (currentParent !== '')
-      html += '<button class="file-menu-item" onclick="contextMenuMoveTo(\'\')">Move to Root</button>';
+      html += '<button class="file-menu-item" onclick="fContextMenuMoveTo(\'\')">Move to Root</button>';
 
     Object.keys(folders)
       .filter(function(p)
@@ -513,25 +513,25 @@ function renderContextMenu()
       .sort()
       .forEach(function(p)
       {
-        html += '<button class="file-menu-item" onclick="contextMenuMoveTo(\'' + escAttr(p) + '\')">Move to &ldquo;' + escHtml(folders[p].name) + '&rdquo;</button>';
+        html += '<button class="file-menu-item" onclick="fContextMenuMoveTo(\'' + fEscAttr(p) + '\')">Move to &ldquo;' + fEscHtml(folders[p].name) + '&rdquo;</button>';
       });
   }
 
   menu.innerHTML = html;
 }
 
-async function contextMenuNewFolder()
+async function fContextMenuNewFolder()
 {
   const t = contextMenuTarget,
         parent = (t.kind === 'folder') ? t.id : (t.kind === 'file' ? (files[t.id].folder || '') : '');
 
-  closeContextMenu();
+  fCloseContextMenu();
 
-  const relPath = uniqueFolderRelPath(parent, 'New Folder');
+  const relPath = fUniqueFolderRelPath(parent, 'New Folder');
 
   try
   {
-    await Platform.createWorkFolder(workFolderRoot, relPath);
+    await Platform.fCreateWorkFolder(workFolderRoot, relPath);
   }
   catch(e)
   {
@@ -543,23 +543,23 @@ async function contextMenuNewFolder()
   if (parent)
     expandedFolders.add(parent);
 
-  await loadWorkFolderTree();
+  await fLoadWorkFolderTree();
 
   const nameEl = document.querySelector('.folder-item[data-id="' + relPath + '"] .file-name');
 
   if (nameEl)
-    startInlineRename({ stopPropagation: function(){} }, nameEl, relPath);
+    fStartInlineRename({ stopPropagation: function(){} }, nameEl, relPath);
 }
 
-async function contextMenuMoveTo(targetFolderPath)
+async function fContextMenuMoveTo(targetFolderPath)
 {
   const id = contextMenuTarget.id;
 
-  closeContextMenu();
-  await moveEntryToFolder(id, targetFolderPath);
+  fCloseContextMenu();
+  await fMoveEntryToFolder(id, targetFolderPath);
 }
 
-function switchAppType(type, rerender)
+function fSwitchAppType(type, rerender)
 {
   if (rerender === undefined)
     rerender = true;
@@ -587,5 +587,5 @@ function switchAppType(type, rerender)
   document.getElementById('tab-' + type).classList.add('active');
 
   if (rerender)
-    renderFileList();
+    fRenderFileList();
 }

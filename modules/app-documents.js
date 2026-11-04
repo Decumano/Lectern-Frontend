@@ -5,42 +5,79 @@
 // scope, exactly as when this was a single file.
 
 // ── DOC ──
-var docTextUndo = makeTextUndo(function(){ return document.getElementById('editor'); });
+var docTextUndo = fMakeTextUndo(function(){ return document.getElementById('editor'); });
 
-function loadDocFile(file)
+function fLoadDocFile(file)
 {
   docTextUndo.reset();
   document.getElementById('doc-title-input').value = file.name;
   document.getElementById('editor').value = file.content || '';
-  document.getElementById('toolbar-title').innerHTML = '<span>' + escHtml(file.name) + '</span>';
-  updatePreview();
-  updateStatus();
+  document.getElementById('toolbar-title').innerHTML = '<span>' + fEscHtml(file.name) + '</span>';
+  fUpdatePreview();
+  fUpdateStatus();
 }
 
-function onDocTitleChange()
+function fOnDocTitleChange()
 {
   if ((!currentFileId) || (files[currentFileId].type !== 'doc'))
     return;
 
   files[currentFileId].name = (document.getElementById('doc-title-input').value || files[currentFileId].name);
-  document.getElementById('toolbar-title').innerHTML = '<span>' + escHtml(files[currentFileId].name) + '</span>';
-  scheduleSave();
-  renderFileList();
+  document.getElementById('toolbar-title').innerHTML = '<span>' + fEscHtml(files[currentFileId].name) + '</span>';
+  fScheduleSave();
+  fRenderFileList();
 }
 
-function onEditorChange()
+function fOnEditorChange()
 {
   if (!currentFileId || !files[currentFileId] || files[currentFileId].type !== 'doc')
     return;
 
   files[currentFileId].content = document.getElementById('editor').value;
 
-  updatePreview();
-  updateStatus();
-  scheduleSave();
+  fSchedulePreviewUpdate();
+  fScheduleSave();
 }
 
-function scheduleSave()
+// Re-rendering the whole preview (markdown lex/parse, sanitize, innerHTML,
+// mermaid, backlink scan across every file) on every keystroke freezes long
+// documents. Typing now only queues the work: the preview/status refresh runs
+// once typing pauses, with a delay that grows with document length, and the
+// backlink scan (the heaviest part, O(all files)) waits for a longer pause.
+var previewTimer = null,
+    backlinkTimer = null;
+
+function fSchedulePreviewUpdate()
+{
+  var length = files[currentFileId].content.length,
+      delay = Math.min(700, 80 + Math.floor(length / 150));
+
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout
+  (
+    function()
+    {
+      previewTimer = null;
+      fUpdatePreview(true);
+      fUpdateStatus();
+    },
+    delay
+  );
+}
+
+// Run any queued preview refresh right now (used before something reads it).
+function fFlushPreviewUpdate()
+{
+  if (previewTimer === null)
+    return;
+
+  clearTimeout(previewTimer);
+  previewTimer = null;
+  fUpdatePreview(true);
+  fUpdateStatus();
+}
+
+function fScheduleSave()
 {
   lastLocalEditAt = Date.now();
   clearTimeout(saveTimer);
@@ -51,11 +88,11 @@ function scheduleSave()
         if (currentFileId)
         {
           files[currentFileId].modified = Date.now();
-          persistFileEntry(currentFileId);
+          fPersistFileEntry(currentFileId);
 
           // Keep the side pane in step while its file is being edited
           if (splitState.fileId === currentFileId)
-            renderSplitPane();
+            fRenderSplitPane();
         }
     },
     800
@@ -77,19 +114,19 @@ function scheduleSave()
 // Generic CSS family keywords must stay unquoted to mean what they say -
 // font-family:'monospace' looks up a font literally NAMED "monospace" (and
 // fails), while font-family:monospace is the actual generic fallback.
-var CSS_GENERIC_FONT_FAMILIES = ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded', 'math', 'emoji', 'fangsong'];
+var cCssGenericFontFamilies = ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded', 'math', 'emoji', 'fangsong'];
 
-function cssFontFamilyValue(name)
+function fCssFontFamilyValue(name)
 {
   name = (name || '').trim();
 
-  if (CSS_GENERIC_FONT_FAMILIES.indexOf(name.toLowerCase()) !== -1)
+  if (cCssGenericFontFamilies.indexOf(name.toLowerCase()) !== -1)
     return name.toLowerCase();
 
   return "'" + name.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 
-function parseBlockDirectives(line)
+function fParseBlockDirectives(line)
 {
   var style = '',
       re = /([A-Za-z]+)(?:=("([^"]*)"|'([^']*)'|[^\s]+))?/g,
@@ -104,7 +141,7 @@ function parseBlockDirectives(line)
     if (!hasValue && (key === 'left' || key === 'center' || key === 'right' || key === 'justify'))
       style += 'text-align:' + key + ';';
     else if (hasValue && key === 'font' && value)
-      style += 'font-family:' + escHtml(cssFontFamilyValue(value)) + ';';
+      style += 'font-family:' + fEscHtml(fCssFontFamilyValue(value)) + ';';
   }
 
   return style;
@@ -117,12 +154,12 @@ var checkboxRenderIndex = 0;
 // through the vendored KaTeX build. Registered as marked tokenizers (not a
 // post-pass) so markdown emphasis rules never mangle the TeX source.
 
-function katexRenderTex(tex, displayMode)
+function fKatexRenderTex(tex, displayMode)
 {
   if (typeof katex === 'undefined')
-    return '<code>' + escHtml(tex) + '</code>';
+    return '<code>' + fEscHtml(tex) + '</code>';
   try { return katex.renderToString(tex, { displayMode: displayMode, throwOnError: false }); }
-  catch(e) { return '<code>' + escHtml(tex) + '</code>'; }
+  catch(e) { return '<code>' + fEscHtml(tex) + '</code>'; }
 }
 
 var mathBlockExtension =
@@ -135,7 +172,7 @@ var mathBlockExtension =
     var m = /^\$\$([\s\S]+?)\$\$/.exec(src);
     if (m) return { type: 'mathBlock', raw: m[0], text: m[1].trim() };
   },
-  renderer: function(token) { return '<div class="math-block">' + katexRenderTex(token.text, true) + '</div>\n'; }
+  renderer: function(token) { return '<div class="math-block">' + fKatexRenderTex(token.text, true) + '</div>\n'; }
 };
 
 var mathInlineExtension =
@@ -150,10 +187,10 @@ var mathInlineExtension =
     var m = /^\$(?!\s)((?:\\\$|[^$\n])+?)\$(?!\d)/.exec(src);
     if (m && !/\s$/.test(m[1])) return { type: 'mathInline', raw: m[0], text: m[1].replace(/\\\$/g, '$') };
   },
-  renderer: function(token) { return katexRenderTex(token.text, false); }
+  renderer: function(token) { return fKatexRenderTex(token.text, false); }
 };
 
-function configureMarkedExtensions()
+function fConfigureMarkedExtensions()
 {
   if (typeof marked === 'undefined')
     return;
@@ -189,7 +226,7 @@ function configureMarkedExtensions()
           if (lang !== 'mermaid')
             return false;
 
-          return '<div class="mermaid">' + escHtml(code.replace(/\n$/, '')) + '\n</div>\n';
+          return '<div class="mermaid">' + fEscHtml(code.replace(/\n$/, '')) + '\n</div>\n';
         },
         checkbox: function(checked)
         {
@@ -198,43 +235,43 @@ function configureMarkedExtensions()
         },
         image: function(href, title, text)
         {
-          if (!href || href.indexOf(FILE_LINK_SCHEME) !== 0)
+          if (!href || href.indexOf(cFileLinkScheme) !== 0)
             return false;
 
-          var id = decodeURIComponent(href.slice(FILE_LINK_SCHEME.length)),
+          var id = decodeURIComponent(href.slice(cFileLinkScheme.length)),
               file = files[id];
 
           if (!file)
-            return '<div class="embed-missing">' + escHtml('[File not found: ' + (text || id) + ']') + '</div>';
+            return '<div class="embed-missing">' + fEscHtml('[File not found: ' + (text || id) + ']') + '</div>';
 
           if (file.type === 'graph')
           {
             var mermaidMatch = /```mermaid\n([\s\S]*?)```/i.exec(file.content || '');
             if (!mermaidMatch)
-              return '<div class="embed-missing">' + escHtml('[No diagram in: ' + file.name + ']') + '</div>';
+              return '<div class="embed-missing">' + fEscHtml('[No diagram in: ' + file.name + ']') + '</div>';
             return  '<figure class="embed-graph">' +
-                      '<div class="mermaid">' + escHtml(mermaidMatch[1].replace(/\n$/, '')) + '</div>' +
-                      (text ? '<figcaption class="embed-caption">' + escHtml(text) + '</figcaption>' : '') +
+                      '<div class="mermaid">' + fEscHtml(mermaidMatch[1].replace(/\n$/, '')) + '</div>' +
+                      (text ? '<figcaption class="embed-caption">' + fEscHtml(text) + '</figcaption>' : '') +
                     '</figure>';
           }
 
           if (file.type === 'sheet')
           {
-            var defs = parseSheetChartsFromContent(file.content || '');
+            var defs = fParseSheetChartsFromContent(file.content || '');
             if (!defs.length)
-              return '<div class="embed-missing">' + escHtml('[No charts in: ' + file.name + ']') + '</div>';
-            var cells = parseSheetCellsForEmbed(file.content || '');
+              return '<div class="embed-missing">' + fEscHtml('[No charts in: ' + file.name + ']') + '</div>';
+            var cells = fParseSheetCellsForEmbed(file.content || '');
             return  '<figure class="embed-sheet">' +
                       defs.map(function(def)
                       {
                         try
                         {
-                          var config = buildChartJsConfigFromCells(def, cells);
-                          return '<div class="embed-sheet-chart" data-chart-config="' + escAttr(JSON.stringify(config)) + '"><canvas></canvas></div>';
+                          var config = fBuildChartJsConfigFromCells(def, cells);
+                          return '<div class="embed-sheet-chart" data-chart-config="' + fEscAttr(JSON.stringify(config)) + '"><canvas></canvas></div>';
                         }
                         catch(e) { return ''; }
                       }).join('') +
-                      (text ? '<figcaption class="embed-caption">' + escHtml(text) + '</figcaption>' : '') +
+                      (text ? '<figcaption class="embed-caption">' + fEscHtml(text) + '</figcaption>' : '') +
                     '</figure>';
           }
 
@@ -254,7 +291,7 @@ function configureMarkedExtensions()
           tokenizer: function(src)
           {
             var match = /^:::[ \t]*(\S[^\n]*)\n([\s\S]*?)\n:::(?:\n+|$)/.exec(src),
-                style = match ? parseBlockDirectives(match[1]) : '';
+                style = match ? fParseBlockDirectives(match[1]) : '';
 
             if (!match || !style)
               return undefined;
@@ -272,7 +309,7 @@ function configureMarkedExtensions()
           }
         },
         {
-          // Bare-symbol alignment blocks (see ALIGN_BLOCK_SYMBOLS near wrapBlock,
+          // Bare-symbol alignment blocks (see ALIGN_BLOCK_SYMBOLS near fWrapBlock,
           // which is what writes these). The symbol must be alone on its line -
           // no trailing text - and the closer must repeat the exact same symbol
           // (matched via the \1 backreference), so this never collides with the
@@ -306,10 +343,10 @@ function configureMarkedExtensions()
           }
         },
         {
-          // Bare-symbol font blocks (see wrapFontBlock, which is what writes
+          // Bare-symbol font blocks (see fWrapFontBlock, which is what writes
           // these): || followed directly by the font name - no "font=" keyword,
           // no quotes - closed by a bare ||. The older ":::font="..." ... :::"
-          // form (parseBlockDirectives, above) still parses correctly for
+          // form (fParseBlockDirectives, above) still parses correctly for
           // documents written before this existed.
           name: 'fontSymbolBlock',
           level: 'block',
@@ -328,7 +365,7 @@ function configureMarkedExtensions()
             return  {
                       type: 'fontSymbolBlock',
                       raw: match[0],
-                      style: 'font-family:' + escHtml(cssFontFamilyValue(match[1].trim())) + ';',
+                      style: 'font-family:' + fEscHtml(fCssFontFamilyValue(match[1].trim())) + ';',
                       tokens: this.lexer.blockTokens(match[2], [])
                     };
           },
@@ -363,7 +400,7 @@ function configureMarkedExtensions()
           },
           renderer: function(token)
           {
-            return '<span style="font-family:' + escHtml(cssFontFamilyValue(token.fontName)) + ';">' +
+            return '<span style="font-family:' + fEscHtml(fCssFontFamilyValue(token.fontName)) + ';">' +
                    this.parser.parseInline(token.tokens) + '</span>';
           }
         },
@@ -382,7 +419,7 @@ function configureMarkedExtensions()
           },
           renderer: function()
           {
-            return renderTOC();
+            return fRenderTOC();
           }
         },
         {
@@ -416,7 +453,7 @@ function configureMarkedExtensions()
               if (lower === null) lower = isLower;
               else if (lower !== isLower) break; // case switch = new list
 
-              var value = romanToInt(m[1]);
+              var value = fRomanToInt(m[1]);
               if (!value) break;
               if (!items.length) startNum = value;
 
@@ -512,7 +549,7 @@ function configureMarkedExtensions()
               return '<div class="doc-fields doc-fields-vertical">' +
                      token.pairs.map(function(p)
                      {
-                       return '<b class="doc-field-key">' + escHtml(p.key) + '</b><span class="doc-field-value">' + escHtml(p.value) + '</span>';
+                       return '<b class="doc-field-key">' + fEscHtml(p.key) + '</b><span class="doc-field-value">' + fEscHtml(p.value) + '</span>';
                      }).join('') +
                      '</div>\n';
             }
@@ -520,7 +557,7 @@ function configureMarkedExtensions()
             return '<div class="doc-fields">' +
                    token.pairs.map(function(p)
                    {
-                     return '<span class="doc-field"><b>' + escHtml(p.key) + '</b> ' + escHtml(p.value) + '</span>';
+                     return '<span class="doc-field"><b>' + fEscHtml(p.key) + '</b> ' + fEscHtml(p.value) + '</span>';
                    }).join('') +
                    '</div>\n';
           }
@@ -538,7 +575,7 @@ function configureMarkedExtensions()
           },
           renderer: function(token)
           {
-            return '<span class="doc-tag" onclick="filterByTag(\'' + escAttr(token.tag) + '\')">#' + escHtml(token.tag) + '</span>';
+            return '<span class="doc-tag" onclick="fFilterByTag(\'' + fEscAttr(token.tag) + '\')">#' + fEscHtml(token.tag) + '</span>';
           }
         }
       ]
@@ -546,11 +583,11 @@ function configureMarkedExtensions()
   );
 }
 
-configureMarkedExtensions();
+fConfigureMarkedExtensions();
 
 // Loose roman-numeral parser for the romanList extension: subtractive
 // notation handled, 0 returned for anything that isn't roman.
-function romanToInt(text)
+function fRomanToInt(text)
 {
   var values = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 },
       total = 0,
@@ -575,7 +612,7 @@ function romanToInt(text)
   return (total > 0 && total < 4000) ? total : 0;
 }
 
-function configureMermaid()
+function fConfigureMermaid()
 {
   if (typeof mermaid === 'undefined')
     return;
@@ -583,9 +620,9 @@ function configureMermaid()
   mermaid.initialize({ startOnLoad: false });
 }
 
-configureMermaid();
+fConfigureMermaid();
 
-function extractPlainText(tokens)
+function fExtractPlainText(tokens)
 {
   if (!tokens || !tokens.length)
     return '';
@@ -594,12 +631,12 @@ function extractPlainText(tokens)
   (
     function(token)
     {
-      return token.tokens ? extractPlainText(token.tokens) : (token.text || token.raw || '');
+      return token.tokens ? fExtractPlainText(token.tokens) : (token.text || token.raw || '');
     }
   ).join('');
 }
 
-function makeSlug(text)
+function fMakeSlug(text)
 {
   var base = text.toLowerCase()
                   .trim()
@@ -614,7 +651,7 @@ function makeSlug(text)
   return count === 0 ? base : (base + '-' + count);
 }
 
-function collectHeadings(tokens)
+function fCollectHeadings(tokens)
 {
   tokens.forEach
   (
@@ -622,14 +659,14 @@ function collectHeadings(tokens)
     {
       if (token.type === 'heading')
       {
-        var text = extractPlainText(token.tokens);
+        var text = fExtractPlainText(token.tokens);
 
         documentHeadings.push
         (
           {
             depth: token.depth,
             text: text,
-            slug: makeSlug(text)
+            slug: fMakeSlug(text)
           }
         );
       }
@@ -639,19 +676,19 @@ function collectHeadings(tokens)
         (
           function(item)
           {
-            collectHeadings(item.tokens);
+            fCollectHeadings(item.tokens);
           }
         );
       }
       else if (token.tokens)
       {
-        collectHeadings(token.tokens);
+        fCollectHeadings(token.tokens);
       }
     }
   );
 }
 
-function renderTOC()
+function fRenderTOC()
 {
   if (!documentHeadings.length)
     return '<div class="toc toc-empty">No headings yet.</div>';
@@ -684,7 +721,7 @@ function renderTOC()
         openDepth--;
       }
 
-      html += '<li><a href="#' + h.slug + '">' + escHtml(h.text) + '</a></li>';
+      html += '<li><a href="#' + h.slug + '">' + fEscHtml(h.text) + '</a></li>';
     }
   );
 
@@ -699,8 +736,15 @@ function renderTOC()
   return html;
 }
 
-function updatePreview()
+function fUpdatePreview(deferBacklinks)
 {
+  // A direct call supersedes any queued typing refresh.
+  if (previewTimer !== null)
+  {
+    clearTimeout(previewTimer);
+    previewTimer = null;
+  }
+
   document.getElementById('preview-title').textContent = document.getElementById('doc-title-input').value;
 
   var source = document.getElementById('editor').value,
@@ -714,22 +758,28 @@ function updatePreview()
     checkboxRenderIndex = 0;
 
     var tokens = marked.lexer(source);
-    collectHeadings(tokens);
+    fCollectHeadings(tokens);
 
     html = marked.parser(tokens);
   }
 
   var previewContent = document.getElementById('preview-content');
-  previewContent.innerHTML = sanitizeHtml(html);
-  renderMermaidDiagrams(previewContent);
-  renderEmbeddedSheetCharts(previewContent);
-  renderPreviewBacklinks();
+  previewContent.innerHTML = fSanitizeHtml(html);
+  fRenderMermaidDiagrams(previewContent);
+  fRenderEmbeddedSheetCharts(previewContent);
 
-  if (typeof frAfterPreviewRender === 'function')
-    frAfterPreviewRender();
+  clearTimeout(backlinkTimer);
+
+  if (deferBacklinks)
+    backlinkTimer = setTimeout(fRenderPreviewBacklinks, 1500);
+  else
+    fRenderPreviewBacklinks();
+
+  if (typeof fFrAfterPreviewRender === 'function')
+    fFrAfterPreviewRender();
 }
 
-function renderPreviewBacklinks()
+function fRenderPreviewBacklinks()
 {
   var panel = document.getElementById('preview-backlinks');
   if (!panel) return;
@@ -737,7 +787,7 @@ function renderPreviewBacklinks()
 
   // Merge persisted index with live scan of loaded content
   var indexed = (backlinksIndex[currentFileId] || []).filter(function(id) { return !!files[id]; });
-  var live    = computeBacklinks(currentFileId).map(function(r) { return r.id; });
+  var live    = fComputeBacklinks(currentFileId).map(function(r) { return r.id; });
   var allIds  = indexed.slice();
   live.forEach(function(id) { if (allIds.indexOf(id) < 0) allIds.push(id); });
 
@@ -753,15 +803,15 @@ function renderPreviewBacklinks()
       allIds.map(function(id)
       {
         var f = files[id];
-        return '<div class="pbl-item" onclick="openFile(\'' + escAttr(id) + '\')">' +
-          '<span class="pbl-icon">' + fileTypeIcon(f.type) + '</span>' +
-          '<span class="pbl-name">' + escHtml(f.name) + '</span>' +
+        return '<div class="pbl-item" onclick="fOpenFile(\'' + fEscAttr(id) + '\')">' +
+          '<span class="pbl-icon">' + fFileTypeIcon(f.type) + '</span>' +
+          '<span class="pbl-name">' + fEscHtml(f.name) + '</span>' +
         '</div>';
       }).join('') +
     '</div>';
 }
 
-function updateStatus()
+function fUpdateStatus()
 {
   var text = document.getElementById('editor').value;
   var words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -776,14 +826,25 @@ document.getElementById('editor').addEventListener
   function(target)
   {
     var editor = target.target;
-    var lines = editor.value.substr(0, editor.selectionStart).split('\n');
-    document.getElementById('cursor-pos').textContent = 'Ln ' + lines.length + ', Col ' + (lines[lines.length - 1].length + 1);
+    // Count newlines up to the caret without splitting the whole prefix.
+    var caret = editor.selectionStart,
+        line = 1,
+        lineStart = 0,
+        nl = -1;
+
+    while ((nl = editor.value.indexOf('\n', nl + 1)) !== -1 && nl < caret)
+    {
+      line++;
+      lineStart = nl + 1;
+    }
+
+    document.getElementById('cursor-pos').textContent = 'Ln ' + line + ', Col ' + (caret - lineStart + 1);
   }
 );
 
-function handleEditorKey(keyEvent)
+function fHandleEditorKey(keyEvent)
 {
-  docTextUndo.noteKeydown(keyEvent);
+  docTextUndo.fNoteKeydown(keyEvent);
 
   if (keyEvent.ctrlKey || keyEvent.metaKey)
   {
@@ -792,7 +853,7 @@ function handleEditorKey(keyEvent)
       keyEvent.preventDefault();
 
       if (docTextUndo.undo())
-        onEditorChange();
+        fOnEditorChange();
 
       return;
     }
@@ -802,7 +863,7 @@ function handleEditorKey(keyEvent)
       keyEvent.preventDefault();
 
       if (docTextUndo.redo())
-        onEditorChange();
+        fOnEditorChange();
 
       return;
     }
@@ -810,19 +871,19 @@ function handleEditorKey(keyEvent)
     if (keyEvent.key === 'b')
     {
       keyEvent.preventDefault();
-      wrapSelectedText('**','**');
+      fWrapSelectedText('**','**');
     }
 
     if (keyEvent.key === 'i')
     {
       keyEvent.preventDefault();
-      wrapSelectedText('*','*');
+      fWrapSelectedText('*','*');
     }
 
     if (keyEvent.key === 's')
     {
       keyEvent.preventDefault();
-      saveToStorage();
+      fSaveToStorage();
     }
   }
 
@@ -835,7 +896,7 @@ function handleEditorKey(keyEvent)
 
     target.value = target.value.slice(0, startSelection) + '  ' + target.value.slice(target.selectionEnd);
     target.selectionStart = target.selectionEnd = startSelection + 2;
-    onEditorChange();
+    fOnEditorChange();
   }
 }
 
@@ -847,7 +908,7 @@ document.addEventListener
     if ((keyEvent.ctrlKey || keyEvent.metaKey) && keyEvent.key==='n')
     {
       keyEvent.preventDefault();
-      openNewModal();
+      fOpenNewModal();
     }
 
     if (keyEvent.key === 'Escape')

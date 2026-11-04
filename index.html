@@ -31,8 +31,8 @@
 
   <div id="app">
 
-    <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileSidebar()" title="Files &amp; apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-    <div id="mobile-backdrop" class="mobile-backdrop" onclick="closeMobileSidebar()"></div>
+    <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="fToggleMobileSidebar()" title="Files &amp; apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <div id="mobile-backdrop" class="mobile-backdrop" onclick="fCloseMobileSidebar()"></div>
 
     <div id="sidebar">
 
@@ -45,90 +45,90 @@
       </div> <!-- END LOGO -->
 
       <div class="app-tabs">
-        <button class="app-tab active" onclick="switchAppType('doc')" id="tab-doc" title="Docs">
+        <button class="app-tab active" onclick="fSwitchAppType('doc')" id="tab-doc" title="Docs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('sheet')" id="tab-sheet" title="Sheets">
+        <button class="app-tab" onclick="fSwitchAppType('sheet')" id="tab-sheet" title="Sheets">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('graph')" id="tab-graph" title="Graphs">
+        <button class="app-tab" onclick="fSwitchAppType('graph')" id="tab-graph" title="Graphs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="10.5"/><line x1="8.5" y1="16.5" x2="15.5" y2="13.5"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('slides')" id="tab-slides" title="Slides">
+        <button class="app-tab" onclick="fSwitchAppType('slides')" id="tab-slides" title="Slides">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="6" y1="8.5" x2="13" y2="8.5"/><line x1="6" y1="12.5" x2="10" y2="12.5"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('notebook')" id="tab-notebook" title="Notebook">
+        <button class="app-tab" onclick="fSwitchAppType('notebook')" id="tab-notebook" title="Notebook">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/><line x1="12" y1="16" x2="15" y2="16"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('glossary')" id="tab-glossary" title="Glossary / Dictionary">
+        <button class="app-tab" onclick="fSwitchAppType('glossary')" id="tab-glossary" title="Glossary / Dictionary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="16" y2="8"/><line x1="9" y1="12" x2="14" y2="12"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('calendar')" id="tab-calendar" title="Calendar System">
+        <button class="app-tab" onclick="fSwitchAppType('calendar')" id="tab-calendar" title="Calendar System">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="7" y="14" width="2" height="2" rx=".5" fill="currentColor" stroke="none"/><rect x="11" y="14" width="2" height="2" rx=".5" fill="currentColor" stroke="none"/><rect x="15" y="14" width="2" height="2" rx=".5" fill="currentColor" stroke="none"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('bestiary')" id="tab-bestiary" title="Bestiary">
+        <button class="app-tab" onclick="fSwitchAppType('bestiary')" id="tab-bestiary" title="Bestiary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="10" r="1.6"/><circle cx="9.5" cy="6.5" r="1.6"/><circle cx="14.5" cy="6.5" r="1.6"/><circle cx="18.5" cy="10" r="1.6"/><path d="M12 11c-2.6 0-5.5 2.6-5.5 5a3 3 0 0 0 3 3c1 0 1.7-.5 2.5-.5s1.5.5 2.5.5a3 3 0 0 0 3-3c0-2.4-2.9-5-5.5-5z"/></svg>
         </button>
-        <button class="app-tab" onclick="switchAppType('economy')" id="tab-economy" title="Currency &amp; Economy">
+        <button class="app-tab" onclick="fSwitchAppType('economy')" id="tab-economy" title="Currency &amp; Economy">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
         </button>
       </div> <!-- END SIDEBAR TABS -->
 
-      <div class="sidebar-section" ondragenter="handleDragEnter(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'')" oncontextmenu="openContextMenu(event,'root','')">
+      <div class="sidebar-section" ondragenter="fHandleDragEnter(event)" ondragover="fHandleDragOver(event)" ondragleave="fHandleDragLeave(event)" ondrop="fHandleDrop(event,'')" oncontextmenu="fOpenContextMenu(event,'root','')">
         Files
       </div>
       <div class="sidebar-search-wrap">
         <svg class="sidebar-search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6.5" cy="6.5" r="4"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
-        <input id="sidebar-search" class="sidebar-search" type="text" placeholder="Search all notes…" oninput="onSidebarSearch(this.value)">
-        <button class="sidebar-search-clear" id="sidebar-search-clear" style="display:none" onclick="clearGlobalSearch()" title="Clear">×</button>
+        <input id="sidebar-search" class="sidebar-search" type="text" placeholder="Search all notes…" oninput="fOnSidebarSearch(this.value)">
+        <button class="sidebar-search-clear" id="sidebar-search-clear" style="display:none" onclick="fClearGlobalSearch()" title="Clear">×</button>
       </div>
-      <div id="file-list" ondragenter="handleDragEnter(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'')" oncontextmenu="openContextMenu(event,'root','')"></div>
+      <div id="file-list" ondragenter="fHandleDragEnter(event)" ondragover="fHandleDragOver(event)" ondragleave="fHandleDragLeave(event)" ondrop="fHandleDrop(event,'')" oncontextmenu="fOpenContextMenu(event,'root','')"></div>
       <div id="global-search-results" style="display:none"></div>
 
-      <div class="sidebar-section shared-section-header" id="shared-section-header" style="display:none" onclick="toggleSharedSection()">
+      <div class="sidebar-section shared-section-header" id="shared-section-header" style="display:none" onclick="fToggleSharedSection()">
         Shared with me <span id="shared-section-chevron">▾</span>
       </div>
       <div id="shared-list" style="display:none"></div>
 
       <div class="sidebar-collapse-area">
-        <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar">
+        <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="fToggleSidebarCollapse()" title="Collapse sidebar">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="10,3 4,8 10,13"/></svg>
         </button>
       </div>
 
       <div class="sidebar-footer">
-        <button class="btn-new" onclick="openNewModal()" title="New file">
+        <button class="btn-new" onclick="fOpenNewModal()" title="New file">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span class="btn-new-label">New</span>
         </button> <!-- New file button -->
 
-        <button class="btn-icon" id="relations-btn" onclick="openRelationsGraph()" title="Relationship graph — how your files link together">
+        <button class="btn-icon" id="relations-btn" onclick="fOpenRelationsGraph()" title="Relationship graph — how your files link together">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="2.4"/><circle cx="19" cy="7" r="2.4"/><circle cx="8" cy="19" r="2.4"/><circle cx="17" cy="16" r="2.4"/><line x1="7" y1="6.2" x2="16.8" y2="6.7"/><line x1="6" y1="7.3" x2="7.4" y2="16.8"/><line x1="10.3" y1="18.2" x2="14.8" y2="16.8"/><line x1="18.3" y1="9.2" x2="17.3" y2="13.7"/></svg>
         </button> <!-- Relationship graph (desktop) -->
 
         <div style="position:relative;">
-          <button class="btn-icon" id="file-menu-btn" onclick="toggleFileMenu(event)" title="More options">
+          <button class="btn-icon" id="file-menu-btn" onclick="fToggleFileMenu(event)" title="More options">
             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>
           </button> <!-- File menu trigger -->
 
           <div id="file-menu" class="file-menu">
-            <button class="file-menu-item" onclick="handleFileMenuExport()">Export</button>
-            <button class="file-menu-item" onclick="toggleExportAsSubmenu(event)">
+            <button class="file-menu-item" onclick="fHandleFileMenuExport()">Export</button>
+            <button class="file-menu-item" onclick="fToggleExportAsSubmenu(event)">
               Export as&hellip;
               <span class="file-menu-caret">&#9656;</span>
             </button>
             <div id="export-as-submenu" class="export-as-submenu">
-              <button class="file-menu-item" onclick="handleFileMenuExportAs('html')">HTML (.html)</button>
-              <button class="file-menu-item" onclick="handleFileMenuExportAs('pdf')">PDF (.pdf)</button>
+              <button class="file-menu-item" onclick="fHandleFileMenuExportAs('html')">HTML (.html)</button>
+              <button class="file-menu-item" onclick="fHandleFileMenuExportAs('pdf')">PDF (.pdf)</button>
             </div>
             <div class="file-menu-divider"></div>
-            <button class="file-menu-item" onclick="handleFileMenuImport()">Import</button>
+            <button class="file-menu-item" onclick="fHandleFileMenuImport()">Import</button>
             <div class="file-menu-divider"></div>
-            <button class="file-menu-item" onclick="handleFileMenuSaveTemplate()">Save as template&hellip;</button>
+            <button class="file-menu-item" onclick="fHandleFileMenuSaveTemplate()">Save as template&hellip;</button>
             <div class="file-menu-divider"></div>
             <button class="file-menu-item" id="file-menu-download" style="display:none"
               onclick="window.open('download.html','_blank')">Get the desktop app&hellip;</button>
-            <button class="file-menu-item" onclick="handleFileMenuSettings()">Settings&hellip;</button>
+            <button class="file-menu-item" onclick="fHandleFileMenuSettings()">Settings&hellip;</button>
           </div>
         </div>
       </div> <!-- END SIDEBAR FOOTER -->
@@ -147,7 +147,7 @@
       <div id="doc-app" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
         <div id="toolbar">
           <div class="toolbar-group">
-            <select class="tb-select" id="heading-sel" onchange="applyHeading(this.value)">
+            <select class="tb-select" id="heading-sel" onchange="fApplyHeading(this.value)">
               <option value="">Paragraph</option>
               <option value="# ">Heading 1</option>
               <option value="## ">Heading 2</option>
@@ -159,56 +159,56 @@
           </div>
           <div class="toolbar-sep"></div>
           <div class="toolbar-group">
-            <button class="tb-btn" title="Bold" onclick="wrapSelectedText('**','**')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></button>
-            <button class="tb-btn" title="Italic" onclick="wrapSelectedText('*','*')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
-            <button class="tb-btn" title="Strikethrough" onclick="wrapSelectedText('~~','~~')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 6C16 6 14.5 4 12 4s-5 1.5-5 4c0 5 10 3 10 8 0 2.5-2 4-5 4s-5-1.5-5-4"/></svg></button>
-            <button class="tb-btn" title="Code" onclick="wrapSelectedText('`','`')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg></button>
+            <button class="tb-btn" title="Bold" onclick="fWrapSelectedText('**','**')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></button>
+            <button class="tb-btn" title="Italic" onclick="fWrapSelectedText('*','*')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+            <button class="tb-btn" title="Strikethrough" onclick="fWrapSelectedText('~~','~~')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 6C16 6 14.5 4 12 4s-5 1.5-5 4c0 5 10 3 10 8 0 2.5-2 4-5 4s-5-1.5-5-4"/></svg></button>
+            <button class="tb-btn" title="Code" onclick="fWrapSelectedText('`','`')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg></button>
           </div>
           <div class="toolbar-sep"></div>
           <div class="toolbar-group">
-            <button class="tb-btn" title="Bullet list" onclick="insertLine('- ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg></button>
-            <button class="tb-btn" title="Numbered list" onclick="insertLine('1. ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
-            <button class="tb-btn" title="Roman numeral list" onclick="insertLine('i. ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><line x1="4" y1="4.5" x2="4" y2="7.5"/><line x1="3" y1="10.5" x2="3" y2="13.5"/><line x1="6" y1="10.5" x2="6" y2="13.5"/><line x1="2" y1="16.5" x2="2" y2="19.5"/><line x1="5" y1="16.5" x2="5" y2="19.5"/><line x1="8" y1="16.5" x2="8" y2="19.5"/></svg></button>
-            <button class="tb-btn" title="Checklist item" onclick="insertLine('- [ ] ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></button>
-            <button class="tb-btn" title="Blockquote" onclick="insertLine('> ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
-            <button class="tb-btn" title="Code block" onclick="insertCodeBlock()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><line x1="12" y1="7" x2="11" y2="17"/></svg></button>
-            <button class="tb-btn" title="Table" onclick="openTableModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></button>
-            <button class="tb-btn" title="Link" onclick="insertLink()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
-            <button class="tb-btn" title="Link to another file" onclick="openFileLinkModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M14 3h7v7"/><line x1="21" y1="3" x2="11" y2="13"/></svg></button>
+            <button class="tb-btn" title="Bullet list" onclick="fInsertLine('- ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg></button>
+            <button class="tb-btn" title="Numbered list" onclick="fInsertLine('1. ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
+            <button class="tb-btn" title="Roman numeral list" onclick="fInsertLine('i. ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><line x1="4" y1="4.5" x2="4" y2="7.5"/><line x1="3" y1="10.5" x2="3" y2="13.5"/><line x1="6" y1="10.5" x2="6" y2="13.5"/><line x1="2" y1="16.5" x2="2" y2="19.5"/><line x1="5" y1="16.5" x2="5" y2="19.5"/><line x1="8" y1="16.5" x2="8" y2="19.5"/></svg></button>
+            <button class="tb-btn" title="Checklist item" onclick="fInsertLine('- [ ] ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></button>
+            <button class="tb-btn" title="Blockquote" onclick="fInsertLine('> ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
+            <button class="tb-btn" title="Code block" onclick="fInsertCodeBlock()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><line x1="12" y1="7" x2="11" y2="17"/></svg></button>
+            <button class="tb-btn" title="Table" onclick="fOpenTableModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></button>
+            <button class="tb-btn" title="Link" onclick="fInsertLink()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+            <button class="tb-btn" title="Link to another file" onclick="fOpenFileLinkModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M14 3h7v7"/><line x1="21" y1="3" x2="11" y2="13"/></svg></button>
           </div>
           <div class="toolbar-sep"></div>
           <div class="toolbar-group">
-            <button class="tb-btn" title="Align left" onclick="wrapBlock('left')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></button>
-            <button class="tb-btn" title="Center" onclick="wrapBlock('center')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg></button>
-            <button class="tb-btn" title="Align right" onclick="wrapBlock('right')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg></button>
-            <button class="tb-btn" title="Justify" onclick="wrapBlock('justify')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg></button>
-            <button class="tb-btn" title="Insert table of contents" onclick="insertTOC()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/></svg></button>
-            <button class="tb-btn" title="Font…" onclick="applyFont()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
-            <button class="tb-btn" title="Find &amp; replace (Ctrl+F)" onclick="toggleFindReplace()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="6"/><line x1="21" y1="21" x2="14.5" y2="14.5"/></svg></button>
+            <button class="tb-btn" title="Align left" onclick="fWrapBlock('left')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></button>
+            <button class="tb-btn" title="Center" onclick="fWrapBlock('center')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg></button>
+            <button class="tb-btn" title="Align right" onclick="fWrapBlock('right')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg></button>
+            <button class="tb-btn" title="Justify" onclick="fWrapBlock('justify')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg></button>
+            <button class="tb-btn" title="Insert table of contents" onclick="fInsertTOC()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/></svg></button>
+            <button class="tb-btn" title="Font…" onclick="fApplyFont()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
+            <button class="tb-btn" title="Find &amp; replace (Ctrl+F)" onclick="fToggleFindReplace()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="6"/><line x1="21" y1="21" x2="14.5" y2="14.5"/></svg></button>
           </div>
           <div class="toolbar-title" id="toolbar-title"><span>No document open</span></div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
           <div class="view-toggle">
-            <button class="view-btn active" id="vbtn-write" onclick="setView('write')" title="Write"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="view-btn" id="vbtn-split" onclick="setView('split')" title="Split"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg></button>
-            <button class="view-btn" id="vbtn-preview" onclick="setView('preview')" title="Preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="view-btn active" id="vbtn-write" onclick="fSetView('write')" title="Write"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="view-btn" id="vbtn-split" onclick="fSetView('split')" title="Split"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg></button>
+            <button class="view-btn" id="vbtn-preview" onclick="fSetView('preview')" title="Preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
         </div>
         <div id="editor-area">
           <div id="find-replace-panel" class="find-replace-panel">
-            <input id="fr-find" placeholder="Find" oninput="frUpdateCount()" onkeydown="frKey(event)">
-            <input id="fr-replace" placeholder="Replace with" onkeydown="frKey(event)">
-            <label class="fr-case" title="Match case"><input type="checkbox" id="fr-case" onchange="frUpdateCount()">Aa</label>
+            <input id="fr-find" placeholder="Find" oninput="fFrUpdateCount()" onkeydown="fFrKey(event)">
+            <input id="fr-replace" placeholder="Replace with" onkeydown="fFrKey(event)">
+            <label class="fr-case" title="Match case"><input type="checkbox" id="fr-case" onchange="fFrUpdateCount()">Aa</label>
             <span id="fr-count"></span>
-            <button type="button" class="fr-btn" onclick="frFindPrev()" title="Find previous (Shift+Enter)">Prev</button>
-            <button type="button" class="fr-btn" onclick="frFindNext()" title="Find next (Enter)">Next</button>
-            <button type="button" class="fr-btn" onclick="frReplaceOne()" title="Replace the current match, then jump to the next">Replace</button>
-            <button type="button" class="fr-btn" onclick="frReplaceAll()" title="Replace every match">All</button>
-            <button type="button" class="fr-btn fr-close" onclick="closeFindReplace()" title="Close (Esc)">×</button>
+            <button type="button" class="fr-btn" onclick="fFrFindPrev()" title="Find previous (Shift+Enter)">Prev</button>
+            <button type="button" class="fr-btn" onclick="fFrFindNext()" title="Find next (Enter)">Next</button>
+            <button type="button" class="fr-btn" onclick="fFrReplaceOne()" title="Replace the current match, then jump to the next">Replace</button>
+            <button type="button" class="fr-btn" onclick="fFrReplaceAll()" title="Replace every match">All</button>
+            <button type="button" class="fr-btn fr-close" onclick="fCloseFindReplace()" title="Close (Esc)">×</button>
           </div>
           <div id="write-pane">
-            <input id="doc-title-input" placeholder="Document title…" oninput="onDocTitleChange()">
-            <textarea id="editor" placeholder="Start writing in Markdown…" oninput="onEditorChange()" onkeydown="handleEditorKey(event)"></textarea>
+            <input id="doc-title-input" placeholder="Document title…" oninput="fOnDocTitleChange()">
+            <textarea id="editor" placeholder="Start writing in Markdown…" oninput="fOnEditorChange()" onkeydown="fHandleEditorKey(event)"></textarea>
           </div>
           <div id="preview-pane">
             <div id="preview-title"></div>
@@ -232,41 +232,41 @@
           <input class="cell-ref" id="cell-ref" value="A1" readonly>
           <div style="width:1px;height:20px;background:var(--border2);"></div>
           <div style="position:relative;">
-            <button type="button" id="fx-help-btn" class="fx-help-btn" onclick="toggleFunctionHelp(event)" title="Function reference">fx ▾</button>
+            <button type="button" id="fx-help-btn" class="fx-help-btn" onclick="fToggleFunctionHelp(event)" title="Function reference">fx ▾</button>
             <div id="function-help-panel" class="function-help-panel"></div>
           </div>
-          <input class="formula-bar" id="formula-bar" placeholder="Enter value or =formula" onkeydown="formulaBarKey(event)" oninput="formulaBarInput()" onfocus="onFormulaBarFocus()">
+          <input class="formula-bar" id="formula-bar" placeholder="Enter value or =formula" onkeydown="fFormulaBarKey(event)" oninput="fFormulaBarInput()" onfocus="fOnFormulaBarFocus()">
           <div style="flex:1;"></div>
           <label class="fill-literal-toggle" title="When filling formulas, also shift plain numbers (e.g. +1 becomes +2)">
-            <input type="checkbox" id="increment-literals-toggle" onchange="toggleIncrementLiterals(this.checked)">
+            <input type="checkbox" id="increment-literals-toggle" onchange="fToggleIncrementLiterals(this.checked)">
             Increment numbers on fill
           </label>
           <div class="tb-split" title="Paint the selected cells' background">
-            <button type="button" class="tb-btn tb-split-main" onclick="applyBucketColor()" title="Paint the selected cells with the current color">
+            <button type="button" class="tb-btn tb-split-main" onclick="fApplyBucketColor()" title="Paint the selected cells with the current color">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11l-8-8-7 7a2 2 0 0 0 0 3l5 5a2 2 0 0 0 3 0z"/><path d="M5 2l3 3"/><path d="M21 15s-2 2.4-2 4a2 2 0 1 0 4 0c0-1.6-2-4-2-4z"/></svg>
               <span class="bucket-swatch" id="bucket-swatch"></span>
             </button>
             <label class="tb-split-arrow tb-btn" title="Choose a color">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,6 8,10 12,6"/></svg>
-              <input type="color" id="cell-color-input" value="#3a5a40" onchange="onBucketColorChosen(this.value)">
+              <input type="color" id="cell-color-input" value="#3a5a40" onchange="fOnBucketColorChosen(this.value)">
             </label>
           </div>
-          <button type="button" class="tb-btn" onclick="clearCellColor()" title="Clear the selected cells' background"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11l-8-8-7 7a2 2 0 0 0 0 3l5 5a2 2 0 0 0 3 0z"/><line x1="3" y1="21" x2="21" y2="3"/></svg></button>
+          <button type="button" class="tb-btn" onclick="fClearCellColor()" title="Clear the selected cells' background"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11l-8-8-7 7a2 2 0 0 0 0 3l5 5a2 2 0 0 0 3 0z"/><line x1="3" y1="21" x2="21" y2="3"/></svg></button>
           <div class="tb-split" title="Color the selected cells' text">
-            <button type="button" class="tb-btn tb-split-main" onclick="applyTextColor()" title="Color the selected cells' text with the current color">
+            <button type="button" class="tb-btn tb-split-main" onclick="fApplyTextColor()" title="Color the selected cells' text with the current color">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 20L12 4l6 16"/><line x1="8.3" y1="14" x2="15.7" y2="14"/></svg>
               <span class="bucket-swatch" id="text-swatch"></span>
             </button>
             <label class="tb-split-arrow tb-btn" title="Choose a text color">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,6 8,10 12,6"/></svg>
-              <input type="color" id="text-color-input" value="#d4a843" onchange="onTextColorChosen(this.value)">
+              <input type="color" id="text-color-input" value="#d4a843" onchange="fOnTextColorChosen(this.value)">
             </label>
           </div>
-          <button type="button" class="tb-btn" onclick="clearCellTextColor()" title="Clear the selected cells' text color"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 20L12 4l6 16"/><line x1="8.3" y1="14" x2="15.7" y2="14"/><line x1="3" y1="21" x2="21" y2="3"/></svg></button>
-          <button type="button" class="tb-btn" onclick="toggleMergeSelection()" title="Merge the selected cells into one (or split an existing merge)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1"/><line x1="9" y1="5" x2="9" y2="9"/><line x1="15" y1="5" x2="15" y2="9"/><line x1="9" y1="19" x2="9" y2="15"/><line x1="15" y1="19" x2="15" y2="15"/></svg></button>
+          <button type="button" class="tb-btn" onclick="fClearCellTextColor()" title="Clear the selected cells' text color"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 20L12 4l6 16"/><line x1="8.3" y1="14" x2="15.7" y2="14"/><line x1="3" y1="21" x2="21" y2="3"/></svg></button>
+          <button type="button" class="tb-btn" onclick="fToggleMergeSelection()" title="Merge the selected cells into one (or split an existing merge)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1"/><line x1="9" y1="5" x2="9" y2="9"/><line x1="15" y1="5" x2="15" y2="9"/><line x1="9" y1="19" x2="9" y2="15"/><line x1="15" y1="19" x2="15" y2="15"/></svg></button>
           <div style="width:1px;height:20px;background:var(--border2);"></div>
-          <button type="button" class="tb-btn" id="insert-chart-btn" onclick="openChartModal()" title="Insert chart from the selected range" style="width:auto;padding:0 10px;font-size:12px;font-family:var(--sans);">Insert Chart</button>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button type="button" class="tb-btn" id="insert-chart-btn" onclick="fOpenChartModal()" title="Insert chart from the selected range" style="width:auto;padding:0 10px;font-size:12px;font-family:var(--sans);">Insert Chart</button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
           <span style="font-size:11px;color:var(--text3);">Stored as cell=value pairs (.mds)</span>
         </div>
         <div id="sheet-container">
@@ -280,23 +280,23 @@
       <!-- GRAPH APP -->
       <div id="graph-app" style="flex-direction:column;">
         <div id="graph-toolbar">
-          <input id="graph-title-input" placeholder="Diagram title…" oninput="onGraphTitleChange()">
+          <input id="graph-title-input" placeholder="Diagram title…" oninput="fOnGraphTitleChange()">
           <div style="flex:1;"></div>
           <span style="font-size:11px;color:var(--text3);">Stored as Markdown with a mermaid code block (.mdg)</span>
           <div style="position:relative;">
-            <button type="button" id="mermaid-help-btn" class="fx-help-btn" onclick="toggleMermaidHelp(event)" title="Mermaid cheatsheet">Cheatsheet ▾</button>
+            <button type="button" id="mermaid-help-btn" class="fx-help-btn" onclick="fToggleMermaidHelp(event)" title="Mermaid cheatsheet">Cheatsheet ▾</button>
             <div id="mermaid-help-panel" class="function-help-panel mermaid-help-panel"></div>
           </div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
           <div class="view-toggle">
-            <button class="view-btn" id="gvbtn-write" onclick="setGraphView('write')" title="Write"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="view-btn active" id="gvbtn-split" onclick="setGraphView('split')" title="Split"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg></button>
-            <button class="view-btn" id="gvbtn-preview" onclick="setGraphView('preview')" title="Preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="view-btn" id="gvbtn-write" onclick="fSetGraphView('write')" title="Write"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="view-btn active" id="gvbtn-split" onclick="fSetGraphView('split')" title="Split"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg></button>
+            <button class="view-btn" id="gvbtn-preview" onclick="fSetGraphView('preview')" title="Preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
         </div>
         <div id="graph-editor-area" class="split">
           <div id="graph-write-pane">
-            <textarea id="graph-editor" placeholder="Write a diagram in Markdown using a mermaid code block…" oninput="onGraphEditorChange()" onkeydown="handleGraphEditorKey(event)"></textarea>
+            <textarea id="graph-editor" placeholder="Write a diagram in Markdown using a mermaid code block…" oninput="fOnGraphEditorChange()" onkeydown="fHandleGraphEditorKey(event)"></textarea>
           </div>
           <div id="graph-preview-pane">
             <div id="graph-preview-content"></div>
@@ -307,58 +307,58 @@
       <!-- SLIDES APP -->
       <div id="slides-app" style="display:none;flex-direction:column;">
         <div id="slides-toolbar">
-          <input id="slides-title-input" placeholder="Presentation title…" oninput="onSlidesTitleChange()">
+          <input id="slides-title-input" placeholder="Presentation title…" oninput="fOnSlidesTitleChange()">
           <div class="toolbar-sep"></div>
           <div class="sl-visual-only sl-tool-group">
-            <button type="button" class="tb-btn" data-sl-tool="select" onclick="setSlidesTool('select')" title="Select, move and resize (double-click a text box to edit it)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 8-6 2-3 6z"/></svg></button>
-            <button type="button" class="tb-btn" data-sl-tool="text" onclick="setSlidesTool('text')" title="Text box: drag on the slide (or click for a default size)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg></button>
-            <button type="button" class="tb-btn" data-sl-tool="line" onclick="setSlidesTool('line')" title="Line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg></button>
-            <button type="button" class="tb-btn" data-sl-tool="rect" onclick="setSlidesTool('rect')" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="1"/></svg></button>
-            <button type="button" class="tb-btn" data-sl-tool="ellipse" onclick="setSlidesTool('ellipse')" title="Ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg></button>
-            <button type="button" class="tb-btn" data-sl-tool="pen" onclick="setSlidesTool('pen')" title="Pen: draw freehand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="select" onclick="fSetSlidesTool('select')" title="Select, move and resize (double-click a text box to edit it)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 8-6 2-3 6z"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="text" onclick="fSetSlidesTool('text')" title="Text box: drag on the slide (or click for a default size)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="line" onclick="fSetSlidesTool('line')" title="Line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="rect" onclick="fSetSlidesTool('rect')" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="1"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="ellipse" onclick="fSetSlidesTool('ellipse')" title="Ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg></button>
+            <button type="button" class="tb-btn" data-sl-tool="pen" onclick="fSetSlidesTool('pen')" title="Pen: draw freehand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg></button>
           </div>
           <div class="sl-visual-only sl-style-group">
-            <label class="sl-swatch" title="Line color"><span>Line</span><input type="color" id="slides-stroke-color" value="#d4a843" onchange="setSlidesStrokeColor(this.value)"></label>
-            <label class="sl-swatch" title="Fill color"><span>Fill</span><input type="color" id="slides-fill-color" value="#d4a843" onchange="setSlidesFillColor(this.value)"></label>
-            <label class="sl-check" title="No fill"><input type="checkbox" id="slides-fill-none" checked onchange="setSlidesFillNone(this.checked)">none</label>
-            <input type="number" id="slides-line-width" class="sl-width" min="1" max="60" value="4" title="Line width" onchange="setSlidesLineWidth(this.value)">
-            <button type="button" class="tb-btn" id="slides-delete-sel" onclick="slDeleteSelection()" title="Delete the selected item (Delete)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
-            <button type="button" class="tb-btn" onclick="slReorderSelection(true)" title="Bring the selected item to the front"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M15 9V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h5"/></svg></button>
-            <button type="button" class="tb-btn" onclick="slReorderSelection(false)" title="Send the selected item to the back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M9 15v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-5"/></svg></button>
+            <label class="sl-swatch" title="Line color"><span>Line</span><input type="color" id="slides-stroke-color" value="#d4a843" onchange="fSetSlidesStrokeColor(this.value)"></label>
+            <label class="sl-swatch" title="Fill color"><span>Fill</span><input type="color" id="slides-fill-color" value="#d4a843" onchange="fSetSlidesFillColor(this.value)"></label>
+            <label class="sl-check" title="No fill"><input type="checkbox" id="slides-fill-none" checked onchange="fSetSlidesFillNone(this.checked)">none</label>
+            <input type="number" id="slides-line-width" class="sl-width" min="1" max="60" value="4" title="Line width" onchange="fSetSlidesLineWidth(this.value)">
+            <button type="button" class="tb-btn" id="slides-delete-sel" onclick="fSlDeleteSelection()" title="Delete the selected item (Delete)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+            <button type="button" class="tb-btn" onclick="fSlReorderSelection(true)" title="Bring the selected item to the front"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M15 9V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h5"/></svg></button>
+            <button type="button" class="tb-btn" onclick="fSlReorderSelection(false)" title="Send the selected item to the back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".25"/><path d="M9 15v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-5"/></svg></button>
           </div>
           <div class="toolbar-sep sl-visual-only"></div>
           <div class="sl-visual-only sl-style-group">
-            <label class="sl-swatch" title="Slide background color"><span>Bg</span><input type="color" id="slides-bg-color" value="#ffffff" onchange="slSetBackgroundColor(this.value)"></label>
-            <label class="sl-swatch" title="Slide text color"><span>Text</span><input type="color" id="slides-text-color" value="#1a1a1a" onchange="slSetTextColor(this.value)"></label>
+            <label class="sl-swatch" title="Slide background color"><span>Bg</span><input type="color" id="slides-bg-color" value="#ffffff" onchange="fSlSetBackgroundColor(this.value)"></label>
+            <label class="sl-swatch" title="Slide text color"><span>Text</span><input type="color" id="slides-text-color" value="#1a1a1a" onchange="fSlSetTextColor(this.value)"></label>
             <div style="position:relative;">
-              <button type="button" class="tb-btn sl-wide-btn" onclick="toggleSlidesBgMenu(event)" title="Background image">Image ▾</button>
+              <button type="button" class="tb-btn sl-wide-btn" onclick="fToggleSlidesBgMenu(event)" title="Background image">Image ▾</button>
               <div id="slides-bg-menu" class="sl-menu">
-                <button type="button" onclick="slPickImageFile()">From this computer…</button>
-                <button type="button" onclick="slPickImageUrl()">From a web address…</button>
-                <button type="button" onclick="slRemoveImage()">Remove image</button>
+                <button type="button" onclick="fSlPickImageFile()">From this computer…</button>
+                <button type="button" onclick="fSlPickImageUrl()">From a web address…</button>
+                <button type="button" onclick="fSlRemoveImage()">Remove image</button>
                 <div class="sl-menu-sep"></div>
-                <button type="button" onclick="slApplyBackgroundToAll()">Apply this background to all slides</button>
+                <button type="button" onclick="fSlApplyBackgroundToAll()">Apply this background to all slides</button>
               </div>
             </div>
           </div>
           <div style="flex:1;"></div>
           <span id="slides-counter" class="sl-counter"></span>
           <span class="sl-hint">Stored as text with --- N --- slides (.mdd)</span>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
           <div class="view-toggle">
-            <button class="view-btn active" id="svbtn-visual" onclick="setSlidesView('visual')" title="Slides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/></svg></button>
-            <button class="view-btn" id="svbtn-source" onclick="setSlidesView('source')" title="Source text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8,6 2,12 8,18"/><polyline points="16,6 22,12 16,18"/></svg></button>
+            <button class="view-btn active" id="svbtn-visual" onclick="fSetSlidesView('visual')" title="Slides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/></svg></button>
+            <button class="view-btn" id="svbtn-source" onclick="fSetSlidesView('source')" title="Source text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8,6 2,12 8,18"/><polyline points="16,6 22,12 16,18"/></svg></button>
           </div>
-          <button type="button" class="tb-btn sl-wide-btn sl-present-btn" onclick="startSlidesPresentation(0)" title="Present from the first slide (F5; Shift+F5 from this one)">▶ Present</button>
+          <button type="button" class="tb-btn sl-wide-btn sl-present-btn" onclick="fStartSlidesPresentation(0)" title="Present from the first slide (F5; Shift+F5 from this one)">▶ Present</button>
         </div>
         <div id="slides-visual">
           <div id="slides-strip"></div>
           <div id="slides-stage"><div id="slides-canvas"></div></div>
         </div>
         <div id="slides-source-pane" style="display:none;">
-          <textarea id="slides-source" spellcheck="false" oninput="onSlidesSourceInput()" placeholder="--- 1 ---&#10;{&#10;background-color: #ffffff;&#10;}&#10;[120, 200, 1040, 140, # Title]"></textarea>
+          <textarea id="slides-source" spellcheck="false" oninput="fOnSlidesSourceInput()" placeholder="--- 1 ---&#10;{&#10;background-color: #ffffff;&#10;}&#10;[120, 200, 1040, 140, # Title]"></textarea>
         </div>
-        <input type="file" id="slides-image-input" accept="image/*" style="display:none" onchange="onSlidesImageChosen(event)">
+        <input type="file" id="slides-image-input" accept="image/*" style="display:none" onchange="fOnSlidesImageChosen(event)">
       </div>
 
       <div id="slides-present" tabindex="-1">
@@ -370,78 +370,78 @@
       <!-- NOTEBOOK APP -->
       <div id="notebook-app" style="flex-direction:column;">
         <div id="notebook-toolbar">
-          <input id="notebook-title-input" placeholder="Notebook title…" oninput="onNotebookTitleChange()">
+          <input id="notebook-title-input" placeholder="Notebook title…" oninput="fOnNotebookTitleChange()">
           <div class="toolbar-sep"></div>
 
           <!-- TAB SWITCHER -->
           <div class="nb-tab-bar">
-            <button class="nb-tab active" id="nb-tab-draw" onclick="switchNbTab('draw')" title="Drawing tools">Draw</button>
-            <button class="nb-tab" id="nb-tab-map" onclick="switchNbTab('map')" title="Map tools">Map</button>
+            <button class="nb-tab active" id="nb-tab-draw" onclick="fSwitchNbTab('draw')" title="Drawing tools">Draw</button>
+            <button class="nb-tab" id="nb-tab-map" onclick="fSwitchNbTab('map')" title="Map tools">Map</button>
           </div>
           <div class="toolbar-sep"></div>
 
           <!-- DRAW TAB -->
           <div id="nb-draw-tools" style="display:contents">
             <div class="toolbar-group">
-              <button class="tb-btn nb-tool-btn active" data-tool="pen" onclick="setNotebookTool('pen')" title="Pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L9 19l-5 1 1-5L17 3z"/></svg></button>
-              <button class="tb-btn nb-tool-btn" data-tool="highlighter" onclick="setNotebookTool('highlighter')" title="Highlighter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="14" width="6" height="6" rx="1"/><path d="M9 14L18 5l3 3-9 9"/></svg></button>
-              <button class="tb-btn nb-tool-btn" data-tool="eraser" onclick="setNotebookTool('eraser')" title="Eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="8" rx="2"/><line x1="5" y1="15" x2="19" y2="15"/></svg></button>
-              <button class="tb-btn nb-tool-btn" data-tool="select" onclick="setNotebookTool('select')" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg></button>
+              <button class="tb-btn nb-tool-btn active" data-tool="pen" onclick="fSetNotebookTool('pen')" title="Pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L9 19l-5 1 1-5L17 3z"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="highlighter" onclick="fSetNotebookTool('highlighter')" title="Highlighter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="14" width="6" height="6" rx="1"/><path d="M9 14L18 5l3 3-9 9"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="eraser" onclick="fSetNotebookTool('eraser')" title="Eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="8" rx="2"/><line x1="5" y1="15" x2="19" y2="15"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="select" onclick="fSetNotebookTool('select')" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg></button>
             </div>
             <div class="toolbar-sep"></div>
             <div class="toolbar-group">
-              <button class="tb-btn nb-tool-btn" data-tool="text" onclick="setNotebookTool('text')" title="Text box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="5" x2="18" y2="5"/><line x1="12" y1="5" x2="12" y2="19"/></svg></button>
-              <button class="tb-btn nb-tool-btn" data-tool="line" onclick="setNotebookTool('line')" title="Line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg></button>
-              <button class="tb-btn nb-tool-btn" data-tool="rectangle" onclick="setNotebookTool('rectangle')" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
-              <button class="tb-btn nb-tool-btn" data-tool="ellipse" onclick="setNotebookTool('ellipse')" title="Ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="text" onclick="fSetNotebookTool('text')" title="Text box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="5" x2="18" y2="5"/><line x1="12" y1="5" x2="12" y2="19"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="line" onclick="fSetNotebookTool('line')" title="Line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="rectangle" onclick="fSetNotebookTool('rectangle')" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
+              <button class="tb-btn nb-tool-btn" data-tool="ellipse" onclick="fSetNotebookTool('ellipse')" title="Ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg></button>
             </div>
             <div class="toolbar-sep"></div>
             <div class="toolbar-group" id="notebook-color-group"></div>
-            <input type="color" id="notebook-color-picker" value="#1a1a1a" onchange="setNotebookColor(this.value)" title="Custom color">
+            <input type="color" id="notebook-color-picker" value="#1a1a1a" onchange="fSetNotebookColor(this.value)" title="Custom color">
             <div class="toolbar-sep"></div>
-            <select class="tb-select" id="notebook-width-sel" onchange="setNotebookWidth(this.value)" title="Stroke size">
+            <select class="tb-select" id="notebook-width-sel" onchange="fSetNotebookWidth(this.value)" title="Stroke size">
               <option value="1.5">Thin</option>
               <option value="3" selected>Medium</option>
               <option value="6">Thick</option>
             </select>
             <div class="toolbar-sep"></div>
             <div class="toolbar-group">
-              <button class="tb-btn" onclick="notebookUndo()" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,14 4,9 9,4"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-              <button class="tb-btn" onclick="notebookRedo()" title="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,14 20,9 15,4"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+              <button class="tb-btn" onclick="fNotebookUndo()" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,14 4,9 9,4"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+              <button class="tb-btn" onclick="fNotebookRedo()" title="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,14 20,9 15,4"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
             </div>
             <div class="toolbar-sep"></div>
-            <button class="tb-btn" id="notebook-import-pdf-btn" onclick="triggerNotebookPdfImport()" title="Import a PDF to annotate">Import PDF</button>
-            <input type="file" id="notebook-pdf-input" accept="application/pdf" style="display:none" onchange="handleNotebookPdfImport(event)">
-            <button class="tb-btn" id="notebook-import-svg-btn" onclick="triggerNotebookVectorImport()" title="Import an SVG vector drawing onto the current page">Import SVG</button>
-            <input type="file" id="notebook-svg-input" accept=".svg,image/svg+xml" style="display:none" onchange="handleNotebookVectorImport(event)">
+            <button class="tb-btn" id="notebook-import-pdf-btn" onclick="fTriggerNotebookPdfImport()" title="Import a PDF to annotate">Import PDF</button>
+            <input type="file" id="notebook-pdf-input" accept="application/pdf" style="display:none" onchange="fHandleNotebookPdfImport(event)">
+            <button class="tb-btn" id="notebook-import-svg-btn" onclick="fTriggerNotebookVectorImport()" title="Import an SVG vector drawing onto the current page">Import SVG</button>
+            <input type="file" id="notebook-svg-input" accept=".svg,image/svg+xml" style="display:none" onchange="fHandleNotebookVectorImport(event)">
           </div>
 
           <!-- MAP TAB -->
           <div id="nb-map-tools" style="display:none">
-            <button class="tb-btn" onclick="notebookAddMapPage()" title="Add world map page">
+            <button class="tb-btn" onclick="fNotebookAddMapPage()" title="Add world map page">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><line x1="9" y1="3" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="21"/></svg>
               <span style="font-size:11px;margin-left:3px">Add Map</span>
             </button>
             <div class="toolbar-sep"></div>
             <div class="toolbar-group">
-              <button class="tb-btn map-tool-btn" data-map-tool="pin" onclick="setMapTool('pin')" title="Pin tool — click map to place a location pin">
+              <button class="tb-btn map-tool-btn" data-map-tool="pin" onclick="fSetMapTool('pin')" title="Pin tool — click map to place a location pin">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
               </button>
-              <button class="tb-btn map-tool-btn" data-map-tool="travel" onclick="setMapTool('travel')" title="Travel route — click to add waypoints, click again to calculate distance">
+              <button class="tb-btn map-tool-btn" data-map-tool="travel" onclick="fSetMapTool('travel')" title="Travel route — click to add waypoints, click again to calculate distance">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l4-8 4 4 4-6 4 4"/><circle cx="3" cy="17" r="1.5" fill="currentColor"/></svg>
               </button>
-              <button class="tb-btn map-tool-btn" data-map-tool="scale" onclick="setMapTool('scale')" title="Set scale — click two reference points then enter the real-world distance">
+              <button class="tb-btn map-tool-btn" data-map-tool="scale" onclick="fSetMapTool('scale')" title="Set scale — click two reference points then enter the real-world distance">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="8" x2="4" y2="16"/><line x1="20" y1="8" x2="20" y2="16"/></svg>
               </button>
             </div>
             <div class="toolbar-sep"></div>
-            <button class="tb-btn" onclick="triggerMapImageUpload()" title="Upload map image">
+            <button class="tb-btn" onclick="fTriggerMapImageUpload()" title="Upload map image">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
             </button>
-            <input type="file" id="map-image-input" accept="image/*" style="display:none" onchange="handleMapImageUpload(event)">
+            <input type="file" id="map-image-input" accept="image/*" style="display:none" onchange="fHandleMapImageUpload(event)">
             <div id="map-terrain-group" style="display:none;align-items:center;gap:4px">
               <span id="map-terrain-dot" class="map-terrain-dot" title="Segment colour for this terrain"></span>
-              <select class="tb-select" id="map-terrain-select" title="Terrain type for the next waypoint" onchange="onTerrainSelectChange(this.value)">
+              <select class="tb-select" id="map-terrain-select" title="Terrain type for the next waypoint" onchange="fOnTerrainSelectChange(this.value)">
                 <option value="road">Road</option>
                 <option value="trail">Trail</option>
                 <option value="rough">Rough terrain</option>
@@ -449,55 +449,55 @@
               </select>
             </div>
             <span id="map-scale-display" class="map-info-chip"></span>
-            <span id="map-travel-result" class="map-info-chip map-travel-result-chip" onclick="openTravelPopover(event)"></span>
+            <span id="map-travel-result" class="map-info-chip map-travel-result-chip" onclick="fOpenTravelPopover(event)"></span>
             <span id="map-hint" class="map-info-chip map-hint-chip"></span>
           </div>
 
           <!-- ALWAYS VISIBLE: PAGE NAV + HISTORY -->
           <div style="flex:1;"></div>
           <div class="toolbar-group">
-            <button class="tb-btn" onclick="notebookPrevPage()" title="Previous page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
+            <button class="tb-btn" onclick="fNotebookPrevPage()" title="Previous page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
             <span id="notebook-page-indicator" class="status-item">1 / 1</span>
-            <button class="tb-btn" onclick="notebookNextPage()" title="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></button>
-            <button class="tb-btn" onclick="notebookAddPage()" title="Add draw page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-            <button class="tb-btn" onclick="notebookDeletePage()" title="Delete this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="tb-btn" onclick="fNotebookNextPage()" title="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></button>
+            <button class="tb-btn" onclick="fNotebookAddPage()" title="Add draw page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+            <button class="tb-btn" onclick="fNotebookDeletePage()" title="Delete this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="toolbar-sep"></div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
         </div>
         <div id="nb-import-bar" style="display:none">
           <span class="nb-import-hint">Drag to position &middot; corner handle or buttons to resize</span>
-          <button class="tb-btn" onclick="notebookVectorScaleBy(1/1.15)" title="Smaller">&minus;</button>
-          <button class="tb-btn" onclick="notebookVectorScaleBy(1.15)" title="Larger">+</button>
-          <button class="tb-btn nb-import-accept" onclick="acceptNotebookVectorImport()" title="Place the vector on the page (Enter)">&#10003; Place</button>
-          <button class="tb-btn" onclick="cancelNotebookVectorImport()" title="Discard the import (Esc)">&#10005; Cancel</button>
+          <button class="tb-btn" onclick="fNotebookVectorScaleBy(1/1.15)" title="Smaller">&minus;</button>
+          <button class="tb-btn" onclick="fNotebookVectorScaleBy(1.15)" title="Larger">+</button>
+          <button class="tb-btn nb-import-accept" onclick="fAcceptNotebookVectorImport()" title="Place the vector on the page (Enter)">&#10003; Place</button>
+          <button class="tb-btn" onclick="fCancelNotebookVectorImport()" title="Discard the import (Esc)">&#10005; Cancel</button>
         </div>
         <div id="notebook-pages"></div>
         <div id="notebook-zoom-controls">
-          <button class="tb-btn" onclick="notebookZoomOut()" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
-          <span id="notebook-zoom-indicator" class="nb-zoom-indicator" onclick="notebookZoomReset()" title="Reset zoom to 100%">100%</span>
-          <button class="tb-btn" onclick="notebookZoomIn()" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="tb-btn" onclick="fNotebookZoomOut()" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <span id="notebook-zoom-indicator" class="nb-zoom-indicator" onclick="fNotebookZoomReset()" title="Reset zoom to 100%">100%</span>
+          <button class="tb-btn" onclick="fNotebookZoomIn()" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
         </div>
       </div>
 
       <!-- GLOSSARY APP -->
       <div id="glossary-app" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
         <div id="glossary-toolbar" class="nbp-toolbar">
-          <input id="glossary-title-input" placeholder="Glossary name…" oninput="onGlossaryTitleChange()">
+          <input id="glossary-title-input" placeholder="Glossary name…" oninput="fOnGlossaryTitleChange()">
           <div class="toolbar-sep"></div>
           <div class="gls-tab-bar">
-            <button class="gls-tab active" id="gls-tab-words" onclick="switchGlossaryTab('words')">Words</button>
-            <button class="gls-tab" id="gls-tab-roots" onclick="switchGlossaryTab('roots')">Roots &amp; Affixes</button>
+            <button class="gls-tab active" id="gls-tab-words" onclick="fSwitchGlossaryTab('words')">Words</button>
+            <button class="gls-tab" id="gls-tab-roots" onclick="fSwitchGlossaryTab('roots')">Roots &amp; Affixes</button>
           </div>
           <div class="toolbar-sep"></div>
-          <input class="tb-search" id="gls-search" type="text" placeholder="Search…" oninput="onGlossarySearch(this.value)">
-          <select class="tb-select tb-filter" id="gls-filter-type" title="Filter by type" onchange="onGlsFilterType(this.value)"></select>
-          <select class="tb-select tb-filter" id="gls-filter-tag" title="Filter by tag" onchange="onGlsFilterTag(this.value)"></select>
-          <input class="tb-search tb-file-tags" id="gls-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="onGlossaryFileTagsChange()">
+          <input class="tb-search" id="gls-search" type="text" placeholder="Search…" oninput="fOnGlossarySearch(this.value)">
+          <select class="tb-select tb-filter" id="gls-filter-type" title="Filter by type" onchange="fOnGlsFilterType(this.value)"></select>
+          <select class="tb-select tb-filter" id="gls-filter-tag" title="Filter by tag" onchange="fOnGlsFilterTag(this.value)"></select>
+          <input class="tb-search tb-file-tags" id="gls-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="fOnGlossaryFileTagsChange()">
           <div style="flex:1"></div>
-          <button class="tb-btn tb-btn-wide" id="gls-add-btn" onclick="glsAddCurrent()">+ Add</button>
+          <button class="tb-btn tb-btn-wide" id="gls-add-btn" onclick="fGlsAddCurrent()">+ Add</button>
           <div class="toolbar-sep"></div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
         </div>
         <div class="nbp-body">
           <div class="nbp-page">
@@ -520,17 +520,17 @@
       <!-- BESTIARY APP -->
       <div id="bestiary-app" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
         <div id="bestiary-toolbar" class="nbp-toolbar">
-          <input id="bestiary-title-input" placeholder="Bestiary name…" oninput="onBestiaryTitleChange()">
+          <input id="bestiary-title-input" placeholder="Bestiary name…" oninput="fOnBestiaryTitleChange()">
           <div class="toolbar-sep"></div>
-          <input class="tb-search" id="bst-search" type="text" placeholder="Search beasts…" oninput="onBestiarySearch(this.value)">
-          <select class="tb-select tb-filter" id="bst-filter-type" title="Filter by category" onchange="onBstFilterType(this.value)"></select>
-          <select class="tb-select tb-filter" id="bst-filter-world" title="Filter by world / region" onchange="onBstFilterWorld(this.value)"></select>
-          <select class="tb-select tb-filter" id="bst-filter-tag" title="Filter by tag" onchange="onBstFilterTag(this.value)"></select>
-          <input class="tb-search tb-file-tags" id="bst-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="onBestiaryFileTagsChange()">
+          <input class="tb-search" id="bst-search" type="text" placeholder="Search beasts…" oninput="fOnBestiarySearch(this.value)">
+          <select class="tb-select tb-filter" id="bst-filter-type" title="Filter by category" onchange="fOnBstFilterType(this.value)"></select>
+          <select class="tb-select tb-filter" id="bst-filter-world" title="Filter by world / region" onchange="fOnBstFilterWorld(this.value)"></select>
+          <select class="tb-select tb-filter" id="bst-filter-tag" title="Filter by tag" onchange="fOnBstFilterTag(this.value)"></select>
+          <input class="tb-search tb-file-tags" id="bst-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="fOnBestiaryFileTagsChange()">
           <div style="flex:1"></div>
-          <button class="tb-btn tb-btn-wide" id="bst-add-btn" onclick="openBeastModal(null)">+ Add beast</button>
+          <button class="tb-btn tb-btn-wide" id="bst-add-btn" onclick="fOpenBeastModal(null)">+ Add beast</button>
           <div class="toolbar-sep"></div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
         </div>
         <div class="nbp-body">
           <div class="nbp-page">
@@ -545,24 +545,24 @@
       <!-- CALENDAR APP -->
       <div id="calendar-app" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
         <div id="calendar-toolbar" class="nbp-toolbar">
-          <input id="calendar-title-input" placeholder="Calendar name…" oninput="onCalendarTitleChange()">
+          <input id="calendar-title-input" placeholder="Calendar name…" oninput="fOnCalendarTitleChange()">
           <div class="toolbar-sep"></div>
           <div class="gls-tab-bar">
-            <button class="gls-tab active" id="cal-tab-months" onclick="switchCalendarTab('months')">Months &amp; Seasons</button>
-            <button class="gls-tab" id="cal-tab-holidays" onclick="switchCalendarTab('holidays')">Holidays</button>
-            <button class="gls-tab" id="cal-tab-convert" onclick="switchCalendarTab('convert')">Date Converter</button>
+            <button class="gls-tab active" id="cal-tab-months" onclick="fSwitchCalendarTab('months')">Months &amp; Seasons</button>
+            <button class="gls-tab" id="cal-tab-holidays" onclick="fSwitchCalendarTab('holidays')">Holidays</button>
+            <button class="gls-tab" id="cal-tab-convert" onclick="fSwitchCalendarTab('convert')">Date Converter</button>
           </div>
           <div class="toolbar-sep"></div>
           <label class="cal-days-label">Days/year
-            <input class="tb-input-sm" id="cal-days-per-year" type="number" min="1" value="365" onchange="onCalDaysChange(this.value)">
+            <input class="tb-input-sm" id="cal-days-per-year" type="number" min="1" value="365" onchange="fOnCalDaysChange(this.value)">
           </label>
-          <select class="tb-select tb-filter" id="cal-filter-type" title="Filter by season / type" onchange="onCalFilterType(this.value)"></select>
-          <select class="tb-select tb-filter" id="cal-filter-tag" title="Filter by tag" onchange="onCalFilterTag(this.value)"></select>
-          <input class="tb-search tb-file-tags" id="cal-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="onCalendarFileTagsChange()">
+          <select class="tb-select tb-filter" id="cal-filter-type" title="Filter by season / type" onchange="fOnCalFilterType(this.value)"></select>
+          <select class="tb-select tb-filter" id="cal-filter-tag" title="Filter by tag" onchange="fOnCalFilterTag(this.value)"></select>
+          <input class="tb-search tb-file-tags" id="cal-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="fOnCalendarFileTagsChange()">
           <div style="flex:1"></div>
-          <button class="tb-btn tb-btn-wide" id="cal-add-btn" onclick="calAddCurrent()">+ Add</button>
+          <button class="tb-btn tb-btn-wide" id="cal-add-btn" onclick="fCalAddCurrent()">+ Add</button>
           <div class="toolbar-sep"></div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
         </div>
         <div class="nbp-body">
           <div class="nbp-page">
@@ -586,7 +586,7 @@
                     <input class="modal-input tb-input-sm" id="cal-conv-fy" type="number" placeholder="Year" style="width:80px">
                     <select class="tb-select" id="cal-conv-fm"></select>
                     <input class="modal-input tb-input-sm" id="cal-conv-fd" type="number" placeholder="Day" min="1" style="width:70px">
-                    <button class="btn-create" onclick="convertFictionToReal()">Convert</button>
+                    <button class="btn-create" onclick="fConvertFictionToReal()">Convert</button>
                   </div>
                   <div class="cal-conv-result" id="cal-conv-f2r"></div>
                 </div>
@@ -594,7 +594,7 @@
                   <div class="cal-conv-title">Real → Fiction date</div>
                   <div class="cal-conv-row">
                     <input class="modal-input" id="cal-conv-rd" type="date" style="flex:1">
-                    <button class="btn-create" onclick="convertRealToFiction()">Convert</button>
+                    <button class="btn-create" onclick="fConvertRealToFiction()">Convert</button>
                   </div>
                   <div class="cal-conv-result" id="cal-conv-r2f"></div>
                 </div>
@@ -602,7 +602,7 @@
                   <div class="cal-conv-title">Epoch anchor</div>
                   <div class="cal-conv-row">
                     <span style="font-size:12px;color:var(--text2)">Fiction year 1 = real date</span>
-                    <input class="modal-input" id="cal-epoch-real" type="date" onchange="onCalEpochChange()">
+                    <input class="modal-input" id="cal-epoch-real" type="date" onchange="fOnCalEpochChange()">
                   </div>
                 </div>
               </div>
@@ -614,21 +614,21 @@
       <!-- ECONOMY APP -->
       <div id="economy-app" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
         <div id="economy-toolbar" class="nbp-toolbar">
-          <input id="economy-title-input" placeholder="Economy name…" oninput="onEconomyTitleChange()">
+          <input id="economy-title-input" placeholder="Economy name…" oninput="fOnEconomyTitleChange()">
           <div class="toolbar-sep"></div>
           <div class="gls-tab-bar">
-            <button class="gls-tab active" id="eco-tab-currencies" onclick="switchEconomyTab('currencies')">Currencies</button>
-            <button class="gls-tab" id="eco-tab-goods" onclick="switchEconomyTab('goods')">Trade Goods</button>
-            <button class="gls-tab" id="eco-tab-regions" onclick="switchEconomyTab('regions')">Regions</button>
+            <button class="gls-tab active" id="eco-tab-currencies" onclick="fSwitchEconomyTab('currencies')">Currencies</button>
+            <button class="gls-tab" id="eco-tab-goods" onclick="fSwitchEconomyTab('goods')">Trade Goods</button>
+            <button class="gls-tab" id="eco-tab-regions" onclick="fSwitchEconomyTab('regions')">Regions</button>
           </div>
           <div class="toolbar-sep"></div>
-          <select class="tb-select tb-filter" id="eco-filter-type" title="Filter by region / category / status" onchange="onEcoFilterType(this.value)"></select>
-          <select class="tb-select tb-filter" id="eco-filter-tag" title="Filter by tag" onchange="onEcoFilterTag(this.value)"></select>
-          <input class="tb-search tb-file-tags" id="eco-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="onEconomyFileTagsChange()">
+          <select class="tb-select tb-filter" id="eco-filter-type" title="Filter by region / category / status" onchange="fOnEcoFilterType(this.value)"></select>
+          <select class="tb-select tb-filter" id="eco-filter-tag" title="Filter by tag" onchange="fOnEcoFilterTag(this.value)"></select>
+          <input class="tb-search tb-file-tags" id="eco-file-tags" type="text" placeholder="File tags…" title="Tags for this file (comma separated)" oninput="fOnEconomyFileTagsChange()">
           <div style="flex:1"></div>
-          <button class="tb-btn tb-btn-wide" id="eco-add-btn" onclick="ecoAddCurrent()">+ Add</button>
+          <button class="tb-btn tb-btn-wide" id="eco-add-btn" onclick="fEcoAddCurrent()">+ Add</button>
           <div class="toolbar-sep"></div>
-          <button class="tb-btn" title="Version history" onclick="openHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
+          <button class="tb-btn" title="Version history" onclick="fOpenHistoryModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 16,14"/></svg></button>
         </div>
         <div class="nbp-body">
           <div class="nbp-page">
@@ -644,7 +644,7 @@
                   <select class="tb-select" id="eco-calc-from"></select>
                   <span class="eco-calc-arrow">→</span>
                   <select class="tb-select" id="eco-calc-to"></select>
-                  <button class="btn-create" onclick="calcEcoExchange()">Convert</button>
+                  <button class="btn-create" onclick="fCalcEcoExchange()">Convert</button>
                 </div>
                 <div class="eco-calc-result" id="eco-calc-result"></div>
               </div>
@@ -668,23 +668,23 @@
       </div> <!-- END APPS HOST -->
 
       <!-- SPLIT PANE: side view of any open tab, raw text or rendered (right-click a tab) -->
-      <div id="split-divider" style="display:none" onmousedown="startSplitDrag(event)"></div>
+      <div id="split-divider" style="display:none" onmousedown="fStartSplitDrag(event)"></div>
       <div id="split-pane" style="display:none">
         <div id="split-pane-head">
-          <div id="split-pane-tab" draggable="true" ondragstart="onSplitTabDragStart(event)" ondragend="onTabDragEnd(event)" title="Drag to move this view — into the tab bar, another window, or out of the app">
+          <div id="split-pane-tab" draggable="true" ondragstart="fOnSplitTabDragStart(event)" ondragend="fOnTabDragEnd(event)" title="Drag to move this view — into the tab bar, another window, or out of the app">
             <span id="split-pane-icon"></span>
             <span id="split-pane-name"></span>
           </div>
           <div style="flex:1"></div>
           <div class="view-toggle">
-            <button class="view-btn" id="split-btn-raw" onclick="setSplitMode('raw')" title="Raw text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg></button>
-            <button class="view-btn" id="split-btn-rendered" onclick="setSplitMode('rendered')" title="Rendered view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="view-btn" id="split-btn-raw" onclick="fSetSplitMode('raw')" title="Raw text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg></button>
+            <button class="view-btn" id="split-btn-rendered" onclick="fSetSplitMode('rendered')" title="Rendered view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
-          <button class="tb-btn" id="split-detach-btn" title="Move to a separate window" onclick="detachSplitPane()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M14 3h7v7"/><line x1="21" y1="3" x2="11" y2="13"/></svg></button>
-          <button class="tb-btn" id="split-close-btn" title="Close split view" onclick="closeSplitPane()">×</button>
+          <button class="tb-btn" id="split-detach-btn" title="Move to a separate window" onclick="fDetachSplitPane()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M14 3h7v7"/><line x1="21" y1="3" x2="11" y2="13"/></svg></button>
+          <button class="tb-btn" id="split-close-btn" title="Close split view" onclick="fCloseSplitPane()">×</button>
         </div>
         <div id="split-pane-body">
-          <textarea id="split-raw" spellcheck="false" style="display:none" oninput="onSplitRawInput()"></textarea>
+          <textarea id="split-raw" spellcheck="false" style="display:none" oninput="fOnSplitRawInput()"></textarea>
           <div id="split-rendered" style="display:none"></div>
           <iframe id="split-embed" style="display:none" title="Embedded editor"></iframe>
         </div>
@@ -706,39 +706,39 @@
     <div class="modal">
       <h3>New File</h3>
       <div class="modal-type-grid">
-        <div class="type-card selected" data-type="doc" onclick="selectNewType('doc',this)">
+        <div class="type-card selected" data-type="doc" onclick="fSelectNewType('doc',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Document</span>
         </div>
-        <div class="type-card" data-type="sheet" onclick="selectNewType('sheet',this)">
+        <div class="type-card" data-type="sheet" onclick="fSelectNewType('sheet',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
           <span>Spreadsheet</span>
         </div>
-        <div class="type-card" data-type="graph" onclick="selectNewType('graph',this)">
+        <div class="type-card" data-type="graph" onclick="fSelectNewType('graph',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="10.5"/><line x1="8.5" y1="16.5" x2="15.5" y2="13.5"/></svg>
           <span>Diagram</span>
         </div>
-        <div class="type-card" data-type="slides" onclick="selectNewType('slides',this)">
+        <div class="type-card" data-type="slides" onclick="fSelectNewType('slides',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="6" y1="8.5" x2="13" y2="8.5"/><line x1="6" y1="12.5" x2="10" y2="12.5"/></svg>
           <span>Slides</span>
         </div>
-        <div class="type-card" data-type="notebook" onclick="selectNewType('notebook',this)">
+        <div class="type-card" data-type="notebook" onclick="fSelectNewType('notebook',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="12" y1="12" x2="17" y2="12"/><line x1="12" y1="16" x2="15" y2="16"/></svg>
           <span>Notebook</span>
         </div>
-        <div class="type-card" data-type="glossary" onclick="selectNewType('glossary',this)">
+        <div class="type-card" data-type="glossary" onclick="fSelectNewType('glossary',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="16" y2="8"/><line x1="9" y1="12" x2="14" y2="12"/></svg>
           <span>Glossary</span>
         </div>
-        <div class="type-card" data-type="calendar" onclick="selectNewType('calendar',this)">
+        <div class="type-card" data-type="calendar" onclick="fSelectNewType('calendar',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <span>Calendar</span>
         </div>
-        <div class="type-card" data-type="economy" onclick="selectNewType('economy',this)">
+        <div class="type-card" data-type="economy" onclick="fSelectNewType('economy',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
           <span>Economy</span>
         </div>
-        <div class="type-card" data-type="bestiary" onclick="selectNewType('bestiary',this)">
+        <div class="type-card" data-type="bestiary" onclick="fSelectNewType('bestiary',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="10" r="1.6"/><circle cx="9.5" cy="6.5" r="1.6"/><circle cx="14.5" cy="6.5" r="1.6"/><circle cx="18.5" cy="10" r="1.6"/><path d="M12 11c-2.6 0-5.5 2.6-5.5 5a3 3 0 0 0 3 3c1 0 1.7-.5 2.5-.5s1.5.5 2.5.5a3 3 0 0 0 3-3c0-2.4-2.9-5-5.5-5z"/></svg>
           <span>Bestiary</span>
         </div>
@@ -746,30 +746,30 @@
       <div id="doc-template-row" class="doc-template-row">
         <div class="doc-tpl-label">Template</div>
         <div class="doc-tpl-grid">
-          <div class="doc-tpl-card selected" data-tpl="blank" onclick="selectDocTemplate('blank',this)">Blank</div>
-          <div class="doc-tpl-card" data-tpl="character" onclick="selectDocTemplate('character',this)">Character</div>
-          <div class="doc-tpl-card" data-tpl="faction" onclick="selectDocTemplate('faction',this)">Faction</div>
-          <div class="doc-tpl-card" data-tpl="location" onclick="selectDocTemplate('location',this)">Location</div>
-          <div class="doc-tpl-card" data-tpl="event" onclick="selectDocTemplate('event',this)">Event</div>
-          <div class="doc-tpl-card" data-tpl="region" onclick="selectDocTemplate('region',this)">Region</div>
+          <div class="doc-tpl-card selected" data-tpl="blank" onclick="fSelectDocTemplate('blank',this)">Blank</div>
+          <div class="doc-tpl-card" data-tpl="character" onclick="fSelectDocTemplate('character',this)">Character</div>
+          <div class="doc-tpl-card" data-tpl="faction" onclick="fSelectDocTemplate('faction',this)">Faction</div>
+          <div class="doc-tpl-card" data-tpl="location" onclick="fSelectDocTemplate('location',this)">Location</div>
+          <div class="doc-tpl-card" data-tpl="event" onclick="fSelectDocTemplate('event',this)">Event</div>
+          <div class="doc-tpl-card" data-tpl="region" onclick="fSelectDocTemplate('region',this)">Region</div>
         </div>
       </div>
-      <input class="modal-input" id="new-name" placeholder="File name…" onkeydown="if(event.key==='Enter')createNewFile()">
+      <input class="modal-input" id="new-name" placeholder="File name…" onkeydown="if(event.key==='Enter')fCreateNewFile()">
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeNewModal()">Cancel</button>
-        <button class="btn-create" onclick="createNewFile()">Create</button>
+        <button class="btn-cancel" onclick="fCloseNewModal()">Cancel</button>
+        <button class="btn-create" onclick="fCreateNewFile()">Create</button>
       </div>
     </div>
   </div>
 
   <!-- DATA EDIT MODAL (shared by Glossary / Calendar / Economy) -->
-  <div class="modal-overlay" id="data-edit-modal" onclick="if(event.target===this)closeDataModal()">
+  <div class="modal-overlay" id="data-edit-modal" onclick="if(event.target===this)fCloseDataModal()">
     <div class="modal">
       <h3 id="dem-title">Edit</h3>
       <div id="dem-fields"></div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeDataModal()">Cancel</button>
-        <button class="btn-create" onclick="demSave()" id="dem-save-btn">Save</button>
+        <button class="btn-cancel" onclick="fCloseDataModal()">Cancel</button>
+        <button class="btn-create" onclick="fDemSave()" id="dem-save-btn">Save</button>
       </div>
     </div>
   </div>
@@ -781,16 +781,16 @@
       <div class="table-size-fields">
         <label class="field-label">
           Rows
-          <input class="modal-input" id="table-rows" type="number" min="1" max="50" value="2" onkeydown="if(event.key==='Enter')createTable()">
+          <input class="modal-input" id="table-rows" type="number" min="1" max="50" value="2" onkeydown="if(event.key==='Enter')fCreateTable()">
         </label>
         <label class="field-label">
           Columns
-          <input class="modal-input" id="table-cols" type="number" min="1" max="20" value="3" onkeydown="if(event.key==='Enter')createTable()">
+          <input class="modal-input" id="table-cols" type="number" min="1" max="20" value="3" onkeydown="if(event.key==='Enter')fCreateTable()">
         </label>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeTableModal()">Cancel</button>
-        <button class="btn-create" onclick="createTable()">Insert</button>
+        <button class="btn-cancel" onclick="fCloseTableModal()">Cancel</button>
+        <button class="btn-create" onclick="fCreateTable()">Insert</button>
       </div>
     </div>
   </div>
@@ -800,35 +800,35 @@
     <div class="modal">
       <h3>Insert Chart</h3>
       <div class="modal-type-grid">
-        <div class="type-card selected" data-type="bar" onclick="selectChartType('bar',this)">
+        <div class="type-card selected" data-type="bar" onclick="fSelectChartType('bar',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="12" width="4" height="8"/><rect x="10" y="7" width="4" height="13"/><rect x="16" y="3" width="4" height="17"/></svg>
           <span>Bar</span>
         </div>
-        <div class="type-card" data-type="line" onclick="selectChartType('line',this)">
+        <div class="type-card" data-type="line" onclick="fSelectChartType('line',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,17 9,9 14,13 21,4"/></svg>
           <span>Line</span>
         </div>
-        <div class="type-card" data-type="pie" onclick="selectChartType('pie',this)">
+        <div class="type-card" data-type="pie" onclick="fSelectChartType('pie',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
           <span>Pie</span>
         </div>
-        <div class="type-card" data-type="doughnut" onclick="selectChartType('doughnut',this)">
+        <div class="type-card" data-type="doughnut" onclick="fSelectChartType('doughnut',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
           <span>Doughnut</span>
         </div>
-        <div class="type-card" data-type="radar" onclick="selectChartType('radar',this)">
+        <div class="type-card" data-type="radar" onclick="fSelectChartType('radar',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 21,8 18,20 6,20 3,8"/><line x1="12" y1="2" x2="12" y2="20"/><line x1="3" y1="8" x2="18" y2="20"/><line x1="21" y1="8" x2="6" y2="20"/></svg>
           <span>Radar</span>
         </div>
-        <div class="type-card" data-type="scatter" onclick="selectChartType('scatter',this)">
+        <div class="type-card" data-type="scatter" onclick="fSelectChartType('scatter',this)">
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6" cy="16" r="1.6"/><circle cx="10" cy="8" r="1.6"/><circle cx="14" cy="14" r="1.6"/><circle cx="18" cy="6" r="1.6"/></svg>
           <span>Scatter</span>
         </div>
-        <div class="type-card" data-type="combo" onclick="selectChartType('combo',this)">
+        <div class="type-card" data-type="combo" onclick="fSelectChartType('combo',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="14" width="4" height="6"/><rect x="11" y="10" width="4" height="10"/><polyline points="4,9 11,5 18,8"/></svg>
           <span>Bar + Line</span>
         </div>
-        <div class="type-card" data-type="percent" onclick="selectChartType('percent',this)">
+        <div class="type-card" data-type="percent" onclick="fSelectChartType('percent',this)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="16" y="9" width="4" height="11"/><circle cx="6" cy="5" r="1.6"/><line x1="4.5" y1="8.5" x2="9.5" y2="3.5"/><circle cx="8" cy="7" r="1.6"/></svg>
           <span>% Stacked</span>
         </div>
@@ -850,8 +850,8 @@
         <option value="cols">Columns are series — legend from first row, axis from first column</option>
       </select>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeChartModal()">Cancel</button>
-        <button class="btn-create" onclick="createChart()">Create</button>
+        <button class="btn-cancel" onclick="fCloseChartModal()">Cancel</button>
+        <button class="btn-create" onclick="fCreateChart()">Create</button>
       </div>
     </div>
   </div>
@@ -862,7 +862,7 @@
       <h3>Version History</h3>
       <div id="history-list" class="history-list"></div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeHistoryModal()">Close</button>
+        <button class="btn-cancel" onclick="fCloseHistoryModal()">Close</button>
       </div>
     </div>
   </div>
@@ -882,8 +882,8 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeHistoryDiffModal()">Back</button>
-        <button class="btn-create" onclick="restoreFromDiff()">Restore this version</button>
+        <button class="btn-cancel" onclick="fCloseHistoryDiffModal()">Back</button>
+        <button class="btn-create" onclick="fRestoreFromDiff()">Restore this version</button>
       </div>
     </div>
   </div>
@@ -892,10 +892,10 @@
   <div class="modal-overlay" id="font-picker-modal">
     <div class="modal font-picker-modal">
       <h3>Choose a Font</h3>
-      <input class="modal-input" id="font-picker-search" placeholder="Search fonts…" oninput="renderFontPickerList()">
+      <input class="modal-input" id="font-picker-search" placeholder="Search fonts…" oninput="fRenderFontPickerList()">
       <div id="font-picker-list" class="font-picker-list"></div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeFontPickerModal()">Cancel</button>
+        <button class="btn-cancel" onclick="fCloseFontPickerModal()">Cancel</button>
       </div>
     </div>
   </div>
@@ -904,10 +904,10 @@
   <div class="modal-overlay" id="file-link-modal">
     <div class="modal file-link-modal">
       <h3>Link to a File</h3>
-      <input class="modal-input" id="file-link-search" placeholder="Search files…" oninput="renderFileLinkList()">
+      <input class="modal-input" id="file-link-search" placeholder="Search files…" oninput="fRenderFileLinkList()">
       <div id="file-link-list" class="file-link-list"></div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeFileLinkModal()">Cancel</button>
+        <button class="btn-cancel" onclick="fCloseFileLinkModal()">Cancel</button>
       </div>
     </div>
   </div>
@@ -919,8 +919,8 @@
         <span class="print-preview-title">Print Preview</span>
         <span class="print-preview-hint">Tip: uncheck "Headers and footers" under More settings in the print dialog for a cleaner PDF</span>
         <div style="flex:1;"></div>
-        <button class="btn-create" onclick="printPreviewNow()">Print / Save as PDF</button>
-        <button class="btn-cancel" onclick="closePrintPreview()">Close</button>
+        <button class="btn-create" onclick="fPrintPreviewNow()">Print / Save as PDF</button>
+        <button class="btn-cancel" onclick="fClosePrintPreview()">Close</button>
       </div>
       <iframe id="print-preview-frame" class="print-preview-frame"></iframe>
     </div>
@@ -957,14 +957,14 @@
           <input class="modal-input" id="cloud-server-url" placeholder="Server URL, e.g. http://localhost:8080">
           <input class="modal-input" id="cloud-email" placeholder="Email" type="email">
           <input class="modal-input" id="cloud-password" placeholder="Password" type="password">
-          <button type="button" class="btn-create" onclick="connectCloud()">Connect</button>
+          <button type="button" class="btn-create" onclick="fConnectCloud()">Connect</button>
         </div>
         <div id="cloud-sync-connected" style="display:none;">
           <p class="settings-help-text" id="cloud-sync-status"></p>
           <p class="settings-help-text" id="cloud-sync-errors" style="display:none;"></p>
-          <button type="button" class="btn-cancel" onclick="syncNowCloud()">Sync now</button>
-          <button type="button" class="btn-cancel" id="cloud-conflicts-btn" onclick="openSyncConflictsModal()" style="display:none;">View conflicts</button>
-          <button type="button" class="btn-cancel" onclick="disconnectCloud()">Disconnect</button>
+          <button type="button" class="btn-cancel" onclick="fSyncNowCloud()">Sync now</button>
+          <button type="button" class="btn-cancel" id="cloud-conflicts-btn" onclick="fOpenSyncConflictsModal()" style="display:none;">View conflicts</button>
+          <button type="button" class="btn-cancel" onclick="fDisconnectCloud()">Disconnect</button>
         </div>
       </div>
       <div class="settings-section">
@@ -978,10 +978,10 @@
           dictionaries installed on this device. Pick a language to check against, or leave it on your system default.</p>
         <div class="settings-spell-row">
           <label class="settings-type-toggle">
-            <input type="checkbox" id="settings-spell-enabled" onchange="onSpellPrefsChange()">
+            <input type="checkbox" id="settings-spell-enabled" onchange="fOnSpellPrefsChange()">
             <span>Check spelling as you type</span>
           </label>
-          <select class="tb-select" id="settings-spell-lang" title="Spell-check language" onchange="onSpellPrefsChange()"></select>
+          <select class="tb-select" id="settings-spell-lang" title="Spell-check language" onchange="fOnSpellPrefsChange()"></select>
         </div>
       </div>
       <div class="settings-section">
@@ -991,13 +991,13 @@
         <div class="settings-custom-colors">
           <label class="settings-color-field">
             <span>Background</span>
-            <input type="color" id="settings-bg-color" onchange="onCustomColorChange()">
+            <input type="color" id="settings-bg-color" onchange="fOnCustomColorChange()">
           </label>
           <label class="settings-color-field">
             <span>Accent</span>
-            <input type="color" id="settings-accent-color" onchange="onCustomColorChange()">
+            <input type="color" id="settings-accent-color" onchange="fOnCustomColorChange()">
           </label>
-          <button type="button" class="btn-cancel settings-theme-reset" onclick="resetTheme()">Reset to default</button>
+          <button type="button" class="btn-cancel settings-theme-reset" onclick="fResetTheme()">Reset to default</button>
         </div>
       </div>
       <div class="settings-section" id="custom-fonts-section" style="display:none;">
@@ -1008,16 +1008,16 @@
         <div id="custom-fonts-list" class="custom-fonts-list"></div>
         <div class="custom-fonts-upload-row">
           <input type="text" id="custom-font-name" class="modal-input" placeholder="Font name (e.g. Brand Sans)">
-          <input type="file" id="custom-font-file" accept=".ttf,.otf,.woff,.woff2" style="display:none" onchange="onCustomFontFileChosen()">
+          <input type="file" id="custom-font-file" accept=".ttf,.otf,.woff,.woff2" style="display:none" onchange="fOnCustomFontFileChosen()">
           <button type="button" class="btn-cancel" onclick="document.getElementById('custom-font-file').click()">Choose file&hellip;</button>
         </div>
         <div id="custom-font-error" style="display:none;color:#e57373;font-size:12px;margin-top:6px;"></div>
       </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" id="settings-stop-btn" onclick="stopUsingWorkFolder()" style="display:none;">Stop using this folder</button>
-        <button class="btn-create" id="settings-folder-btn" onclick="onSettingsFolderButton()">Choose Folder&hellip;</button>
-        <button class="btn-cancel" onclick="closeSettingsModal()">Close</button>
+        <button class="btn-cancel" id="settings-stop-btn" onclick="fStopUsingWorkFolder()" style="display:none;">Stop using this folder</button>
+        <button class="btn-create" id="settings-folder-btn" onclick="fOnSettingsFolderButton()">Choose Folder&hellip;</button>
+        <button class="btn-cancel" onclick="fCloseSettingsModal()">Close</button>
       </div>
     </div>
   </div>
@@ -1028,7 +1028,7 @@
       <h3>Sync Conflicts</h3>
       <div id="sync-conflicts-list" class="history-list"></div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeSyncConflictsModal()">Close</button>
+        <button class="btn-cancel" onclick="fCloseSyncConflictsModal()">Close</button>
       </div>
     </div>
   </div>
@@ -1048,27 +1048,27 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeSyncConflictDiffModal()">Back</button>
-        <button class="btn-cancel" onclick="resolveSyncConflict('remote')">Keep Cloud Version</button>
-        <button class="btn-cancel" onclick="resolveSyncConflict('both')">Keep Both</button>
-        <button class="btn-create" onclick="resolveSyncConflict('local')">Keep My Version</button>
+        <button class="btn-cancel" onclick="fCloseSyncConflictDiffModal()">Back</button>
+        <button class="btn-cancel" onclick="fResolveSyncConflict('remote')">Keep Cloud Version</button>
+        <button class="btn-cancel" onclick="fResolveSyncConflict('both')">Keep Both</button>
+        <button class="btn-create" onclick="fResolveSyncConflict('local')">Keep My Version</button>
       </div>
     </div>
   </div>
 
   <!-- RELATIONSHIP GRAPH -->
-  <div class="modal-overlay" id="relations-modal" onclick="if(event.target===this)closeRelationsGraph()">
+  <div class="modal-overlay" id="relations-modal" onclick="if(event.target===this)fCloseRelationsGraph()">
     <div class="relations-shell">
       <div class="relations-head">
         <h3>Relationship graph</h3>
         <label class="rel-slider-label">Spacing
-          <input type="range" id="rel-spacing" min="40" max="300" step="5" oninput="onRelSpacingChange(this.value)">
+          <input type="range" id="rel-spacing" min="40" max="300" step="5" oninput="fOnRelSpacingChange(this.value)">
         </label>
         <label class="rel-slider-label">Node size
-          <input type="range" id="rel-size" min="50" max="250" step="5" oninput="onRelSizeChange(this.value)">
+          <input type="range" id="rel-size" min="50" max="250" step="5" oninput="fOnRelSizeChange(this.value)">
         </label>
         <span class="relations-hint">Drag nodes &middot; scroll to zoom &middot; drag the background to pan &middot; click a node to open the file</span>
-        <button class="comments-close" onclick="closeRelationsGraph()" title="Close">×</button>
+        <button class="comments-close" onclick="fCloseRelationsGraph()" title="Close">×</button>
       </div>
       <div class="relations-canvas-wrap">
         <canvas id="relations-canvas"></canvas>
@@ -1078,7 +1078,7 @@
     </div>
   </div>
 
-  <input type="file" id="import-input" accept=".mdp,.mds,.mdg,.mdd,.mdn,.mdl,.mdc,.mde,.mdb,.md,.csv,.txt" style="display:none" onchange="handleImport(event)">
+  <input type="file" id="import-input" accept=".mdp,.mds,.mdg,.mdd,.mdn,.mdl,.mdc,.mde,.mdb,.md,.csv,.txt" style="display:none" onchange="fHandleImport(event)">
 
   <script>
   // ── INLINE MARKED.JS ──
@@ -1109,20 +1109,20 @@
   <div id="live-sync-pill" style="display:none" title="This file syncs live — edits from other devices appear automatically">● Live</div>
 
   <!-- Comments (any open work file, web only) -->
-  <button id="comments-fab" style="display:none" title="Comments" onclick="toggleCommentsPanel()">
+  <button id="comments-fab" style="display:none" title="Comments" onclick="fToggleCommentsPanel()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span id="comments-count" class="comments-count" style="display:none"></span>
   </button>
   <div id="comments-panel" style="display:none">
     <div class="comments-head">
       <span>Comments</span>
-      <button class="comments-close" onclick="toggleCommentsPanel()" title="Close">×</button>
+      <button class="comments-close" onclick="fToggleCommentsPanel()" title="Close">×</button>
     </div>
     <div id="comments-list"></div>
     <div class="comments-compose" id="comments-compose">
       <div id="comment-anchor-chip" class="comment-anchor-chip" style="display:none"></div>
-      <textarea id="comment-input" rows="3" placeholder="Add a comment… (select something first to comment on that spot)" onfocus="captureCommentAnchor()"></textarea>
-      <button class="btn-create" onclick="submitComment()">Post</button>
+      <textarea id="comment-input" rows="3" placeholder="Add a comment… (select something first to comment on that spot)" onfocus="fCaptureCommentAnchor()"></textarea>
+      <button class="btn-create" onclick="fSubmitComment()">Post</button>
     </div>
     <div class="comments-no-perm" id="comments-no-perm" style="display:none">You can view this thread but not post in it.</div>
   </div>
@@ -1133,7 +1133,7 @@
       <h3 id="share-modal-title">Share</h3>
       <div id="share-modal-list" class="share-modal-list"></div>
       <div class="share-add-row">
-        <input class="modal-input" id="share-email" placeholder="Email of an existing account" onkeydown="if(event.key==='Enter')submitShare()">
+        <input class="modal-input" id="share-email" placeholder="Email of an existing account" onkeydown="if(event.key==='Enter')fSubmitShare()">
         <select class="modal-input tb-select" id="share-perm">
           <option value="view">Can view</option>
           <option value="comment">Can comment</option>
@@ -1148,12 +1148,12 @@
           <option value="comment">Can comment</option>
           <option value="edit">Can edit</option>
         </select>
-        <button class="btn-create" onclick="createLinkRow()">Create link</button>
+        <button class="btn-create" onclick="fCreateLinkRow()">Create link</button>
       </div>
       <div id="share-error" style="display:none;color:#e57373;font-size:12px;margin-top:8px;"></div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeShareModal()">Close</button>
-        <button class="btn-create" onclick="submitShare()">Share</button>
+        <button class="btn-cancel" onclick="fCloseShareModal()">Close</button>
+        <button class="btn-create" onclick="fSubmitShare()">Share</button>
       </div>
     </div>
   </div>
@@ -1166,7 +1166,7 @@
       <div class="travel-pop-header" id="travel-pop-header"></div>
       <div class="travel-pop-modes" id="travel-pop-modes"></div>
       <div class="travel-pop-close-row">
-        <button class="btn-cancel" onclick="closeTravelPopover()">Close</button>
+        <button class="btn-cancel" onclick="fCloseTravelPopover()">Close</button>
       </div>
     </div>
   </div>
@@ -1178,9 +1178,9 @@
       <select id="pin-doc-select" class="tb-select" style="width:100%;margin-bottom:8px"></select>
       <div id="pin-color-swatches" class="pin-color-row" style="margin-bottom:10px"></div>
       <div class="pin-pop-actions">
-        <button class="btn-cancel" onclick="openPinDoc()">Open Doc</button>
-        <button class="btn-cancel" onclick="deleteCurrentPin()">Delete</button>
-        <button class="btn-create" onclick="savePinEdits()">Done</button>
+        <button class="btn-cancel" onclick="fOpenPinDoc()">Open Doc</button>
+        <button class="btn-cancel" onclick="fDeleteCurrentPin()">Delete</button>
+        <button class="btn-create" onclick="fSavePinEdits()">Done</button>
       </div>
     </div>
   </div>

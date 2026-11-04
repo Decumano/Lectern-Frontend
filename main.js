@@ -12,7 +12,7 @@
 // Order. The modules are concatenated in the order listed here, and that
 // order is the original file's order. A module only sees what earlier modules
 // have already defined, so anything that runs at load time — the
-// addEventListener wiring, configureMermaid(), and so on — must come after
+// addEventListener wiring, fConfigureMermaid(), and so on — must come after
 // what it uses. Appending an entry is safe; reordering is not.
 //
 // async = false. A script element created with createElement is async by
@@ -27,13 +27,13 @@
 (function () {
   // Modules load relative to this script, so a page served from a
   // subdirectory keeps working.
-  var LOADER = document.currentScript;
+  var cLoader = document.currentScript;
 
   // Reuse whatever cache-busting version this script was loaded with
   // (auth-gate.js appends ?v=N), so there is no second place to update.
-  function version() {
+  function fVersion() {
     try {
-      var query = (LOADER && LOADER.src || '').split('?')[1] || '';
+      var query = (cLoader && cLoader.src || '').split('?')[1] || '';
       var match = /(?:^|&)v=([^&]+)/.exec(query);
       return match ? match[1] : '';
     } catch (e) {
@@ -42,7 +42,7 @@
   }
 
   // Order matters — see the note above.
-  var MODULES = [
+  var cModules = [
     // Core: state every other module reads, init(), and the file list.
     'core-state.js',
     'core-spellcheck.js',
@@ -92,10 +92,10 @@
     'app-slides.js'
   ];
 
-  var suffix = version() ? '?v=' + version() : '';
+  var suffix = fVersion() ? '?v=' + fVersion() : '';
   var base = 'modules/';
 
-  function report(message) {
+  function fReport(message) {
     // A module that fails to load leaves a blank window and no explanation,
     // which is the worst way to find out. Say so on the page itself.
     var box = document.createElement('div');
@@ -107,7 +107,7 @@
     document.body.appendChild(box);
   }
 
-  MODULES.forEach(function (name, index) {
+  cModules.forEach(function (name, index) {
     var script = document.createElement('script');
     script.src = base + name + suffix;
 
@@ -115,16 +115,16 @@
     // depends on this.
     script.async = false;
 
-    if (index === MODULES.length - 1) {
+    if (index === cModules.length - 1) {
       // async = false guarantees the earlier modules have already run by the
       // time the last one does, so this is the moment everything exists.
       script.onload = function () {
-        init();
+        fInit();
       };
     }
 
     script.onerror = function () {
-      report('Lectern could not start: failed to load ' + base + name +
+      fReport('Lectern could not start: failed to load ' + base + name +
              '\n\nThe frontend files are incomplete or the server is not ' +
              'serving modules/.');
     };

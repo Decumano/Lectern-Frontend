@@ -15,18 +15,18 @@ var cloudStatusCache = { connected: false };
 var syncConflicts = [];
 var activeSyncConflict = null;
 
-async function refreshCloudStatus()
+async function fRefreshCloudStatus()
 {
   if (!Platform.isNative)
     return;
 
-  try { cloudStatusCache = await Platform.cloudStatus(); }
+  try { cloudStatusCache = await Platform.fCloudStatus(); }
   catch(e) { cloudStatusCache = { connected: false }; }
 
-  renderCloudSyncSection();
+  fRenderCloudSyncSection();
 }
 
-function renderCloudSyncSection()
+function fRenderCloudSyncSection()
 {
   var section = document.getElementById('cloud-sync-section');
 
@@ -105,7 +105,7 @@ function renderCloudSyncSection()
   }
 }
 
-async function connectCloud()
+async function fConnectCloud()
 {
   var serverUrl = document.getElementById('cloud-server-url').value.trim(),
       email = document.getElementById('cloud-email').value.trim(),
@@ -125,10 +125,10 @@ async function connectCloud()
 
   try
   {
-    cloudStatusCache = await Platform.cloudConnect(serverUrl, email, password, workFolderRoot);
+    cloudStatusCache = await Platform.fCloudConnect(serverUrl, email, password, workFolderRoot);
     document.getElementById('cloud-password').value = '';
-    renderSettingsModal();
-    await loadWorkFolderTree();
+    fRenderSettingsModal();
+    await fLoadWorkFolderTree();
   }
   catch(e)
   {
@@ -136,22 +136,22 @@ async function connectCloud()
   }
 }
 
-async function disconnectCloud()
+async function fDisconnectCloud()
 {
-  try { await Platform.cloudDisconnect(); }
+  try { await Platform.fCloudDisconnect(); }
   catch(e) { console.warn('Cloud disconnect error', e); }
 
   cloudStatusCache = { connected: false };
-  renderCloudSyncSection();
+  fRenderCloudSyncSection();
 }
 
-async function syncNowCloud()
+async function fSyncNowCloud()
 {
   try
   {
-    cloudStatusCache = await Platform.cloudSyncNow();
-    renderCloudSyncSection();
-    await loadWorkFolderTree();
+    cloudStatusCache = await Platform.fCloudSyncNow();
+    fRenderCloudSyncSection();
+    await fLoadWorkFolderTree();
   }
   catch(e)
   {
@@ -164,21 +164,21 @@ async function syncNowCloud()
 // couldn't be auto-merged (see three_way_merge in cloud.rs). The user picks
 // which version wins, or keeps both as separate files.
 
-async function openSyncConflictsModal()
+async function fOpenSyncConflictsModal()
 {
-  try { syncConflicts = await Platform.cloudListConflicts(); }
+  try { syncConflicts = await Platform.fCloudListConflicts(); }
   catch(e) { syncConflicts = []; }
 
-  renderSyncConflictsModal();
+  fRenderSyncConflictsModal();
   document.getElementById('sync-conflicts-modal').classList.add('open');
 }
 
-function closeSyncConflictsModal()
+function fCloseSyncConflictsModal()
 {
   document.getElementById('sync-conflicts-modal').classList.remove('open');
 }
 
-function renderSyncConflictsModal()
+function fRenderSyncConflictsModal()
 {
   var list = document.getElementById('sync-conflicts-list');
 
@@ -192,17 +192,17 @@ function renderSyncConflictsModal()
   {
     return '<div class="history-item">' +
              '<div class="history-item-info">' +
-               '<div class="history-item-time">' + escHtml(c.relPath) + '</div>' +
+               '<div class="history-item-time">' + fEscHtml(c.relPath) + '</div>' +
                '<div class="history-item-preview">Both your device and the cloud changed this file since the last sync.</div>' +
              '</div>' +
              '<div class="history-item-actions">' +
-               '<button type="button" class="btn-cancel history-compare-btn" onclick="openSyncConflictDiff(' + i + ')">Review</button>' +
+               '<button type="button" class="btn-cancel history-compare-btn" onclick="fOpenSyncConflictDiff(' + i + ')">Review</button>' +
              '</div>' +
            '</div>';
   }).join('');
 }
 
-function openSyncConflictDiff(index)
+function fOpenSyncConflictDiff(index)
 {
   activeSyncConflict = syncConflicts[index];
 
@@ -210,26 +210,26 @@ function openSyncConflictDiff(index)
     return;
 
   document.getElementById('sync-conflict-diff-title').textContent = activeSyncConflict.relPath;
-  renderWordDiff(activeSyncConflict.localContent, activeSyncConflict.remoteContent, 'sync-conflict-local-pane', 'sync-conflict-remote-pane');
+  fRenderWordDiff(activeSyncConflict.localContent, activeSyncConflict.remoteContent, 'sync-conflict-local-pane', 'sync-conflict-remote-pane');
 
-  closeSyncConflictsModal();
+  fCloseSyncConflictsModal();
   document.getElementById('sync-conflict-diff-modal').classList.add('open');
 }
 
-function closeSyncConflictDiffModal()
+function fCloseSyncConflictDiffModal()
 {
   document.getElementById('sync-conflict-diff-modal').classList.remove('open');
   document.getElementById('sync-conflicts-modal').classList.add('open');
 }
 
-async function resolveSyncConflict(choice)
+async function fResolveSyncConflict(choice)
 {
   if (!activeSyncConflict)
     return;
 
   try
   {
-    await Platform.cloudResolveConflict(activeSyncConflict.relPath, choice);
+    await Platform.fCloudResolveConflict(activeSyncConflict.relPath, choice);
   }
   catch(e)
   {
@@ -240,21 +240,21 @@ async function resolveSyncConflict(choice)
   document.getElementById('sync-conflict-diff-modal').classList.remove('open');
   activeSyncConflict = null;
 
-  await refreshCloudStatus();
-  await openSyncConflictsModal();
-  await loadWorkFolderTree();
+  await fRefreshCloudStatus();
+  await fOpenSyncConflictsModal();
+  await fLoadWorkFolderTree();
 }
 
 // Wraps rendered body markup (doc HTML or a sheet table) into a standalone,
 // printable HTML document - intentionally light-themed regardless of the
 // app's dark UI, since this is meant to be portable/readable on its own.
-function wrapExportHtml(title, bodyHtml)
+function fWrapExportHtml(title, bodyHtml)
 {
   return  '<!DOCTYPE html>\n'+
           '<html lang="en">\n'+
           '<head>\n'+
           '<meta charset="UTF-8">\n'+
-          '<title>' + escHtml(title) + '</title>\n'+
+          '<title>' + fEscHtml(title) + '</title>\n'+
           '<style>\n'+
           '@page{size:A4;margin:2cm;}\n'+
           'body{font-family:Georgia,\'Times New Roman\',serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6;}\n'+
@@ -279,9 +279,9 @@ function wrapExportHtml(title, bodyHtml)
           '</html>';
 }
 
-function buildDocExportHtml(file)
+function fBuildDocExportHtml(file)
 {
-  var bodyHtml = escHtml(file.content || '');
+  var bodyHtml = fEscHtml(file.content || '');
 
   if (typeof marked !== 'undefined')
   {
@@ -290,15 +290,15 @@ function buildDocExportHtml(file)
     headingRenderCursor = 0;
 
     var tokens = marked.lexer(file.content || '');
-    collectHeadings(tokens);
+    fCollectHeadings(tokens);
 
     bodyHtml = marked.parser(tokens);
   }
 
-  return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + sanitizeHtml(bodyHtml));
+  return fWrapExportHtml(file.name, '<h1>' + fEscHtml(file.name) + '</h1>\n' + fSanitizeHtml(bodyHtml));
 }
 
-function buildSheetExportHtml(file)
+function fBuildSheetExportHtml(file)
 {
   var sections = '',
       savedData = sheetData;
@@ -316,13 +316,13 @@ function buildSheetExportHtml(file)
     (
       function(ref)
       {
-        var parsed = parseName(ref);
+        var parsed = fParseName(ref);
 
         if (!parsed)
           return;
 
         maxRow = Math.max(maxRow, parsed.row);
-        maxCol = Math.max(maxCol, colIndex(parsed.col));
+        maxCol = Math.max(maxCol, fColIndex(parsed.col));
       }
     );
 
@@ -333,13 +333,13 @@ function buildSheetExportHtml(file)
       rowsHtml += '<tr>';
 
       for (var c = 0; c <= maxCol; c++)
-        rowsHtml += '<td>' + escHtml(getDisplayValue(colName(c) + r)) + '</td>';
+        rowsHtml += '<td>' + fEscHtml(fGetDisplayValue(fColName(c) + r)) + '</td>';
 
       rowsHtml += '</tr>\n';
     }
 
     if (sheetPages.length > 1)
-      sections += '<h2>' + escHtml(page.name) + '</h2>\n';
+      sections += '<h2>' + fEscHtml(page.name) + '</h2>\n';
 
     sections += maxRow
                 ?
@@ -350,7 +350,7 @@ function buildSheetExportHtml(file)
 
   sheetData = savedData;
 
-  return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + sections);
+  return fWrapExportHtml(file.name, '<h1>' + fEscHtml(file.name) + '</h1>\n' + sections);
 }
 
 // Mermaid's library isn't shipped inside exported files, so any `.mermaid`
@@ -359,7 +359,7 @@ function buildSheetExportHtml(file)
 // HTML/PDF fully self-contained and immune to script execution quirks in
 // whatever renders it later (the server-side PDF renderer, or the Tauri
 // print-preview iframe).
-async function inlineMermaidSvgs(html)
+async function fInlineMermaidSvgs(html)
 {
   if (typeof mermaid === 'undefined')
     return html;
@@ -385,23 +385,23 @@ async function inlineMermaidSvgs(html)
     catch(e)
     {
       console.warn('Mermaid export render error', e);
-      node.outerHTML = '<pre>' + escHtml(source) + '</pre>';
+      node.outerHTML = '<pre>' + fEscHtml(source) + '</pre>';
     }
   }
 
   return container.innerHTML;
 }
 
-async function buildGraphExportHtml(file)
+async function fBuildGraphExportHtml(file)
 {
-  var bodyHtml = escHtml(file.content || '');
+  var bodyHtml = fEscHtml(file.content || '');
 
   if (typeof marked !== 'undefined')
     bodyHtml = marked.parser(marked.lexer(file.content || ''));
 
-  bodyHtml = await inlineMermaidSvgs(sanitizeHtml(bodyHtml));
+  bodyHtml = await fInlineMermaidSvgs(fSanitizeHtml(bodyHtml));
 
-  return wrapExportHtml(file.name, '<h1>' + escHtml(file.name) + '</h1>\n' + bodyHtml);
+  return fWrapExportHtml(file.name, '<h1>' + fEscHtml(file.name) + '</h1>\n' + bodyHtml);
 }
 
 // Shows the HTML in a genuinely on-screen preview (rather than a hidden/
@@ -412,7 +412,7 @@ async function buildGraphExportHtml(file)
 // internal layout - which is empty when the iframe sits off-screen, so the
 // resulting PDF comes out blank. Keeping the content visibly on-screen
 // sidesteps that entirely, and lets the user see what they're printing.
-function printHtmlContent(html)
+function fPrintHtmlContent(html)
 {
   var overlay = document.getElementById('print-preview-overlay'),
       iframe = document.getElementById('print-preview-frame');
@@ -424,7 +424,7 @@ function printHtmlContent(html)
   overlay.classList.add('open');
 }
 
-function printPreviewNow()
+function fPrintPreviewNow()
 {
   var iframe = document.getElementById('print-preview-frame');
 
@@ -435,7 +435,7 @@ function printPreviewNow()
   iframe.contentWindow.print();
 }
 
-function closePrintPreview()
+function fClosePrintPreview()
 {
   var overlay = document.getElementById('print-preview-overlay'),
       iframe = document.getElementById('print-preview-frame');
@@ -453,11 +453,11 @@ document.getElementById('print-preview-overlay').addEventListener
   function(e)
   {
     if (e.target === document.getElementById('print-preview-overlay'))
-      closePrintPreview();
+      fClosePrintPreview();
   }
 );
 
-async function exportCurrentAs(format)
+async function fExportCurrentAs(format)
 {
   if (!currentFileId)
   {
@@ -469,21 +469,21 @@ async function exportCurrentAs(format)
       html;
 
   if (f.type === 'sheet')
-    html = buildSheetExportHtml(f);
+    html = fBuildSheetExportHtml(f);
   else if (f.type === 'graph')
-    html = await buildGraphExportHtml(f);
+    html = await fBuildGraphExportHtml(f);
   else if (f.type === 'slides')
-    html = await buildSlidesExportHtml(f);
+    html = await fBuildSlidesExportHtml(f);
   else if (f.type === 'notebook')
-    html = await buildNotebookExportHtml(f);
+    html = await fBuildNotebookExportHtml(f);
   else
-    html = buildDocExportHtml(f);
+    html = fBuildDocExportHtml(f);
 
   if (format === 'pdf')
   {
     if (Platform.isNative)
     {
-      printHtmlContent(html);
+      fPrintHtmlContent(html);
       return;
     }
 
@@ -491,7 +491,7 @@ async function exportCurrentAs(format)
 
     try
     {
-      await Platform.exportPdf(pdfName, html);
+      await Platform.fExportPdf(pdfName, html);
     }
     catch(e)
     {
@@ -506,7 +506,7 @@ async function exportCurrentAs(format)
 
   try
   {
-    var saved = await Platform.saveFile(fileName, html);
+    var saved = await Platform.fSaveFile(fileName, html);
 
     if (!saved)
       return;
@@ -518,12 +518,12 @@ async function exportCurrentAs(format)
   }
 }
 
-function triggerImport()
+function fTriggerImport()
 {
   document.getElementById('import-input').click();
 }
 
-function handleImport(e)
+function fHandleImport(e)
 {
   var file = e.target.files[0];
   if (!file)
@@ -548,11 +548,11 @@ function handleImport(e)
 
     if (workFolderRoot)
     {
-      var relPath = uniqueRelPath('', sanitizeFileName(name) || 'Untitled', fileExtensionFor(type));
+      var relPath = fUniqueRelPath('', fSanitizeFileName(name) || 'Untitled', fFileExtensionFor(type));
 
       try
       {
-        await Platform.writeWorkFile(workFolderRoot, relPath, content);
+        await Platform.fWriteWorkFile(workFolderRoot, relPath, content);
       }
       catch(err)
       {
@@ -561,22 +561,22 @@ function handleImport(e)
         return;
       }
 
-      await loadWorkFolderTree();
-      switchAppType(type);
-      await openFile(relPath);
+      await fLoadWorkFolderTree();
+      fSwitchAppType(type);
+      await fOpenFile(relPath);
       return;
     }
 
-    var id = createFile(name, type, content);
-    switchAppType(type);
-    openFile(id);
+    var id = fCreateFile(name, type, content);
+    fSwitchAppType(type);
+    fOpenFile(id);
   };
 
   reader.readAsText(file);
   e.target.value = '';
 }
 
-function escHtml(s)
+function fEscHtml(s)
 {
   return String(s)
           .replace(/&/g,'&amp;')
@@ -589,7 +589,7 @@ function escHtml(s)
 // itself sits inside a double-quoted HTML attribute (the onclick="fn('ID')"
 // pattern used throughout the sidebar) - relevant since rel_paths/names can
 // contain arbitrary text once a user renames something.
-function escAttr(s)
+function fEscAttr(s)
 {
   return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 }
@@ -602,11 +602,11 @@ function escAttr(s)
 // inputs with data-idx, data-chart-config attributes) survives DOMPurify's
 // default profile. If the vendored sanitizer somehow didn't load, fall back
 // to escaping everything: a plain-text preview beats running untrusted markup.
-function sanitizeHtml(html)
+function fSanitizeHtml(html)
 {
   if (typeof DOMPurify !== 'undefined' && DOMPurify.isSupported)
     return DOMPurify.sanitize(html);
 
-  return escHtml(html);
+  return fEscHtml(html);
 }
 

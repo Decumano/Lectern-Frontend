@@ -17,28 +17,28 @@ var mapScaleP1 = null;       // {x,y}
 var mapScalePageIndex = -1;
 var mapActivePinEdit = null; // {pageIndex, pinId}
 
-var MAP_TERRAIN = [
+var cMapTerrain = [
   { id: 'road',  label: 'Road',          color: '#9ca3af' },
   { id: 'trail', label: 'Trail',         color: '#c4a26a' },
   { id: 'rough', label: 'Rough terrain', color: '#7a9e6a' },
   { id: 'sea',   label: 'Sea / River',   color: '#4a9fc8' }
 ];
 
-function terrainColor(id)
+function fTerrainColor(id)
 {
-  var t = MAP_TERRAIN.find(function(t){ return t.id === id; });
+  var t = cMapTerrain.find(function(t){ return t.id === id; });
   return t ? t.color : '#9ca3af';
 }
 
-function onTerrainSelectChange(id)
+function fOnTerrainSelectChange(id)
 {
   var dot = document.getElementById('map-terrain-dot');
-  if (dot) dot.style.background = terrainColor(id);
+  if (dot) dot.style.background = fTerrainColor(id);
 }
 
 // km/day per transport mode, keyed by terrain id.
 // null means this mode is not applicable for that terrain.
-var TRAVEL_MODES = [
+var cTravelModes = [
   { id: 'walk',  label: 'Walking',       byTerrain: { road: 35,   trail: 20,   rough: 12,   sea: null } },
   { id: 'horse', label: 'Horse',         byTerrain: { road: 65,   trail: 40,   rough: 22,   sea: null } },
   { id: 'car',   label: 'Car',           byTerrain: { road: 700,  trail: 300,  rough: 100,  sea: null } },
@@ -52,9 +52,9 @@ var mapLastTravelKm       = 0;
 var mapLastTravelWpts     = 0;
 var mapLastTravelSegments = []; // [{km, terrain}] one per leg
 
-var PIN_COLORS = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c'];
+var cPinColors = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c'];
 
-function defaultMapPage()
+function fDefaultMapPage()
 {
   return {
     type: 'map',
@@ -70,17 +70,17 @@ function defaultMapPage()
   };
 }
 
-function notebookAddMapPage()
+function fNotebookAddMapPage()
 {
   if (!nbData) return;
 
-  nbData.pages.push(defaultMapPage());
-  renderNotebookPages();
-  commitNotebookChange();
-  notebookGoToPage(nbData.pages.length - 1);
+  nbData.pages.push(fDefaultMapPage());
+  fRenderNotebookPages();
+  fCommitNotebookChange();
+  fNotebookGoToPage(nbData.pages.length - 1);
 }
 
-function setMapTool(tool)
+function fSetMapTool(tool)
 {
   var prevTool = nbMapTool;
   nbMapTool = (nbMapTool === tool) ? null : tool;
@@ -90,45 +90,45 @@ function setMapTool(tool)
     // Toggled off via travel button = user wants to calculate the accumulated path
     var toggled = (prevTool === tool);
     if (toggled && mapTravelPath.length >= 2 && mapTravelPageIndex !== -1)
-      finishTravelCalc(mapTravelPageIndex);
+      fFinishTravelCalc(mapTravelPageIndex);
     else
-      clearTravelOverlay();
+      fClearTravelOverlay();
 
     mapTravelPath = [];
     mapTravelPageIndex = -1;
   }
   else if (nbMapTool !== 'travel')
   {
-    clearTravelOverlay();
+    fClearTravelOverlay();
   }
 
   if (nbMapTool !== 'scale')
   {
     mapScalePhase = 0;
     mapScaleP1 = null;
-    clearScaleOverlay();
+    fClearScaleOverlay();
   }
 
-  updateMapToolbarState();
-  updateMapCursor();
+  fUpdateMapToolbarState();
+  fUpdateMapCursor();
 
   if (nbMapTool === 'scale')
-    showMapHint('Click the first reference point on the map.');
+    fShowMapHint('Click the first reference point on the map.');
   else if (nbMapTool === 'travel')
-    showMapHint('Click to add waypoints. Click the travel button again to calculate.');
+    fShowMapHint('Click to add waypoints. Click the travel button again to calculate.');
   else if (nbMapTool === 'pin')
-    showMapHint('Click on the map to place a pin.');
+    fShowMapHint('Click on the map to place a pin.');
   else
-    showMapHint('');
+    fShowMapHint('');
 }
 
-function showMapHint(text)
+function fShowMapHint(text)
 {
   var el = document.getElementById('map-hint');
   if (el) el.textContent = text;
 }
 
-function updateMapToolbarState()
+function fUpdateMapToolbarState()
 {
   document.querySelectorAll('.map-tool-btn').forEach(function(btn)
   {
@@ -142,7 +142,7 @@ function updateMapToolbarState()
     if (nbMapTool === 'travel')
     {
       var sel = document.getElementById('map-terrain-select');
-      onTerrainSelectChange(sel ? sel.value : 'road');
+      fOnTerrainSelectChange(sel ? sel.value : 'road');
     }
   }
 
@@ -153,7 +153,7 @@ function updateMapToolbarState()
   });
 }
 
-function updateMapCursor()
+function fUpdateMapCursor()
 {
   var pages = document.getElementById('notebook-pages');
   if (!pages) return;
@@ -165,7 +165,7 @@ function updateMapCursor()
   if (nbMapTool === 'scale')  pages.classList.add('tool-map-scale');
 }
 
-function switchNbTab(tab)
+function fSwitchNbTab(tab)
 {
   var draw = document.getElementById('nb-draw-tools');
   var map  = document.getElementById('nb-map-tools');
@@ -178,31 +178,31 @@ function switchNbTab(tab)
   if (btnMap)  btnMap.classList.toggle('active',  tab === 'map');
 }
 
-function updateMapToolbarVisibility()
+function fUpdateMapToolbarVisibility()
 {
   var page = nbData && nbData.pages[nbCurrentPage];
   var isMap = !!(page && page.type === 'map');
 
-  switchNbTab(isMap ? 'map' : 'draw');
+  fSwitchNbTab(isMap ? 'map' : 'draw');
 
   if (!isMap)
   {
     nbMapTool = null;
     mapTravelPath = [];
     mapTravelPageIndex = -1;
-    clearTravelOverlay();
-    clearScaleOverlay();
-    showMapHint('');
+    fClearTravelOverlay();
+    fClearScaleOverlay();
+    fShowMapHint('');
   }
   else
   {
-    updateMapCursor();
-    updateMapToolbarState();
-    refreshMapScaleDisplay();
+    fUpdateMapCursor();
+    fUpdateMapToolbarState();
+    fRefreshMapScaleDisplay();
   }
 }
 
-function refreshMapScaleDisplay()
+function fRefreshMapScaleDisplay()
 {
   var page = nbData && nbData.pages[nbCurrentPage];
   var el = document.getElementById('map-scale-display');
@@ -223,7 +223,7 @@ function refreshMapScaleDisplay()
 
 // ── Pin layer ──
 
-function renderMapPinLayer(pageIndex)
+function fRenderMapPinLayer(pageIndex)
 {
   var pinLayer = document.querySelector('.notebook-page[data-page-index="' + pageIndex + '"] .nb-pin-layer');
   if (!pinLayer || !nbData) return;
@@ -237,12 +237,12 @@ function renderMapPinLayer(pageIndex)
   {
     var lp = ((pin.x / page.width) * 100).toFixed(4) + '%';
     var tp = ((pin.y / page.height) * 100).toFixed(4) + '%';
-    var color = escAttr(pin.color || PIN_COLORS[0]);
-    var label = escHtml(pin.label || '');
+    var color = fEscAttr(pin.color || cPinColors[0]);
+    var label = fEscHtml(pin.label || '');
 
     var sw = Math.round(18 * nbZoom), sh = Math.round(22 * nbZoom);
     return '<div class="map-pin" style="left:' + lp + ';top:' + tp + ';--pin-color:' + color + '"' +
-           ' onclick="openPinPopover(' + pageIndex + ',\'' + escAttr(pin.id) + '\',event)" title="' + label + '">' +
+           ' onclick="fOpenPinPopover(' + pageIndex + ',\'' + fEscAttr(pin.id) + '\',event)" title="' + label + '">' +
              '<svg width="' + sw + '" height="' + sh + '" viewBox="0 0 24 24" fill="' + color + '" stroke="#0005" stroke-width="0.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>' +
              (label ? '<span class="map-pin-label">' + label + '</span>' : '') +
            '</div>';
@@ -251,7 +251,7 @@ function renderMapPinLayer(pageIndex)
 
 // ── Pin popover ──
 
-function openPinPopover(pageIndex, pinId, event)
+function fOpenPinPopover(pageIndex, pinId, event)
 {
   event.stopPropagation();
 
@@ -273,14 +273,14 @@ function openPinPopover(pageIndex, pinId, event)
     Object.entries(files)
       .filter(function(e){ return e[1].type === 'doc'; })
       .sort(function(a, b){ return a[1].name.localeCompare(b[1].name); })
-      .map(function(e){ return '<option value="' + escAttr(e[0]) + '"' + (e[0] === pin.docId ? ' selected' : '') + '>' + escHtml(e[1].name) + '</option>'; })
+      .map(function(e){ return '<option value="' + fEscAttr(e[0]) + '"' + (e[0] === pin.docId ? ' selected' : '') + '>' + fEscHtml(e[1].name) + '</option>'; })
       .join('');
 
   var swatches = document.getElementById('pin-color-swatches');
-  swatches.innerHTML = PIN_COLORS.map(function(c)
+  swatches.innerHTML = cPinColors.map(function(c)
   {
-    return '<span class="pin-swatch' + (c === (pin.color || PIN_COLORS[0]) ? ' active' : '') + '"' +
-           ' style="background:' + c + '" onclick="selectPinColor(\'' + escAttr(c) + '\',this)"></span>';
+    return '<span class="pin-swatch' + (c === (pin.color || cPinColors[0]) ? ' active' : '') + '"' +
+           ' style="background:' + c + '" onclick="fSelectPinColor(\'' + fEscAttr(c) + '\',this)"></span>';
   }).join('');
 
   pop.style.display = '';
@@ -289,13 +289,13 @@ function openPinPopover(pageIndex, pinId, event)
   pop.style.top  = Math.max(rect.top - 10, 10) + 'px';
 }
 
-function selectPinColor(color, el)
+function fSelectPinColor(color, el)
 {
   document.querySelectorAll('#pin-color-swatches .pin-swatch').forEach(function(s){ s.classList.remove('active'); });
   el.classList.add('active');
 }
 
-function savePinEdits()
+function fSavePinEdits()
 {
   if (!mapActivePinEdit) return;
 
@@ -314,19 +314,19 @@ function savePinEdits()
   if (activeSwatchEl)
     pin.color = activeSwatchEl.style.background;
 
-  closePinPopover();
-  renderMapPinLayer(pageIndex);
-  commitNotebookChange();
+  fClosePinPopover();
+  fRenderMapPinLayer(pageIndex);
+  fCommitNotebookChange();
 }
 
-function closePinPopover()
+function fClosePinPopover()
 {
   var pop = document.getElementById('pin-popover');
   if (pop) pop.style.display = 'none';
   mapActivePinEdit = null;
 }
 
-function openPinDoc()
+function fOpenPinDoc()
 {
   if (!mapActivePinEdit) return;
 
@@ -338,12 +338,12 @@ function openPinDoc()
   var pin = (page.pins || []).find(function(p){ return p.id === pinId; });
   if (!pin || !pin.docId) { alert('No document linked to this pin.'); return; }
 
-  closePinPopover();
-  switchAppType('doc');
-  openFile(pin.docId);
+  fClosePinPopover();
+  fSwitchAppType('doc');
+  fOpenFile(pin.docId);
 }
 
-function deleteCurrentPin()
+function fDeleteCurrentPin()
 {
   if (!mapActivePinEdit) return;
 
@@ -354,12 +354,12 @@ function deleteCurrentPin()
 
   page.pins = (page.pins || []).filter(function(p){ return p.id !== pinId; });
 
-  closePinPopover();
-  renderMapPinLayer(pageIndex);
-  commitNotebookChange();
+  fClosePinPopover();
+  fRenderMapPinLayer(pageIndex);
+  fCommitNotebookChange();
 }
 
-function addMapPin(pageIndex, x, y)
+function fAddMapPin(pageIndex, x, y)
 {
   var page = nbData && nbData.pages[pageIndex];
   if (!page) return;
@@ -370,13 +370,13 @@ function addMapPin(pageIndex, x, y)
     y: y,
     label: '',
     docId: null,
-    color: PIN_COLORS[0]
+    color: cPinColors[0]
   };
 
   if (!page.pins) page.pins = [];
   page.pins.push(pin);
-  renderMapPinLayer(pageIndex);
-  commitNotebookChange();
+  fRenderMapPinLayer(pageIndex);
+  fCommitNotebookChange();
 
   // Open popover for immediate naming
   var pinEl = document.querySelector(
@@ -386,13 +386,13 @@ function addMapPin(pageIndex, x, y)
   {
     // Fake a click event on the pin element
     var fakeEvent = { stopPropagation: function(){}, target: pinEl };
-    openPinPopover(pageIndex, pin.id, fakeEvent);
+    fOpenPinPopover(pageIndex, pin.id, fakeEvent);
   }
 }
 
 // ── Scale tool ──
 
-function clearScaleOverlay()
+function fClearScaleOverlay()
 {
   document.querySelectorAll('.nb-scale-canvas').forEach(function(c)
   {
@@ -401,15 +401,15 @@ function clearScaleOverlay()
   });
 }
 
-function handleScaleClick(pageIndex, x, y, clientX, clientY)
+function fHandleScaleClick(pageIndex, x, y, clientX, clientY)
 {
   if (mapScalePhase === 0)
   {
     mapScalePhase = 1;
     mapScaleP1 = { x: x, y: y };
     mapScalePageIndex = pageIndex;
-    showMapHint('Click the second reference point.');
-    drawScalePoint(pageIndex, x, y, null, null);
+    fShowMapHint('Click the second reference point.');
+    fDrawScalePoint(pageIndex, x, y, null, null);
   }
   else if (mapScalePhase === 1 && mapScalePageIndex === pageIndex)
   {
@@ -418,26 +418,26 @@ function handleScaleClick(pageIndex, x, y, clientX, clientY)
         px = Math.sqrt(dx * dx + dy * dy);
 
     mapScalePhase = 0;
-    clearScaleOverlay();
+    fClearScaleOverlay();
 
-    if (px < 5) { showMapHint('Points too close — try again.'); return; }
+    if (px < 5) { fShowMapHint('Points too close — try again.'); return; }
 
     var km = parseFloat(prompt('Distance between the two points in km:'));
-    if (!km || km <= 0) { showMapHint(''); return; }
+    if (!km || km <= 0) { fShowMapHint(''); return; }
 
     var page = nbData.pages[pageIndex];
     page.kmPerPx = km / px;
 
-    commitNotebookChange();
-    refreshMapScaleDisplay();
-    showMapHint('Scale set: ' + page.kmPerPx.toFixed(4) + ' km/px.');
+    fCommitNotebookChange();
+    fRefreshMapScaleDisplay();
+    fShowMapHint('Scale set: ' + page.kmPerPx.toFixed(4) + ' km/px.');
     nbMapTool = null;
-    updateMapToolbarState();
-    updateMapCursor();
+    fUpdateMapToolbarState();
+    fUpdateMapCursor();
   }
 }
 
-function drawScalePoint(pageIndex, x, y, x2, y2)
+function fDrawScalePoint(pageIndex, x, y, x2, y2)
 {
   var canvas = document.querySelector('.notebook-page[data-page-index="' + pageIndex + '"] .nb-scale-canvas');
   if (!canvas || !nbData) return;
@@ -471,7 +471,7 @@ function drawScalePoint(pageIndex, x, y, x2, y2)
 
 // ── Travel tool ──
 
-function clearTravelOverlay()
+function fClearTravelOverlay()
 {
   document.querySelectorAll('.nb-travel-canvas').forEach(function(c)
   {
@@ -479,26 +479,26 @@ function clearTravelOverlay()
     ctx.clearRect(0, 0, c.width, c.height);
   });
   mapLastTravelKm = 0; mapLastTravelWpts = 0; mapLastTravelSegments = [];
-  closeTravelPopover();
+  fCloseTravelPopover();
   var el = document.getElementById('map-travel-result');
   if (el) el.textContent = '';
 }
 
-function addTravelWaypoint(pageIndex, x, y)
+function fAddTravelWaypoint(pageIndex, x, y)
 {
   if (mapTravelPageIndex === -1) mapTravelPageIndex = pageIndex;
   if (mapTravelPageIndex !== pageIndex) return;
 
   var terrain = (document.getElementById('map-terrain-select') || {}).value || 'road';
   mapTravelPath.push({ x: x, y: y, terrain: terrain });
-  renderTravelPath(pageIndex);
+  fRenderTravelPath(pageIndex);
 
   var n = mapTravelPath.length;
-  var tLabel = (MAP_TERRAIN.find(function(t){ return t.id === terrain; }) || {}).label || terrain;
-  showMapHint(n + ' waypoint' + (n === 1 ? '' : 's') + ' · next leg: ' + tLabel + ' — change terrain or keep clicking.');
+  var tLabel = (cMapTerrain.find(function(t){ return t.id === terrain; }) || {}).label || terrain;
+  fShowMapHint(n + ' waypoint' + (n === 1 ? '' : 's') + ' · next leg: ' + tLabel + ' — change terrain or keep clicking.');
 }
 
-function formatDays(days)
+function fFormatDays(days)
 {
   if (days < 1 / 24) return '< 1 hr';
   if (days < 1)
@@ -512,26 +512,26 @@ function formatDays(days)
   return '~' + d + 'd ' + h + 'h';
 }
 
-function formatTravelTime(km, kmPerDay)
+function fFormatTravelTime(km, kmPerDay)
 {
-  return formatDays(km / kmPerDay);
+  return fFormatDays(km / kmPerDay);
 }
 
-function finishTravelCalc(pageIndex)
+function fFinishTravelCalc(pageIndex)
 {
   var page = nbData && nbData.pages[pageIndex];
   if (!page) return;
 
   if (mapTravelPath.length < 2)
   {
-    showMapHint('Add at least 2 waypoints before calculating.');
+    fShowMapHint('Add at least 2 waypoints before calculating.');
     return;
   }
 
   if (!page.kmPerPx)
   {
-    showMapHint('Scale not set — use the scale tool first.');
-    clearTravelOverlay();
+    fShowMapHint('Scale not set — use the scale tool first.');
+    fClearTravelOverlay();
     return;
   }
 
@@ -553,11 +553,11 @@ function finishTravelCalc(pageIndex)
   var el = document.getElementById('map-travel-result');
   if (el) el.textContent = mapLastTravelWpts + ' pts · ' + mapLastTravelKm.toFixed(1) + ' km';
 
-  renderTravelPath(pageIndex);
-  showMapHint('Click the result chip for travel times.');
+  fRenderTravelPath(pageIndex);
+  fShowMapHint('Click the result chip for travel times.');
 }
 
-function openTravelPopover(e)
+function fOpenTravelPopover(e)
 {
   if (e) e.stopPropagation();
   if (!mapLastTravelKm) return;
@@ -573,7 +573,7 @@ function openTravelPopover(e)
   var terrainSeen = {};
   mapLastTravelSegments.forEach(function(s){ terrainSeen[s.terrain] = true; });
 
-  modesEl.innerHTML = TRAVEL_MODES.map(function(mode)
+  modesEl.innerHTML = cTravelModes.map(function(mode)
   {
     // Sum days per segment using each segment's own terrain speed
     var totalDays = 0;
@@ -596,7 +596,7 @@ function openTravelPopover(e)
     }
     else if (partial)
     {
-      timeStr  = formatDays(totalDays) + '*';
+      timeStr  = fFormatDays(totalDays) + '*';
       speedStr = '* partial — some terrain N/A';
     }
     else
@@ -605,7 +605,7 @@ function openTravelPopover(e)
       var speeds = Object.keys(terrainSeen).map(function(id){ return mode.byTerrain[id]; }).filter(Boolean);
       var minSpd = Math.min.apply(null, speeds), maxSpd = Math.max.apply(null, speeds);
       speedStr = minSpd === maxSpd ? minSpd + ' km/day' : minSpd + '–' + maxSpd + ' km/day';
-      timeStr  = formatDays(totalDays);
+      timeStr  = fFormatDays(totalDays);
     }
 
     return '<div class="travel-mode-row' + (na ? ' travel-mode-na' : '') + '">' +
@@ -625,13 +625,13 @@ function openTravelPopover(e)
   pop.style.display = 'block';
 }
 
-function closeTravelPopover()
+function fCloseTravelPopover()
 {
   var pop = document.getElementById('travel-popover');
   if (pop) pop.style.display = 'none';
 }
 
-function renderTravelPath(pageIndex)
+function fRenderTravelPath(pageIndex)
 {
   var canvas = document.querySelector('.notebook-page[data-page-index="' + pageIndex + '"] .nb-travel-canvas');
   if (!canvas || !nbData) return;
@@ -640,8 +640,8 @@ function renderTravelPath(pageIndex)
   var ctx = canvas.getContext('2d');
 
   // Scale from page units (0..page.width/height) to canvas buffer pixels.
-  // canvas.width was created as page.width * notebookCanvasScale(), so the
-  // ratio is simply notebookCanvasScale().  Recalculate each render to stay
+  // canvas.width was created as page.width * fNotebookCanvasScale(), so the
+  // ratio is simply fNotebookCanvasScale().  Recalculate each render to stay
   // correct if the canvas was recreated after an image upload.
   var sx = canvas.width  / page.width;
   var sy = canvas.height / page.height;
@@ -658,7 +658,7 @@ function renderTravelPath(pageIndex)
   // Draw each segment in its terrain colour
   for (var i = 1; i < mapTravelPath.length; i++)
   {
-    var color = terrainColor(mapTravelPath[i-1].terrain || 'road');
+    var color = fTerrainColor(mapTravelPath[i-1].terrain || 'road');
     ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.moveTo(mapTravelPath[i-1].x * sx, mapTravelPath[i-1].y * sy);
@@ -670,7 +670,7 @@ function renderTravelPath(pageIndex)
   ctx.setLineDash([]);
   mapTravelPath.forEach(function(pt)
   {
-    ctx.fillStyle = terrainColor(pt.terrain || 'road');
+    ctx.fillStyle = fTerrainColor(pt.terrain || 'road');
     ctx.beginPath();
     ctx.arc(pt.x * sx, pt.y * sy, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -681,13 +681,13 @@ function renderTravelPath(pageIndex)
 
 // ── Map image upload ──
 
-function triggerMapImageUpload()
+function fTriggerMapImageUpload()
 {
   var inp = document.getElementById('map-image-input');
   if (inp) inp.click();
 }
 
-function handleMapImageUpload(event)
+function fHandleMapImageUpload(event)
 {
   var file = event.target.files[0];
   if (!file) return;
@@ -717,9 +717,9 @@ function handleMapImageUpload(event)
       page.width = dw;
       page.height = dh;
 
-      commitNotebookChange();
-      renderNotebookPages();
-      notebookGoToPage(nbCurrentPage);
+      fCommitNotebookChange();
+      fRenderNotebookPages();
+      fNotebookGoToPage(nbCurrentPage);
     };
 
     img.src = e.target.result;
@@ -734,7 +734,7 @@ function handleMapImageUpload(event)
 // bounding rect directly — the same reference as pin % positions — rather than
 // the ink-canvas buffer dimensions, which can diverge due to CSS inset vs
 // width/height differences or max-width constraints.
-function mapPagePoint(e, pageIndex)
+function fMapPagePoint(e, pageIndex)
 {
   var pageEl = document.querySelector('.notebook-page[data-page-index="' + pageIndex + '"]');
   if (!pageEl || !nbData) return { x: 0, y: 0 };
@@ -746,7 +746,7 @@ function mapPagePoint(e, pageIndex)
   };
 }
 
-function findNearestPin(page, pt, hitRadius)
+function fFindNearestPin(page, pt, hitRadius)
 {
   hitRadius = hitRadius || 20;
   var best = null, bestD = Infinity;
@@ -760,43 +760,43 @@ function findNearestPin(page, pt, hitRadius)
   return best;
 }
 
-function handleMapPointerDown(e, _pt, canvas, pageIndex)
+function fHandleMapPointerDown(e, _pt, canvas, pageIndex)
 {
   // Use page-element coordinates for all map operations so they align with
   // pin % positions regardless of canvas buffer size or CSS constraints.
-  var pt = mapPagePoint(e, pageIndex);
+  var pt = fMapPagePoint(e, pageIndex);
   var page = nbData.pages[pageIndex];
 
   if (nbMapTool === 'pin')
   {
-    var hit = findNearestPin(page, pt, 16);
+    var hit = fFindNearestPin(page, pt, 16);
     if (hit)
     {
       var fakeEvent = { stopPropagation: function(){}, target: canvas };
-      openPinPopover(pageIndex, hit.id, fakeEvent);
+      fOpenPinPopover(pageIndex, hit.id, fakeEvent);
     }
     else
     {
-      addMapPin(pageIndex, pt.x, pt.y);
+      fAddMapPin(pageIndex, pt.x, pt.y);
     }
     return;
   }
 
   if (nbMapTool === 'scale')
   {
-    handleScaleClick(pageIndex, pt.x, pt.y, e.clientX, e.clientY);
+    fHandleScaleClick(pageIndex, pt.x, pt.y, e.clientX, e.clientY);
     return;
   }
 
   if (nbMapTool === 'travel')
   {
     if (e.button === 0)
-      addTravelWaypoint(pageIndex, pt.x, pt.y);
+      fAddTravelWaypoint(pageIndex, pt.x, pt.y);
     return;
   }
 
   // No map tool active — check if clicking a pin
-  var hit = findNearestPin(page, pt, 20);
+  var hit = fFindNearestPin(page, pt, 20);
   if (hit)
   {
     var pinEl = document.querySelector(
@@ -806,7 +806,7 @@ function handleMapPointerDown(e, _pt, canvas, pageIndex)
       stopPropagation: function(){},
       target: pinEl || canvas
     };
-    openPinPopover(pageIndex, hit.id, fakeEvt);
+    fOpenPinPopover(pageIndex, hit.id, fakeEvt);
     return;
   }
 
@@ -814,7 +814,7 @@ function handleMapPointerDown(e, _pt, canvas, pageIndex)
   return false;
 }
 
-function handleMapContextMenu(e, canvas, pageIndex)
+function fHandleMapContextMenu(e, canvas, pageIndex)
 {
   // Suppress browser context menu while any map tool is active
   if (nbMapTool) e.preventDefault();
@@ -822,16 +822,16 @@ function handleMapContextMenu(e, canvas, pageIndex)
 
 // ── Pointer handling per page ──
 
-function wireNotebookPointerEvents(canvas, pageIndex)
+function fWireNotebookPointerEvents(canvas, pageIndex)
 {
-  canvas.addEventListener('pointerdown', function(e){ notebookPointerDown(e, canvas, pageIndex); });
-  canvas.addEventListener('pointermove', function(e){ notebookPointerMove(e, canvas, pageIndex); });
-  canvas.addEventListener('pointerup', function(e){ notebookPointerUp(e, canvas, pageIndex); });
-  canvas.addEventListener('pointercancel', function(e){ notebookPointerUp(e, canvas, pageIndex); });
-  canvas.addEventListener('contextmenu', function(e){ handleMapContextMenu(e, canvas, pageIndex); });
+  canvas.addEventListener('pointerdown', function(e){ fNotebookPointerDown(e, canvas, pageIndex); });
+  canvas.addEventListener('pointermove', function(e){ fNotebookPointerMove(e, canvas, pageIndex); });
+  canvas.addEventListener('pointerup', function(e){ fNotebookPointerUp(e, canvas, pageIndex); });
+  canvas.addEventListener('pointercancel', function(e){ fNotebookPointerUp(e, canvas, pageIndex); });
+  canvas.addEventListener('contextmenu', function(e){ fHandleMapContextMenu(e, canvas, pageIndex); });
 }
 
-function notebookCanvasPoint(e, canvas)
+function fNotebookCanvasPoint(e, canvas)
 {
   // canvas.width/height are the raw (oversampled) buffer size, but
   // drawing/storage all happens in logical page units - dividing the canvas
@@ -839,7 +839,7 @@ function notebookCanvasPoint(e, canvas)
   // purely the CSS-responsive-shrink factor (the page can be narrower than
   // its logical width on a smaller window).
   const rect = canvas.getBoundingClientRect(),
-        canvasScale = notebookCanvasScale(),
+        canvasScale = fNotebookCanvasScale(),
         scaleX = (canvas.width / canvasScale) / rect.width,
         scaleY = (canvas.height / canvasScale) / rect.height;
 
@@ -851,7 +851,7 @@ function notebookCanvasPoint(e, canvas)
   };
 }
 
-function notebookEffectiveWidth(pt)
+function fNotebookEffectiveWidth(pt)
 {
   if (pt.pointerType !== 'pen')
     return nbWidth;
@@ -867,7 +867,7 @@ function notebookEffectiveWidth(pt)
   return nbWidth * (0.3 + pressure * 1.4);
 }
 
-function notebookEraseAt(pt, active)
+function fNotebookEraseAt(pt, active)
 {
   const page = nbData.pages[active.pageIndex],
         r = active.radius,
@@ -912,14 +912,14 @@ function notebookEraseAt(pt, active)
   page.strokes = newStrokes;
 }
 
-function notebookPointerDown(e, canvas, pageIndex)
+function fNotebookPointerDown(e, canvas, pageIndex)
 {
   if (!nbData)
     return;
 
   canvas.setPointerCapture(e.pointerId);
 
-  const pt = notebookCanvasPoint(e, canvas);
+  const pt = fNotebookCanvasPoint(e, canvas);
   nbCurrentPage = pageIndex;
 
   // A pending vector import captures all pointer input on its page: dragging
@@ -945,44 +945,44 @@ function notebookPointerDown(e, canvas, pageIndex)
   const _mapPage = nbData.pages[pageIndex];
   if (_mapPage && _mapPage.type === 'map')
   {
-    const _consumed = handleMapPointerDown(e, pt, canvas, pageIndex);
+    const _consumed = fHandleMapPointerDown(e, pt, canvas, pageIndex);
     if (_consumed !== false)
       return;
   }
 
   if (nbTool === 'pen' || nbTool === 'highlighter')
   {
-    notebookSnapshotForUndo(pageIndex);
+    fNotebookSnapshotForUndo(pageIndex);
 
-    const stroke = { tool: nbTool, color: nbColor, baseWidth: nbWidth, points: [{ x: pt.x, y: pt.y, w: notebookEffectiveWidth(pt) }] };
+    const stroke = { tool: nbTool, color: nbColor, baseWidth: nbWidth, points: [{ x: pt.x, y: pt.y, w: fNotebookEffectiveWidth(pt) }] };
 
     nbData.pages[pageIndex].strokes.push(stroke);
-    // smoothX/Y track a filtered position (see notebookPointerMove) - seeded
+    // smoothX/Y track a filtered position (see fNotebookPointerMove) - seeded
     // from the real first point since there's nothing yet to smooth against.
     nbActive = { kind: 'stroke', pageIndex: pageIndex, stroke: stroke, smoothX: pt.x, smoothY: pt.y };
-    redrawNotebookPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbTool === 'eraser')
   {
-    notebookSnapshotForUndo(pageIndex);
+    fNotebookSnapshotForUndo(pageIndex);
     nbActive = { kind: 'erase', pageIndex: pageIndex, radius: Math.max(8, nbWidth * 3) };
-    notebookEraseAt(pt, nbActive);
-    redrawNotebookPage(pageIndex);
+    fNotebookEraseAt(pt, nbActive);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbTool === 'line' || nbTool === 'rectangle' || nbTool === 'ellipse')
   {
-    notebookSnapshotForUndo(pageIndex);
+    fNotebookSnapshotForUndo(pageIndex);
 
     const shape = { tool: nbTool, color: nbColor, width: nbWidth, x1: pt.x, y1: pt.y, x2: pt.x, y2: pt.y };
 
     nbData.pages[pageIndex].shapes.push(shape);
     nbActive = { kind: 'shape', pageIndex: pageIndex, shape: shape };
-    redrawNotebookPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbTool === 'select')
   {
     const page = nbData.pages[pageIndex],
-          hit = notebookHitTest(page, pt),
+          hit = fNotebookHitTest(page, pt),
           alreadySelected = hit && nbSelection.some(function(s){ return s.kind === hit.kind && s.index === hit.index; });
 
     if (hit && !alreadySelected)
@@ -998,21 +998,21 @@ function notebookPointerDown(e, canvas, pageIndex)
       nbActive = { kind: 'marquee', pageIndex: pageIndex, x1: pt.x, y1: pt.y, x2: pt.x, y2: pt.y };
     }
 
-    redrawNotebookPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbTool === 'text')
   {
-    notebookCreateTextBoxAt(pageIndex, pt.x, pt.y);
+    fNotebookCreateTextBoxAt(pageIndex, pt.x, pt.y);
     nbActive = null;
   }
 }
 
-function notebookPointerMove(e, canvas, pageIndex)
+function fNotebookPointerMove(e, canvas, pageIndex)
 {
   if (!nbActive || nbActive.pageIndex !== pageIndex)
     return;
 
-  const pt = notebookCanvasPoint(e, canvas);
+  const pt = fNotebookCanvasPoint(e, canvas);
 
   if (nbActive.kind === 'stroke')
   {
@@ -1023,38 +1023,38 @@ function notebookPointerMove(e, canvas, pageIndex)
     // point is even stored, which is what was making strokes look shaky/faceted
     // rather than like handwriting. 0.4 trades a little responsiveness for a
     // visibly steadier line; raw pressure is kept as-is for width.
-    const SMOOTHING = 0.4;
+    const cSmoothing = 0.4;
 
-    nbActive.smoothX += (pt.x - nbActive.smoothX) * SMOOTHING;
-    nbActive.smoothY += (pt.y - nbActive.smoothY) * SMOOTHING;
+    nbActive.smoothX += (pt.x - nbActive.smoothX) * cSmoothing;
+    nbActive.smoothY += (pt.y - nbActive.smoothY) * cSmoothing;
 
-    nbActive.stroke.points.push({ x: nbActive.smoothX, y: nbActive.smoothY, w: notebookEffectiveWidth(pt) });
-    redrawNotebookPage(pageIndex);
+    nbActive.stroke.points.push({ x: nbActive.smoothX, y: nbActive.smoothY, w: fNotebookEffectiveWidth(pt) });
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbActive.kind === 'erase')
   {
-    notebookEraseAt(pt, nbActive);
-    redrawNotebookPage(pageIndex);
+    fNotebookEraseAt(pt, nbActive);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbActive.kind === 'shape')
   {
     nbActive.shape.x2 = pt.x;
     nbActive.shape.y2 = pt.y;
-    redrawNotebookPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbActive.kind === 'marquee')
   {
     nbActive.x2 = pt.x;
     nbActive.y2 = pt.y;
-    nbSelection = notebookItemsInRect(nbData.pages[pageIndex], nbActive);
-    redrawNotebookPage(pageIndex);
+    nbSelection = fNotebookItemsInRect(nbData.pages[pageIndex], nbActive);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbActive.kind === 'import-move')
   {
     nbImport.x += pt.x - nbActive.start.x;
     nbImport.y += pt.y - nbActive.start.y;
     nbActive.start = pt;
-    redrawNotebookPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbActive.kind === 'import-scale')
   {
@@ -1062,13 +1062,13 @@ function notebookPointerMove(e, canvas, pageIndex)
     const s = Math.max((pt.x - nbImport.x) / nbImport.w, (pt.y - nbImport.y) / nbImport.h);
 
     nbImport.scale = Math.max(0.05, Math.min(20, s));
-    redrawNotebookPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
   else if (nbActive.kind === 'move')
   {
     if (!nbActive.snapshotted)
     {
-      notebookSnapshotForUndo(pageIndex);
+      fNotebookSnapshotForUndo(pageIndex);
       nbActive.snapshotted = true;
     }
 
@@ -1076,35 +1076,35 @@ function notebookPointerMove(e, canvas, pageIndex)
           dy = pt.y - nbActive.start.y;
 
     nbActive.start = pt;
-    notebookMoveSelection(nbData.pages[pageIndex], dx, dy);
-    renderNotebookTextLayerForPage(pageIndex);
-    redrawNotebookPage(pageIndex);
+    fNotebookMoveSelection(nbData.pages[pageIndex], dx, dy);
+    fRenderNotebookTextLayerForPage(pageIndex);
+    fRedrawNotebookPage(pageIndex);
   }
 }
 
-function notebookPointerUp(e, canvas, pageIndex)
+function fNotebookPointerUp(e, canvas, pageIndex)
 {
   if (!nbActive)
     return;
 
   const kind = nbActive.kind;
 
-  // The smoothing filter in notebookPointerMove always trails slightly behind
+  // The smoothing filter in fNotebookPointerMove always trails slightly behind
   // the real pointer position: snap to the exact lift-off point so the stroke
   // visibly reaches all the way to where the pen actually left the surface.
   if (kind === 'stroke')
   {
-    const pt = notebookCanvasPoint(e, canvas);
-    nbActive.stroke.points.push({ x: pt.x, y: pt.y, w: notebookEffectiveWidth(pt) });
+    const pt = fNotebookCanvasPoint(e, canvas);
+    nbActive.stroke.points.push({ x: pt.x, y: pt.y, w: fNotebookEffectiveWidth(pt) });
   }
 
   nbActive = null;
 
   if (kind === 'stroke' || kind === 'erase' || kind === 'shape' || kind === 'move')
   {
-    rebuildNotebookCommittedCache(pageIndex);
-    commitNotebookChange();
+    fRebuildNotebookCommittedCache(pageIndex);
+    fCommitNotebookChange();
   }
 
-  redrawNotebookPage(pageIndex);
+  fRedrawNotebookPage(pageIndex);
 }

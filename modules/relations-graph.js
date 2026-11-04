@@ -19,7 +19,7 @@ var relState = null; // { nodes, edges, raf, ... } while the modal is open
 // size = node radius percentage. Persisted so the graph opens how you left it.
 var relPrefs = { spacing: 110, size: 100 };
 
-function loadRelPrefs()
+function fLoadRelPrefs()
 {
   try
   {
@@ -34,12 +34,12 @@ function loadRelPrefs()
   catch(e) {}
 }
 
-function saveRelPrefs()
+function fSaveRelPrefs()
 {
   try { localStorage.setItem('lk_rel_prefs', JSON.stringify(relPrefs)); } catch(e) {}
 }
 
-function relApplyPrefs()
+function fRelApplyPrefs()
 {
   if (!relState)
     return;
@@ -48,21 +48,21 @@ function relApplyPrefs()
   relState.alpha = Math.max(relState.alpha, 0.6); // reheat so the layout re-settles
 }
 
-function onRelSpacingChange(v)
+function fOnRelSpacingChange(v)
 {
   relPrefs.spacing = parseInt(v, 10) || 110;
-  saveRelPrefs();
-  relApplyPrefs();
+  fSaveRelPrefs();
+  fRelApplyPrefs();
 }
 
-function onRelSizeChange(v)
+function fOnRelSizeChange(v)
 {
   relPrefs.size = parseInt(v, 10) || 100;
-  saveRelPrefs();
-  relApplyPrefs();
+  fSaveRelPrefs();
+  fRelApplyPrefs();
 }
 
-var REL_TYPE_COLORS =
+var cRelTypeColors =
 {
   doc:      '#3498db',
   sheet:    '#2ecc71',
@@ -75,14 +75,14 @@ var REL_TYPE_COLORS =
   bestiary: '#e74c3c'
 };
 
-var REL_TYPE_LABELS =
+var cRelTypeLabels =
 {
   doc: 'Document', sheet: 'Spreadsheet', graph: 'Diagram', slides: 'Slides', notebook: 'Notebook',
   glossary: 'Glossary', calendar: 'Calendar', economy: 'Economy', bestiary: 'Bestiary'
 };
 
 // Explicit doc links: any lorekeep://file/<url-encoded id> occurrence.
-function relExplicitTargets(content)
+function fRelExplicitTargets(content)
 {
   var out = [], re = /lorekeep:\/\/file\/([^)\s"'<>]+)/g, m;
 
@@ -95,27 +95,27 @@ function relExplicitTargets(content)
   return out;
 }
 
-async function relEnsureContentsLoaded()
+async function fRelEnsureContentsLoaded()
 {
   if (!workFolderRoot)
     return;
 
   var pending = Object.keys(files).filter(function(id)
   {
-    return id !== SHARED_TMP_ID && !files[id].contentLoaded;
+    return id !== cSharedTmpId && !files[id].contentLoaded;
   });
 
   await Promise.all(pending.map(function(id)
   {
-    return Platform.readWorkFile(workFolderRoot, id)
+    return Platform.fReadWorkFile(workFolderRoot, id)
             .then(function(c) { files[id].content = c; files[id].contentLoaded = true; })
             .catch(function() {});
   }));
 }
 
-function relBuildGraph()
+function fRelBuildGraph()
 {
-  var ids = Object.keys(files).filter(function(id) { return id !== SHARED_TMP_ID; });
+  var ids = Object.keys(files).filter(function(id) { return id !== cSharedTmpId; });
 
   var nodes = ids.map(function(id, i)
   {
@@ -139,7 +139,7 @@ function relBuildGraph()
   // Explicit links win over mere mentions when both exist for a pair.
   var edgeMap = {};
 
-  function addEdge(src, tgt, kind)
+  function fAddEdge(src, tgt, kind)
   {
     if (src === tgt || !nodeById[src] || !nodeById[tgt])
       return;
@@ -154,8 +154,8 @@ function relBuildGraph()
 
   ids.forEach(function(id)
   {
-    relExplicitTargets(files[id].content).forEach(function(tgt) { addEdge(id, tgt, 'link'); });
-    computeMentionsListFor(id).forEach(function(tgt) { addEdge(id, tgt, 'mention'); });
+    fRelExplicitTargets(files[id].content).forEach(function(tgt) { fAddEdge(id, tgt, 'link'); });
+    fComputeMentionsListFor(id).forEach(function(tgt) { fAddEdge(id, tgt, 'mention'); });
   });
 
   var edges = Object.keys(edgeMap).map(function(k) { return edgeMap[k]; });
@@ -170,17 +170,17 @@ function relBuildGraph()
   return { nodes: nodes, edges: edges };
 }
 
-async function openRelationsGraph()
+async function fOpenRelationsGraph()
 {
   document.getElementById('relations-modal').style.display = 'flex';
 
-  loadRelPrefs();
+  fLoadRelPrefs();
   document.getElementById('rel-spacing').value = relPrefs.spacing;
   document.getElementById('rel-size').value    = relPrefs.size;
 
-  await relEnsureContentsLoaded();
+  await fRelEnsureContentsLoaded();
 
-  var graph  = relBuildGraph(),
+  var graph  = fRelBuildGraph(),
       wrap   = document.querySelector('.relations-canvas-wrap'),
       canvas = document.getElementById('relations-canvas');
 
@@ -193,7 +193,7 @@ async function openRelationsGraph()
   document.getElementById('relations-legend').innerHTML =
     Object.keys(typesPresent).map(function(t)
     {
-      return '<span class="rel-legend-item"><span class="rel-legend-dot" style="background:' + (REL_TYPE_COLORS[t] || '#9ca3af') + '"></span>' + escHtml(REL_TYPE_LABELS[t] || t) + '</span>';
+      return '<span class="rel-legend-item"><span class="rel-legend-dot" style="background:' + (cRelTypeColors[t] || '#9ca3af') + '"></span>' + fEscHtml(cRelTypeLabels[t] || t) + '</span>';
     }).join('') +
     '<span class="rel-legend-item"><span class="rel-legend-line"></span>Linked</span>' +
     '<span class="rel-legend-item"><span class="rel-legend-line rel-legend-line-dim"></span>Mentions</span>';
@@ -217,16 +217,16 @@ async function openRelationsGraph()
     textColor:  (css.getPropertyValue('--text')  || '#ddd').trim(),
     edgeColor:  (css.getPropertyValue('--text3') || '#888').trim(),
     haloColor:  (css.getPropertyValue('--bg')    || '#16181d').trim(),
-    resize: function() { relResizeCanvas(); }
+    resize: function() { fRelResizeCanvas(); }
   };
 
   window.addEventListener('resize', relState.resize);
-  relAttachPointerHandlers();
-  relResizeCanvas();
-  relState.raf = requestAnimationFrame(relTick);
+  fRelAttachPointerHandlers();
+  fRelResizeCanvas();
+  relState.raf = requestAnimationFrame(fRelTick);
 }
 
-function closeRelationsGraph()
+function fCloseRelationsGraph()
 {
   document.getElementById('relations-modal').style.display = 'none';
 
@@ -238,7 +238,7 @@ function closeRelationsGraph()
   relState = null;
 }
 
-function relResizeCanvas()
+function fRelResizeCanvas()
 {
   if (!relState)
     return;
@@ -259,7 +259,7 @@ function relResizeCanvas()
 // One simulation step: pairwise repulsion, spring along edges, weak pull to
 // the center. Standard velocity-Verlet-ish integration with damping; alpha
 // cools the whole system down so the layout settles instead of jittering.
-function relStep()
+function fRelStep()
 {
   var s = relState,
       nodes = s.nodes,
@@ -313,7 +313,7 @@ function relStep()
   s.alpha = Math.max(alpha * 0.985, 0.02);
 }
 
-function relDraw()
+function fRelDraw()
 {
   var s = relState,
       ctx = s.ctx;
@@ -333,7 +333,7 @@ function relDraw()
     var touched = hover && (e.a === hover || e.b === hover);
 
     ctx.globalAlpha = e.kind === 'link' ? (touched ? 0.95 : 0.55) : (touched ? 0.7 : 0.22);
-    ctx.strokeStyle = touched ? (REL_TYPE_COLORS[hover.type] || s.edgeColor) : s.edgeColor;
+    ctx.strokeStyle = touched ? (cRelTypeColors[hover.type] || s.edgeColor) : s.edgeColor;
     ctx.lineWidth = (e.kind === 'link' ? 1.8 : 1) / s.scale + (e.kind === 'link' ? 0.6 : 0.2);
     ctx.beginPath();
     ctx.moveTo(e.a.x, e.a.y);
@@ -352,7 +352,7 @@ function relDraw()
     ctx.globalAlpha = dimmed ? 0.25 : 1;
     ctx.beginPath();
     ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-    ctx.fillStyle = REL_TYPE_COLORS[n.type] || '#9ca3af';
+    ctx.fillStyle = cRelTypeColors[n.type] || '#9ca3af';
     ctx.fill();
 
     if (n === hover)
@@ -382,20 +382,20 @@ function relDraw()
   ctx.globalAlpha = 1;
 }
 
-function relTick()
+function fRelTick()
 {
   if (!relState)
     return;
 
   if (relState.alpha > 0.021 || relState.dragNode)
-    relStep();
+    fRelStep();
 
-  relDraw();
-  relState.raf = requestAnimationFrame(relTick);
+  fRelDraw();
+  relState.raf = requestAnimationFrame(fRelTick);
 }
 
 // Screen px → graph coordinates
-function relToGraph(px, py)
+function fRelToGraph(px, py)
 {
   var s = relState,
       rect = s.canvas.getBoundingClientRect();
@@ -406,9 +406,9 @@ function relToGraph(px, py)
   };
 }
 
-function relNodeAt(px, py)
+function fRelNodeAt(px, py)
 {
-  var p = relToGraph(px, py),
+  var p = fRelToGraph(px, py),
       nodes = relState.nodes;
 
   for (var i = nodes.length - 1; i >= 0; i--)
@@ -424,7 +424,7 @@ function relNodeAt(px, py)
   return null;
 }
 
-function relAttachPointerHandlers()
+function fRelAttachPointerHandlers()
 {
   var canvas = relState.canvas;
 
@@ -432,7 +432,7 @@ function relAttachPointerHandlers()
   {
     if (!relState) return;
     canvas.setPointerCapture(e.pointerId);
-    var n = relNodeAt(e.clientX, e.clientY);
+    var n = fRelNodeAt(e.clientX, e.clientY);
     relState.pointerDown = { x: e.clientX, y: e.clientY, moved: false, node: n };
 
     if (n) { relState.dragNode = n; relState.alpha = Math.max(relState.alpha, 0.3); }
@@ -452,7 +452,7 @@ function relAttachPointerHandlers()
 
       if (relState.dragNode)
       {
-        var p = relToGraph(e.clientX, e.clientY);
+        var p = fRelToGraph(e.clientX, e.clientY);
         relState.dragNode.x = p.x;
         relState.dragNode.y = p.y;
         relState.alpha = Math.max(relState.alpha, 0.25);
@@ -465,7 +465,7 @@ function relAttachPointerHandlers()
     }
     else
     {
-      relState.hovered = relNodeAt(e.clientX, e.clientY);
+      relState.hovered = fRelNodeAt(e.clientX, e.clientY);
       canvas.style.cursor = relState.hovered ? 'pointer' : 'grab';
     }
   };
@@ -480,8 +480,8 @@ function relAttachPointerHandlers()
     if (pd && pd.node && !pd.moved)
     {
       var id = pd.node.id;
-      closeRelationsGraph();
-      openFile(id);
+      fCloseRelationsGraph();
+      fOpenFile(id);
       return;
     }
 

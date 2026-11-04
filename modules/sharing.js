@@ -11,7 +11,7 @@
 // reserved id SHARED_TMP_ID, so it never mixes with the user's own workspace
 // files. Saves are routed through the share (edit permission) or dropped.
 
-var SHARED_TMP_ID = '@shared';
+var cSharedTmpId = '@shared';
 var sharedCtx = null;              // { shareId, subPath, permission, ownerEmail } while a shared file is open
 var sharedEntries = [];            // GET /api/shared result
 var sharedChildren = {};           // shareId -> FsEntry[] (folder shares, lazily fetched)
@@ -19,7 +19,7 @@ var sharedExpanded = {};           // shareId -> bool
 var sharedRegistry = {};           // rowKey -> openable file descriptor
 var sharedCollapsed = false;
 
-function typeForFileName(name)
+function fTypeForFileName(name)
 {
   var n = (name || '').toLowerCase();
   return n.endsWith('.mds') ? 'sheet'
@@ -33,46 +33,46 @@ function typeForFileName(name)
        : 'doc';
 }
 
-var SHARE_PERM_COLORS = { view: '#9ca3af', comment: '#f1c40f', edit: '#2ecc71' };
-function sharePermBadge(perm)
+var cSharePermColors = { view: '#9ca3af', comment: '#f1c40f', edit: '#2ecc71' };
+function fSharePermBadge(perm)
 {
-  var c = SHARE_PERM_COLORS[perm] || '#9ca3af';
-  return '<span class="share-perm-badge" style="background:' + c + '22;color:' + c + ';border-color:' + c + '55">' + escHtml(perm) + '</span>';
+  var c = cSharePermColors[perm] || '#9ca3af';
+  return '<span class="share-perm-badge" style="background:' + c + '22;color:' + c + ';border-color:' + c + '55">' + fEscHtml(perm) + '</span>';
 }
 
-async function refreshSharedSection()
+async function fRefreshSharedSection()
 {
   if (Platform.isNative) return;
   var fetched;
-  try { fetched = await Platform.listSharedWithMe(); }
+  try { fetched = await Platform.fListSharedWithMe(); }
   catch(e) { fetched = []; }
   // Link entries (from a #link= URL) aren't in the account's share list; keep
   // them across refreshes. Captured after the await so an entry added while
   // the request was in flight isn't lost.
   var linkEntries = sharedEntries.filter(function(s){ return s.link; });
   sharedEntries = fetched.concat(linkEntries);
-  renderSharedSection();
+  fRenderSharedSection();
 }
 
-function sharedEntryId(s) { return s.shareId || ('link:' + s.link); }
+function fSharedEntryId(s) { return s.shareId || ('link:' + s.link); }
 
-function toggleSharedSection()
+function fToggleSharedSection()
 {
   sharedCollapsed = !sharedCollapsed;
-  renderSharedSection();
+  fRenderSharedSection();
 }
 
-function sharedFileRowHtml(key, name, ownerLabel, permission, depth)
+function fSharedFileRowHtml(key, name, ownerLabel, permission, depth)
 {
-  var type = typeForFileName(name);
-  return '<div class="file-item shared-row" style="padding-left:' + (10 + depth * 14) + 'px" onclick="openSharedRegistry(\'' + escAttr(key) + '\')">' +
-    '<span class="file-icon">' + fileTypeIcon(type) + '</span>' +
-    '<span class="file-name" title="' + escAttr(ownerLabel) + '">' + escHtml(name.replace(/\.[^.]+$/, '')) + '</span>' +
-    sharePermBadge(permission) +
+  var type = fTypeForFileName(name);
+  return '<div class="file-item shared-row" style="padding-left:' + (10 + depth * 14) + 'px" onclick="fOpenSharedRegistry(\'' + fEscAttr(key) + '\')">' +
+    '<span class="file-icon">' + fFileTypeIcon(type) + '</span>' +
+    '<span class="file-name" title="' + fEscAttr(ownerLabel) + '">' + fEscHtml(name.replace(/\.[^.]+$/, '')) + '</span>' +
+    fSharePermBadge(permission) +
   '</div>';
 }
 
-function renderSharedSection()
+function fRenderSharedSection()
 {
   var header = document.getElementById('shared-section-header'),
       list   = document.getElementById('shared-list');
@@ -95,15 +95,15 @@ function renderSharedSection()
 
   sharedEntries.forEach(function(s)
   {
-    var id = sharedEntryId(s);
+    var id = fSharedEntryId(s);
     var ownerLabel = s.link ? 'Shared via link by ' + s.ownerEmail : 'Shared by ' + s.ownerEmail;
 
     if (!s.exists)
     {
       html += '<div class="file-item shared-row shared-gone" title="The owner removed or moved this">' +
-        '<span class="file-name">' + escHtml(s.name) + '</span>' +
+        '<span class="file-name">' + fEscHtml(s.name) + '</span>' +
         '<span class="shared-owner">gone</span>' +
-        (s.shareId ? '<button class="gls-card-del" style="position:static" onclick="leaveShare(event,\'' + escAttr(s.shareId) + '\')" title="Remove">×</button>' : '') +
+        (s.shareId ? '<button class="gls-card-del" style="position:static" onclick="fLeaveShare(event,\'' + fEscAttr(s.shareId) + '\')" title="Remove">×</button>' : '') +
       '</div>';
       return;
     }
@@ -111,79 +111,79 @@ function renderSharedSection()
     if (s.isDir)
     {
       var open = !!sharedExpanded[id];
-      html += '<div class="file-item shared-row" onclick="toggleSharedFolder(\'' + escAttr(id) + '\')">' +
-        '<span class="file-icon">' + FOLDER_ICON + '</span>' +
-        '<span class="file-name" title="' + escAttr(ownerLabel) + '">' + (open ? '▾ ' : '▸ ') + escHtml(s.name) + '</span>' +
-        sharePermBadge(s.permission) +
+      html += '<div class="file-item shared-row" onclick="fToggleSharedFolder(\'' + fEscAttr(id) + '\')">' +
+        '<span class="file-icon">' + cFolderIcon + '</span>' +
+        '<span class="file-name" title="' + fEscAttr(ownerLabel) + '">' + (open ? '▾ ' : '▸ ') + fEscHtml(s.name) + '</span>' +
+        fSharePermBadge(s.permission) +
       '</div>';
 
       if (open && sharedChildren[id])
-        html += sharedFolderChildrenHtml(s, sharedChildren[id], 1);
+        html += fSharedFolderChildrenHtml(s, sharedChildren[id], 1);
     }
     else
     {
       sharedRegistry[id] = { shareId: s.shareId, link: s.link, subPath: '', name: s.name, permission: s.permission, ownerEmail: s.ownerEmail };
-      html += sharedFileRowHtml(id, s.name, ownerLabel, s.permission, 0);
+      html += fSharedFileRowHtml(id, s.name, ownerLabel, s.permission, 0);
     }
   });
 
   list.innerHTML = html;
 }
 
-function sharedFolderChildrenHtml(share, entries, depth)
+function fSharedFolderChildrenHtml(share, entries, depth)
 {
   var html = '';
-  var parentId = sharedEntryId(share);
+  var parentId = fSharedEntryId(share);
   var ownerLabel = share.link ? 'Shared via link by ' + share.ownerEmail : 'Shared by ' + share.ownerEmail;
   entries.forEach(function(e)
   {
     if (e.isDir)
     {
       html += '<div class="file-item shared-row" style="padding-left:' + (10 + depth * 14) + 'px">' +
-        '<span class="file-icon">' + FOLDER_ICON + '</span>' +
-        '<span class="file-name">' + escHtml(e.name) + '</span>' +
-      '</div>' + sharedFolderChildrenHtml(share, e.children || [], depth + 1);
+        '<span class="file-icon">' + cFolderIcon + '</span>' +
+        '<span class="file-name">' + fEscHtml(e.name) + '</span>' +
+      '</div>' + fSharedFolderChildrenHtml(share, e.children || [], depth + 1);
     }
     else
     {
       var key = parentId + '|' + e.relPath;
       sharedRegistry[key] = { shareId: share.shareId, link: share.link, subPath: e.relPath, name: e.name, permission: share.permission, ownerEmail: share.ownerEmail };
-      html += sharedFileRowHtml(key, e.name, ownerLabel, share.permission, depth);
+      html += fSharedFileRowHtml(key, e.name, ownerLabel, share.permission, depth);
     }
   });
   return html;
 }
 
-async function toggleSharedFolder(id)
+async function fToggleSharedFolder(id)
 {
   sharedExpanded[id] = !sharedExpanded[id];
   if (sharedExpanded[id] && !sharedChildren[id])
   {
-    var s = sharedEntries.find(function(x){ return sharedEntryId(x) === id; });
+    var s = sharedEntries.find(function(x){ return fSharedEntryId(x) === id; });
     try
     {
       sharedChildren[id] = s && s.link
-        ? await Platform.listLinkFolder(s.link, '')
-        : await Platform.listSharedFolder(s.shareId, '');
+        ? await Platform.fListLinkFolder(s.link, '')
+        : await Platform.fListSharedFolder(s.shareId, '');
     }
     catch(e) { sharedChildren[id] = []; }
   }
-  renderSharedSection();
+  fRenderSharedSection();
 }
 
-async function leaveShare(e, shareId)
+async function fLeaveShare(e, shareId)
 {
   e.stopPropagation();
-  try { await Platform.revokeShare(shareId); } catch(err) {}
-  refreshSharedSection();
+  try { await Platform.fRevokeShare(shareId); } catch(err) {}
+  fRefreshSharedSection();
 }
 
 /// Entered via a share-link URL (…/#link=<token>): resolves the token, adds
 /// the entry to the "Shared with me" section, and opens it if it's a file.
-async function initLinkAccess(token)
+async function fInitLinkAccess(token)
 {
   var meta;
-  try { meta = await Platform.linkMeta(token); }
+  try { meta = await Platform.fLinkMeta(token); }
   catch(e) { console.warn('Share link error', e); return; }
 
   sharedEntries = sharedEntries.filter(function(s){ return s.link !== token; });
@@ -195,17 +195,17 @@ async function initLinkAccess(token)
     permission: meta.permission,
     exists: meta.exists
   });
-  renderSharedSection();
+  fRenderSharedSection();
 
   if (!meta.exists) return;
 
   if (meta.isDir)
-    await toggleSharedFolder('link:' + token);
+    await fToggleSharedFolder('link:' + token);
   else
-    await openSharedRegistry('link:' + token);
+    await fOpenSharedRegistry('link:' + token);
 }
 
-async function openSharedRegistry(key)
+async function fOpenSharedRegistry(key)
 {
   var entry = sharedRegistry[key];
   if (!entry) return;
@@ -214,8 +214,8 @@ async function openSharedRegistry(key)
   try
   {
     content = entry.link
-      ? await Platform.readLinkFile(entry.link, entry.subPath)
-      : await Platform.readSharedFile(entry.shareId, entry.subPath);
+      ? await Platform.fReadLinkFile(entry.link, entry.subPath)
+      : await Platform.fReadSharedFile(entry.shareId, entry.subPath);
   }
   catch(err)
   {
@@ -223,12 +223,12 @@ async function openSharedRegistry(key)
     return;
   }
 
-  if (currentFileId && currentFileId !== SHARED_TMP_ID)
-    recordFileHistory(currentFileId);
+  if (currentFileId && currentFileId !== cSharedTmpId)
+    fRecordFileHistory(currentFileId);
 
-  var type = typeForFileName(entry.name);
+  var type = fTypeForFileName(entry.name);
 
-  files[SHARED_TMP_ID] = {
+  files[cSharedTmpId] = {
     name: entry.name.replace(/\.[^.]+$/, ''),
     type: type,
     folder: '',
@@ -245,35 +245,35 @@ async function openSharedRegistry(key)
     ownerEmail: entry.ownerEmail
   };
 
-  currentFileId = SHARED_TMP_ID;
-  switchAppType(type, false);
-  renderFileList();
+  currentFileId = cSharedTmpId;
+  fSwitchAppType(type, false);
+  fRenderFileList();
 
-  var file = files[SHARED_TMP_ID];
-  if (type === 'doc')           loadDocFile(file);
-  else if (type === 'graph')    loadGraphFile(file);
-  else if (type === 'slides')   loadSlidesFile(file);
-  else if (type === 'notebook') loadNotebookFile(file);
-  else if (type === 'glossary') loadGlossaryFile(file);
-  else if (type === 'calendar') loadCalendarFile(file);
-  else if (type === 'economy')  loadEconomyFile(file);
-  else if (type === 'bestiary') loadBestiaryFile(file);
-  else                          loadSheetFile(file);
+  var file = files[cSharedTmpId];
+  if (type === 'doc')           fLoadDocFile(file);
+  else if (type === 'graph')    fLoadGraphFile(file);
+  else if (type === 'slides')   fLoadSlidesFile(file);
+  else if (type === 'notebook') fLoadNotebookFile(file);
+  else if (type === 'glossary') fLoadGlossaryFile(file);
+  else if (type === 'calendar') fLoadCalendarFile(file);
+  else if (type === 'economy')  fLoadEconomyFile(file);
+  else if (type === 'bestiary') fLoadBestiaryFile(file);
+  else                          fLoadSheetFile(file);
 
-  applySharedReadOnly();
-  updateCommentsUI();
-  updateLiveSync();
+  fApplySharedReadOnly();
+  fUpdateCommentsUI();
+  fUpdateLiveSync();
 }
 
-function exitSharedMode()
+function fExitSharedMode()
 {
-  if (!sharedCtx && !files[SHARED_TMP_ID]) return;
+  if (!sharedCtx && !files[cSharedTmpId]) return;
   sharedCtx = null;
-  delete files[SHARED_TMP_ID];
-  applySharedReadOnly();
+  delete files[cSharedTmpId];
+  fApplySharedReadOnly();
 }
 
-function applySharedReadOnly()
+function fApplySharedReadOnly()
 {
   var ro = !!(sharedCtx && sharedCtx.permission !== 'edit');
   var ed = document.getElementById('editor');
@@ -302,7 +302,7 @@ function applySharedReadOnly()
 
 var shareModalTarget = null; // { relPath, isDir, label }
 
-function openShareModal()
+function fOpenShareModal()
 {
   var t = contextMenuTarget;
   if (!t || t.kind === 'root') return;
@@ -311,44 +311,44 @@ function openShareModal()
   var label = isDir ? t.id : (files[t.id] ? files[t.id].name : t.id);
   shareModalTarget = { relPath: t.id, isDir: isDir, label: label };
 
-  closeContextMenu();
+  fCloseContextMenu();
 
   document.getElementById('share-modal-title').textContent = 'Share "' + label + '"';
   document.getElementById('share-email').value = '';
   document.getElementById('share-error').style.display = 'none';
   document.getElementById('share-modal').style.display = 'flex';
-  renderShareModalList();
-  renderShareLinksList();
+  fRenderShareModalList();
+  fRenderShareLinksList();
 }
 
 // ── Share links ("anyone with the link") ──
 
-function shareLinkUrl(token)
+function fShareLinkUrl(token)
 {
   return window.location.origin + '/#link=' + token;
 }
 
-async function renderShareLinksList()
+async function fRenderShareLinksList()
 {
   if (!shareModalTarget) return;
   var box = document.getElementById('share-links-list');
   var links = [];
-  try { links = await Platform.listShareLinks(shareModalTarget.relPath); }
+  try { links = await Platform.fListShareLinks(shareModalTarget.relPath); }
   catch(e) {}
 
   box.innerHTML = links.length
     ? links.map(function(l){
         return '<div class="share-modal-row">' +
-          '<span class="share-modal-email share-link-url" title="' + escAttr(shareLinkUrl(l.id)) + '">' + escHtml(shareLinkUrl(l.id)) + '</span>' +
-          sharePermBadge(l.permission) +
-          '<button class="share-copy-btn" onclick="copyShareLink(\'' + escAttr(l.id) + '\', this)">Copy</button>' +
-          '<button class="gls-card-del" style="position:static" onclick="revokeLinkRow(\'' + escAttr(l.id) + '\')" title="Revoke link">×</button>' +
+          '<span class="share-modal-email share-link-url" title="' + fEscAttr(fShareLinkUrl(l.id)) + '">' + fEscHtml(fShareLinkUrl(l.id)) + '</span>' +
+          fSharePermBadge(l.permission) +
+          '<button class="share-copy-btn" onclick="fCopyShareLink(\'' + fEscAttr(l.id) + '\', this)">Copy</button>' +
+          '<button class="gls-card-del" style="position:static" onclick="fRevokeLinkRow(\'' + fEscAttr(l.id) + '\')" title="Revoke link">×</button>' +
         '</div>';
       }).join('')
     : '<div class="share-modal-empty">No links yet — anyone who gets one can open this without an account.</div>';
 }
 
-async function createLinkRow()
+async function fCreateLinkRow()
 {
   if (!shareModalTarget) return;
   var perm = document.getElementById('share-link-perm').value,
@@ -356,8 +356,8 @@ async function createLinkRow()
   errEl.style.display = 'none';
   try
   {
-    await Platform.createShareLink(shareModalTarget.relPath, shareModalTarget.isDir, perm);
-    renderShareLinksList();
+    await Platform.fCreateShareLink(shareModalTarget.relPath, shareModalTarget.isDir, perm);
+    fRenderShareLinksList();
   }
   catch(e)
   {
@@ -366,9 +366,9 @@ async function createLinkRow()
   }
 }
 
-async function copyShareLink(token, btn)
+async function fCopyShareLink(token, btn)
 {
-  var url = shareLinkUrl(token);
+  var url = fShareLinkUrl(token);
   try
   {
     await navigator.clipboard.writeText(url);
@@ -382,44 +382,44 @@ async function copyShareLink(token, btn)
   }
 }
 
-async function revokeLinkRow(linkId)
+async function fRevokeLinkRow(linkId)
 {
-  try { await Platform.revokeShareLink(linkId); } catch(e) {}
-  renderShareLinksList();
+  try { await Platform.fRevokeShareLink(linkId); } catch(e) {}
+  fRenderShareLinksList();
 }
 
-function closeShareModal()
+function fCloseShareModal()
 {
   document.getElementById('share-modal').style.display = 'none';
   shareModalTarget = null;
 }
 
-async function renderShareModalList()
+async function fRenderShareModalList()
 {
   if (!shareModalTarget) return;
   var box = document.getElementById('share-modal-list');
   var shares = [];
-  try { shares = await Platform.listSharesFor(shareModalTarget.relPath); }
+  try { shares = await Platform.fListSharesFor(shareModalTarget.relPath); }
   catch(e) {}
 
   box.innerHTML = shares.length
     ? shares.map(function(s){
         return '<div class="share-modal-row">' +
-          '<span class="share-modal-email">' + escHtml(s.email) + '</span>' +
-          sharePermBadge(s.permission) +
-          '<button class="gls-card-del" style="position:static" onclick="revokeShareRow(\'' + escAttr(s.id) + '\')" title="Revoke">×</button>' +
+          '<span class="share-modal-email">' + fEscHtml(s.email) + '</span>' +
+          fSharePermBadge(s.permission) +
+          '<button class="gls-card-del" style="position:static" onclick="fRevokeShareRow(\'' + fEscAttr(s.id) + '\')" title="Revoke">×</button>' +
         '</div>';
       }).join('')
     : '<div class="share-modal-empty">Not shared with anyone yet.</div>';
 }
 
-async function revokeShareRow(shareId)
+async function fRevokeShareRow(shareId)
 {
-  try { await Platform.revokeShare(shareId); } catch(e) {}
-  renderShareModalList();
+  try { await Platform.fRevokeShare(shareId); } catch(e) {}
+  fRenderShareModalList();
 }
 
-async function submitShare()
+async function fSubmitShare()
 {
   if (!shareModalTarget) return;
   var email = document.getElementById('share-email').value.trim(),
@@ -430,9 +430,9 @@ async function submitShare()
   errEl.style.display = 'none';
   try
   {
-    await Platform.shareEntry(shareModalTarget.relPath, shareModalTarget.isDir, email, perm);
+    await Platform.fShareEntry(shareModalTarget.relPath, shareModalTarget.isDir, email, perm);
     document.getElementById('share-email').value = '';
-    renderShareModalList();
+    fRenderShareModalList();
   }
   catch(e)
   {
@@ -450,7 +450,7 @@ var pendingAnchor = null;          // captured when the composer gains focus
 var lastItemAnchor = null;         // { fileId, kind, id, label } — last opened item modal
 var commentAnchorRegistry = {};    // commentId -> parsed anchor (for click-to-navigate)
 
-function commentTarget()
+function fCommentTarget()
 {
   if (Platform.isNative) return null;
   if (!currentFileId || !files[currentFileId]) return null;
@@ -460,53 +460,53 @@ function commentTarget()
   return { path: currentFileId };
 }
 
-function updateCommentsUI()
+function fUpdateCommentsUI()
 {
   var fab = document.getElementById('comments-fab');
   if (!fab) return;
-  var target = commentTarget();
+  var target = fCommentTarget();
   fab.style.display = (target && !commentsVisible) ? '' : 'none';
   if (!target)
   {
     commentsVisible = false;
     document.getElementById('comments-panel').style.display = 'none';
-    stopCommentsPolling();
+    fStopCommentsPolling();
     return;
   }
-  startCommentsPolling();
+  fStartCommentsPolling();
   lastCommentCount = -1;
-  if (commentsVisible) refreshComments();
-  else refreshCommentsCount();
+  if (commentsVisible) fRefreshComments();
+  else fRefreshCommentsCount();
 }
 
-function startCommentsPolling()
+function fStartCommentsPolling()
 {
   if (commentsPollTimer) return;
   commentsPollTimer = setInterval(function()
   {
-    if (!commentTarget()) { stopCommentsPolling(); return; }
-    if (commentsVisible) refreshComments();
-    else refreshCommentsCount();
+    if (!fCommentTarget()) { fStopCommentsPolling(); return; }
+    if (commentsVisible) fRefreshComments();
+    else fRefreshCommentsCount();
   }, 7000);
 }
 
-function stopCommentsPolling()
+function fStopCommentsPolling()
 {
   if (!commentsPollTimer) return;
   clearInterval(commentsPollTimer);
   commentsPollTimer = null;
 }
 
-function toggleCommentsPanel()
+function fToggleCommentsPanel()
 {
   commentsVisible = !commentsVisible;
   document.getElementById('comments-panel').style.display = commentsVisible ? 'flex' : 'none';
   var fab = document.getElementById('comments-fab');
-  if (fab) fab.style.display = (!commentsVisible && commentTarget()) ? '' : 'none';
-  if (commentsVisible) { lastCommentCount = -1; refreshComments(); }
+  if (fab) fab.style.display = (!commentsVisible && fCommentTarget()) ? '' : 'none';
+  if (commentsVisible) { lastCommentCount = -1; fRefreshComments(); }
 }
 
-function setCommentsBadge(n)
+function fSetCommentsBadge(n)
 {
   var badge = document.getElementById('comments-count');
   if (!badge) return;
@@ -514,22 +514,22 @@ function setCommentsBadge(n)
   badge.style.display = n ? '' : 'none';
 }
 
-async function refreshCommentsCount()
+async function fRefreshCommentsCount()
 {
-  var target = commentTarget();
+  var target = fCommentTarget();
   if (!target) return;
-  try { setCommentsBadge((await Platform.listComments(target)).length); }
+  try { fSetCommentsBadge((await Platform.fListComments(target)).length); }
   catch(e) {}
 }
 
 // ── Comment anchors ──
 
-function noteItemAnchor(kind, id, label)
+function fNoteItemAnchor(kind, id, label)
 {
   lastItemAnchor = { fileId: currentFileId, kind: kind, id: id, label: label };
 }
 
-function captureCommentAnchor()
+function fCaptureCommentAnchor()
 {
   var f = currentFileId && files[currentFileId];
   if (!f) return;
@@ -558,16 +558,16 @@ function captureCommentAnchor()
     a = { t: 'item', k: lastItemAnchor.kind, id: lastItemAnchor.id, x: lastItemAnchor.label };
 
   pendingAnchor = a;
-  renderPendingAnchor();
+  fRenderPendingAnchor();
 }
 
-function clearPendingAnchor()
+function fClearPendingAnchor()
 {
   pendingAnchor = null;
-  renderPendingAnchor();
+  fRenderPendingAnchor();
 }
 
-function anchorLabel(a)
+function fAnchorLabel(a)
 {
   if (!a) return '';
   if (a.t === 'text')  return '“' + (a.x || '').slice(0, 40) + ((a.x || '').length > 40 ? '…' : '') + '”';
@@ -576,17 +576,17 @@ function anchorLabel(a)
   return '';
 }
 
-function renderPendingAnchor()
+function fRenderPendingAnchor()
 {
   var chip = document.getElementById('comment-anchor-chip');
   if (!chip) return;
   if (!pendingAnchor) { chip.style.display = 'none'; chip.innerHTML = ''; return; }
   chip.style.display = '';
-  chip.innerHTML = '<span class="comment-anchor">📍 ' + escHtml(anchorLabel(pendingAnchor)) + '</span>' +
-    '<button class="gls-card-del" style="position:static" onclick="clearPendingAnchor()" title="Comment on the whole file instead">×</button>';
+  chip.innerHTML = '<span class="comment-anchor">📍 ' + fEscHtml(fAnchorLabel(pendingAnchor)) + '</span>' +
+    '<button class="gls-card-del" style="position:static" onclick="fClearPendingAnchor()" title="Comment on the whole file instead">×</button>';
 }
 
-function gotoCommentAnchor(commentId)
+function fGotoCommentAnchor(commentId)
 {
   var a = commentAnchorRegistry[commentId];
   var f = currentFileId && files[currentFileId];
@@ -610,25 +610,25 @@ function gotoCommentAnchor(commentId)
   else if (a.t === 'cells' && f.type === 'sheet')
   {
     var pi = sheetPages.findIndex(function(p){ return p.name === a.p; });
-    if (pi !== -1 && pi !== sheetPageIdx) switchSheetPage(pi);
+    if (pi !== -1 && pi !== sheetPageIdx) fSwitchSheetPage(pi);
     var parts = (a.r || 'A1').split(':');
-    selectCell(parts[0]);
-    if (parts[1]) { selectionEnd = parts[1]; renderRangeSelection(); }
+    fSelectCell(parts[0]);
+    if (parts[1]) { selectionEnd = parts[1]; fRenderRangeSelection(); }
   }
   else if (a.t === 'item')
   {
-    if (a.k === 'glossary-entry')      { switchGlossaryTab('words'); openGlossaryEntryModal(a.id); }
-    else if (a.k === 'glossary-root')  { switchGlossaryTab('roots'); openGlossaryRootModal(a.id); }
-    else if (a.k === 'beast')          openBeastModal(a.id);
-    else if (a.k === 'eco-currency')   openEcoCurrencyModal(a.id);
-    else if (a.k === 'eco-good')       openEcoGoodModal(a.id);
-    else if (a.k === 'eco-region')     openEcoRegionModal(a.id);
+    if (a.k === 'glossary-entry')      { fSwitchGlossaryTab('words'); fOpenGlossaryEntryModal(a.id); }
+    else if (a.k === 'glossary-root')  { fSwitchGlossaryTab('roots'); fOpenGlossaryRootModal(a.id); }
+    else if (a.k === 'beast')          fOpenBeastModal(a.id);
+    else if (a.k === 'eco-currency')   fOpenEcoCurrencyModal(a.id);
+    else if (a.k === 'eco-good')       fOpenEcoGoodModal(a.id);
+    else if (a.k === 'eco-region')     fOpenEcoRegionModal(a.id);
   }
 }
 
-async function refreshComments()
+async function fRefreshComments()
 {
-  var target = commentTarget();
+  var target = fCommentTarget();
   if (!target) return;
 
   var listEl = document.getElementById('comments-list');
@@ -637,14 +637,14 @@ async function refreshComments()
   document.getElementById('comments-no-perm').style.display = canPost ? 'none' : '';
 
   var comments = [];
-  try { comments = await Platform.listComments(target); }
+  try { comments = await Platform.fListComments(target); }
   catch(e)
   {
-    listEl.innerHTML = '<div class="comments-empty">' + escHtml(e.message || 'Could not load comments') + '</div>';
+    listEl.innerHTML = '<div class="comments-empty">' + fEscHtml(e.message || 'Could not load comments') + '</div>';
     return;
   }
 
-  setCommentsBadge(comments.length);
+  fSetCommentsBadge(comments.length);
 
   commentAnchorRegistry = {};
   listEl.innerHTML = comments.length
@@ -657,18 +657,18 @@ async function refreshComments()
           {
             var a = JSON.parse(c.anchor);
             commentAnchorRegistry[c.id] = a;
-            anchorHtml = '<button class="comment-anchor comment-anchor-link" onclick="gotoCommentAnchor(&quot;' + escAttr(c.id) + '&quot;)" title="Jump to this spot">📍 ' + escHtml(anchorLabel(a)) + '</button>';
+            anchorHtml = '<button class="comment-anchor comment-anchor-link" onclick="fGotoCommentAnchor(&quot;' + fEscAttr(c.id) + '&quot;)" title="Jump to this spot">📍 ' + fEscHtml(fAnchorLabel(a)) + '</button>';
           }
           catch(e) {}
         }
         return '<div class="comment-item">' +
           '<div class="comment-meta">' +
-            '<span class="comment-author">' + escHtml(c.authorEmail || 'Anonymous') + '</span>' +
-            '<span class="comment-when">' + escHtml(when) + '</span>' +
-            (c.mine ? '<button class="gls-card-del" style="position:static" onclick="removeComment(&quot;' + escAttr(c.id) + '&quot;)" title="Delete">×</button>' : '') +
+            '<span class="comment-author">' + fEscHtml(c.authorEmail || 'Anonymous') + '</span>' +
+            '<span class="comment-when">' + fEscHtml(when) + '</span>' +
+            (c.mine ? '<button class="gls-card-del" style="position:static" onclick="fRemoveComment(&quot;' + fEscAttr(c.id) + '&quot;)" title="Delete">×</button>' : '') +
           '</div>' +
           anchorHtml +
-          '<div class="comment-body">' + escHtml(c.body) + '</div>' +
+          '<div class="comment-body">' + fEscHtml(c.body) + '</div>' +
         '</div>';
       }).join('')
     : '<div class="comments-empty">No comments yet.</div>';
@@ -680,27 +680,27 @@ async function refreshComments()
   lastCommentCount = comments.length;
 }
 
-async function submitComment()
+async function fSubmitComment()
 {
-  var target = commentTarget();
+  var target = fCommentTarget();
   var input = document.getElementById('comment-input');
   if (!target || !input.value.trim()) return;
   try
   {
-    await Platform.addComment(target, input.value.trim(), pendingAnchor ? JSON.stringify(pendingAnchor) : null);
+    await Platform.fAddComment(target, input.value.trim(), pendingAnchor ? JSON.stringify(pendingAnchor) : null);
     input.value = '';
-    clearPendingAnchor();
+    fClearPendingAnchor();
     lastCommentCount = -1; // force the scroll-to-newest on the next render
-    refreshComments();
+    fRefreshComments();
   }
   catch(e)
   {
-    document.getElementById('comments-list').innerHTML += '<div class="comments-empty">' + escHtml(e.message || 'Posting failed') + '</div>';
+    document.getElementById('comments-list').innerHTML += '<div class="comments-empty">' + fEscHtml(e.message || 'Posting failed') + '</div>';
   }
 }
 
-async function removeComment(id)
+async function fRemoveComment(id)
 {
-  try { await Platform.deleteComment(id); } catch(e) {}
-  refreshComments();
+  try { await Platform.fDeleteComment(id); } catch(e) {}
+  fRefreshComments();
 }

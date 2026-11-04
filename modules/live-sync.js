@@ -11,12 +11,12 @@
 // same file can be edited from several devices — or by several people
 // through a share — at once, with everyone seeing everyone else's changes
 // within a few seconds. Remote and local edits are reconciled with a
-// three-way merge at item granularity (see mergeDataContent), which these
+// three-way merge at item granularity (see fMergeDataContent), which these
 // JSON files support cleanly because every item carries a stable id.
 // Web only: on Tauri the stat call resolves null and the poller never
 // starts — the desktop app keeps its explicit cloud-sync flow.
 
-var LIVE_SYNC_INTERVAL = 3000;
+var cLiveSyncInterval = 3000;
 
 var liveSyncTimer      = null;
 var liveSyncFileId     = null;   // file the poller is tracking
@@ -24,12 +24,12 @@ var liveSyncBase       = null;   // content as of the last agreement with the se
 var liveSyncServerHash = null;   // server hash seen on the previous tick
 var liveSyncBusy       = false;
 
-function liveSyncTarget()
+function fLiveSyncTarget()
 {
   if (Platform.isNative) return null;
   var f = currentFileId && files[currentFileId];
-  if (!f || !DATA_FILE_TYPES[f.type] || !f.contentLoaded) return null;
-  if (currentFileId === SHARED_TMP_ID)
+  if (!f || !cDataFileTypes[f.type] || !f.contentLoaded) return null;
+  if (currentFileId === cSharedTmpId)
   {
     if (!sharedCtx) return null;
     // Any permission level may watch; only edit may write back.
@@ -43,9 +43,9 @@ function liveSyncTarget()
 
 // (Re)aims the poller at whatever is currently open. Called after every
 // file open; the tick also calls it when it notices the file changed.
-function updateLiveSync()
+function fUpdateLiveSync()
 {
-  var target = liveSyncTarget();
+  var target = fLiveSyncTarget();
   liveSyncFileId     = target ? currentFileId : null;
   liveSyncBase       = target ? (files[currentFileId].content || '') : null;
   liveSyncServerHash = null;
@@ -54,7 +54,7 @@ function updateLiveSync()
   if (pill) pill.style.display = target ? '' : 'none';
 
   if (target && !liveSyncTimer)
-    liveSyncTimer = setInterval(liveSyncTick, LIVE_SYNC_INTERVAL);
+    liveSyncTimer = setInterval(fLiveSyncTick, cLiveSyncInterval);
   if (!target && liveSyncTimer)
   {
     clearInterval(liveSyncTimer);
@@ -62,7 +62,7 @@ function updateLiveSync()
   }
 }
 
-function flashLiveSyncPill()
+function fFlashLiveSyncPill()
 {
   var pill = document.getElementById('live-sync-pill');
   if (!pill) return;
@@ -75,12 +75,12 @@ function flashLiveSyncPill()
   }, 1600);
 }
 
-async function liveSyncTick()
+async function fLiveSyncTick()
 {
   if (liveSyncBusy) return;
-  if (currentFileId !== liveSyncFileId) { updateLiveSync(); return; }
-  var target = liveSyncTarget();
-  if (!target) { updateLiveSync(); return; }
+  if (currentFileId !== liveSyncFileId) { fUpdateLiveSync(); return; }
+  var target = fLiveSyncTarget();
+  if (!target) { fUpdateLiveSync(); return; }
 
   liveSyncBusy = true;
   try
@@ -88,9 +88,9 @@ async function liveSyncTick()
     var stat;
     try
     {
-      stat = target.link  ? await Platform.statLinkFile(target.link, target.subPath)
-           : target.share ? await Platform.statSharedFile(target.share, target.subPath)
-           :                await Platform.statWorkFile(workFolderRoot, target.path);
+      stat = target.link  ? await Platform.fStatLinkFile(target.link, target.subPath)
+           : target.share ? await Platform.fStatSharedFile(target.share, target.subPath)
+           :                await Platform.fStatWorkFile(workFolderRoot, target.path);
     }
     catch(e) { return; } // transient network error, or the file moved remotely — try again next tick
 
@@ -100,9 +100,9 @@ async function liveSyncTick()
     var remote;
     try
     {
-      remote = target.link  ? await Platform.readLinkFile(target.link, target.subPath)
-             : target.share ? await Platform.readSharedFile(target.share, target.subPath)
-             :                await Platform.readWorkFile(workFolderRoot, target.path);
+      remote = target.link  ? await Platform.fReadLinkFile(target.link, target.subPath)
+             : target.share ? await Platform.fReadSharedFile(target.share, target.subPath)
+             :                await Platform.fReadWorkFile(workFolderRoot, target.path);
     }
     catch(e) { return; }
 
@@ -113,15 +113,15 @@ async function liveSyncTick()
     var local = f.content || '';
     var merged = (local === liveSyncBase || liveSyncBase === null)
       ? remote
-      : mergeDataContent(f.type, liveSyncBase, local, remote);
+      : fMergeDataContent(f.type, liveSyncBase, local, remote);
 
     if (merged !== local)
     {
       f.content  = merged;
       f.fileTags = undefined; // recomputed lazily from the new content
       f.modified = stat.modified || Date.now();
-      applyRemoteDataContent(currentFileId);
-      flashLiveSyncPill();
+      fApplyRemoteDataContent(currentFileId);
+      fFlashLiveSyncPill();
     }
 
     if (merged !== remote)
@@ -134,9 +134,9 @@ async function liveSyncTick()
       {
         try
         {
-          if (target.link)       await Platform.writeLinkFile(target.link, target.subPath, merged);
-          else if (target.share) await Platform.writeSharedFile(target.share, target.subPath, merged);
-          else                   await Platform.writeWorkFile(workFolderRoot, target.path, merged);
+          if (target.link)       await Platform.fWriteLinkFile(target.link, target.subPath, merged);
+          else if (target.share) await Platform.fWriteSharedFile(target.share, target.subPath, merged);
+          else                   await Platform.fWriteWorkFile(workFolderRoot, target.path, merged);
           liveSyncBase = merged;
           liveSyncServerHash = null; // our write changed the server hash; re-read it next tick
         }
@@ -159,21 +159,21 @@ async function liveSyncTick()
 
 // Which top-level keys of each data file are item arrays (merged per item);
 // everything else is treated as a scalar (local wins only when it changed).
-var DATA_ARRAY_KEYS = {
+var cDataArrayKeys = {
   glossary: ['entries', 'roots'],
   bestiary: ['beasts'],
   calendar: ['seasons', 'months', 'holidays'],
   economy:  ['currencies', 'exchangeRates', 'tradeGoods', 'regions']
 };
 
-function mergeDataContent(type, baseStr, localStr, remoteStr)
+function fMergeDataContent(type, baseStr, localStr, remoteStr)
 {
   var base, local, remote;
   try { base = JSON.parse(baseStr || '{}'); } catch(e) { base = {}; }
   try { local = JSON.parse(localStr || '{}'); } catch(e) { return remoteStr; }
   try { remote = JSON.parse(remoteStr || '{}'); } catch(e) { return localStr; }
 
-  var arrayKeys = DATA_ARRAY_KEYS[type] || [];
+  var arrayKeys = cDataArrayKeys[type] || [];
   var merged = {};
   var seenKeys = {};
   [remote, local, base].forEach(function(o){ Object.keys(o).forEach(function(k){ seenKeys[k] = 1; }); });
@@ -188,7 +188,7 @@ function mergeDataContent(type, baseStr, localStr, remoteStr)
 
   arrayKeys.forEach(function(k)
   {
-    merged[k] = mergeItemArrays(base[k] || [], local[k] || [], remote[k] || []);
+    merged[k] = fMergeItemArrays(base[k] || [], local[k] || [], remote[k] || []);
   });
 
   return JSON.stringify(merged, null, 2);
@@ -196,16 +196,16 @@ function mergeDataContent(type, baseStr, localStr, remoteStr)
 
 // Three-way merge of two divergent copies of an item array, by item id.
 // Remote order wins (they may have re-ordered); local-only survivors append.
-function mergeItemArrays(base, local, remote)
+function fMergeItemArrays(base, local, remote)
 {
-  function mapById(arr)
+  function fMapById(arr)
   {
     var m = {};
     arr.forEach(function(x){ if (x && x.id) m[x.id] = x; });
     return m;
   }
 
-  var bm = mapById(base), lm = mapById(local);
+  var bm = fMapById(base), lm = fMapById(local);
   var out = [], seen = {};
 
   remote.forEach(function(r)
@@ -240,7 +240,7 @@ function mergeItemArrays(base, local, remote)
 // Re-points the open editor at freshly merged content and re-renders,
 // preserving the user's tab, search, facet filters, and whatever input
 // they're typing in (inputs holding focus are never overwritten).
-function applyRemoteDataContent(id)
+function fApplyRemoteDataContent(id)
 {
   var f = files[id];
   if (!f || currentFileId !== id) return;
@@ -249,7 +249,7 @@ function applyRemoteDataContent(id)
   try { data = JSON.parse(f.content || '{}'); } catch(e) { return; }
 
   var focused = document.activeElement;
-  function setInput(elId, val)
+  function fSetInput(elId, val)
   {
     var el = document.getElementById(elId);
     if (el && el !== focused) el.value = val;
@@ -260,15 +260,15 @@ function applyRemoteDataContent(id)
     glsData = data;
     if (!glsData.entries) glsData.entries = [];
     if (!glsData.roots)   glsData.roots   = [];
-    setInput('gls-file-tags', (glsData.tags || []).join(', '));
-    renderGlossary();
+    fSetInput('gls-file-tags', (glsData.tags || []).join(', '));
+    fRenderGlossary();
   }
   else if (f.type === 'bestiary')
   {
     bstData = data;
     if (!bstData.beasts) bstData.beasts = [];
-    setInput('bst-file-tags', (bstData.tags || []).join(', '));
-    renderBestiary();
+    fSetInput('bst-file-tags', (bstData.tags || []).join(', '));
+    fRenderBestiary();
   }
   else if (f.type === 'calendar')
   {
@@ -277,10 +277,10 @@ function applyRemoteDataContent(id)
     if (!calData.seasons)  calData.seasons  = [];
     if (!calData.holidays) calData.holidays = [];
     if (!calData.daysPerYear) calData.daysPerYear = 365;
-    setInput('cal-file-tags', (calData.tags || []).join(', '));
-    setInput('cal-days-per-year', calData.daysPerYear);
-    if (calData.epochRealDate) setInput('cal-epoch-real', calData.epochRealDate);
-    renderCalendar();
+    fSetInput('cal-file-tags', (calData.tags || []).join(', '));
+    fSetInput('cal-days-per-year', calData.daysPerYear);
+    if (calData.epochRealDate) fSetInput('cal-epoch-real', calData.epochRealDate);
+    fRenderCalendar();
   }
   else if (f.type === 'economy')
   {
@@ -289,10 +289,10 @@ function applyRemoteDataContent(id)
     if (!ecoData.exchangeRates) ecoData.exchangeRates = [];
     if (!ecoData.tradeGoods)    ecoData.tradeGoods    = [];
     if (!ecoData.regions)       ecoData.regions       = [];
-    setInput('eco-file-tags', (ecoData.tags || []).join(', '));
-    renderEconomy();
+    fSetInput('eco-file-tags', (ecoData.tags || []).join(', '));
+    fRenderEconomy();
   }
 
-  renderFileList();
+  fRenderFileList();
 }
 

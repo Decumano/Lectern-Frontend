@@ -5,7 +5,7 @@
 // scope, exactly as when this was a single file.
 
 // ── FUNCTION REFERENCE ──
-var SHEET_FUNCTION_GROUPS =
+var cSheetFunctionGroups =
 [
   {
     category: 'Aggregate',
@@ -127,7 +127,7 @@ var SHEET_FUNCTION_GROUPS =
 // Flattened, autocomplete-friendly view of SHEET_FUNCTION_GROUPS - one entry
 // per function with its bare name (the part before "(") split out, used by
 // the in-cell function suggestion dropdown.
-var ALL_SHEET_FUNCTIONS = SHEET_FUNCTION_GROUPS.reduce
+var cAllSheetFunctions = cSheetFunctionGroups.reduce
 (
   function(acc, group)
   {
@@ -142,7 +142,7 @@ var ALL_SHEET_FUNCTIONS = SHEET_FUNCTION_GROUPS.reduce
   }
 );
 
-function renderFunctionHelp()
+function fRenderFunctionHelp()
 {
   var panel = document.getElementById('function-help-panel');
 
@@ -165,7 +165,7 @@ function renderFunctionHelp()
                 '<code>$A1</code>) to lock it in place when filling.'+
               '</div>';
 
-  var groups = SHEET_FUNCTION_GROUPS.map
+  var groups = cSheetFunctionGroups.map
   (
     function(group)
     {
@@ -174,20 +174,20 @@ function renderFunctionHelp()
         function(fn)
         {
           return  '<div class="fx-help-row">'+
-                    '<div class="fx-help-name">' + escHtml(fn.name) + '</div>'+
-                    '<div class="fx-help-desc">' + escHtml(fn.desc) + ' <span class="fx-help-example">' + escHtml(fn.example) + '</span></div>'+
+                    '<div class="fx-help-name">' + fEscHtml(fn.name) + '</div>'+
+                    '<div class="fx-help-desc">' + fEscHtml(fn.desc) + ' <span class="fx-help-example">' + fEscHtml(fn.example) + '</span></div>'+
                   '</div>';
         }
       ).join('');
 
-      return '<div class="fx-help-category">' + escHtml(group.category) + '</div>' + rows;
+      return '<div class="fx-help-category">' + fEscHtml(group.category) + '</div>' + rows;
     }
   ).join('');
 
   panel.innerHTML = intro + groups;
 }
 
-function toggleFunctionHelp(clickEvent)
+function fToggleFunctionHelp(clickEvent)
 {
   if (clickEvent)
     clickEvent.stopPropagation();
@@ -198,7 +198,7 @@ function toggleFunctionHelp(clickEvent)
     return;
 
   if (!panel.classList.contains('open'))
-    renderFunctionHelp();
+    fRenderFunctionHelp();
 
   panel.classList.toggle('open');
 }
