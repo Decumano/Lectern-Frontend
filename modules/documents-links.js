@@ -504,20 +504,32 @@ function fWrapFontBlock(fontName)
   fOnEditorChange();
 }
 
-function fInsertTOC()
+// Inserts a one-line macro (e.g. "[TOC]") on its own line at the caret.
+function fInsertLineMacro(marker)
 {
   docTextUndo.fForceSnapshot();
 
   var editor = document.getElementById('editor'),
       selectionStart = editor.selectionStart,
-      lineStart = editor.value.lastIndexOf('\n', selectionStart - 1) + 1,
-      marker = '[TOC]\n\n';
+      lineStart = editor.value.lastIndexOf('\n', selectionStart - 1) + 1;
+
+  marker += '\n\n';
 
   editor.value = editor.value.slice(0, lineStart) + marker + editor.value.slice(lineStart);
   editor.selectionStart = editor.selectionEnd = lineStart + marker.length;
 
   editor.focus();
   fOnEditorChange();
+}
+
+function fInsertTOC()
+{
+  fInsertLineMacro('[TOC]');
+}
+
+function fInsertPageBreak()
+{
+  fInsertLineMacro('[PAGEBREAK]');
 }
 
 // ── FONT PICKER ──

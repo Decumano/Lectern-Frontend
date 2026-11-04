@@ -93,8 +93,11 @@ Right-aligned, in Times.
 :::
 ```
 
-Recognized directives: the bare words `left`, `center`, `right`, `justify`, and
-`font=<name>` (quote the value if it contains spaces). Unrecognized directives
+Recognized directives: the bare words `left`, `center`, `right`, `justify`,
+`bold`, `italic`, `underline`, `smallcaps`, and the keyed `font=<name>`,
+`size=<size>`, `color=<css colour>`, `spacing=<line-height>` and
+`tracking=<letter-spacing>` (quote the value if it contains spaces — see
+[Sizes](#sizes-and-text-formatting)). Unrecognized directives
 are ignored, and if a block's opening line yields no recognized directive at all
 the block is not treated as a container — the `:::` lines stay literal text.
 
@@ -123,17 +126,95 @@ The symbol form requires nothing after the symbol on the opening line, which is
 what keeps `:::` (right-align) from colliding with `::: center` (keyword form) —
 the keyword form always has trailing text.
 
-## Inline font
+## Sizes and text formatting
+
+The same directive words work in three places: the keyword block line above,
+an inline span, and a heading.
 
 ```
+::: center size=Huge font="Fette Fraktur" bold
+Lore and Chaos
+:::
+
 A line with [these three words]{font=Georgia} set differently.
-[Quoted title]{font="Times New Roman"}
+[Quoted title]{font="Times New Roman" size=18 color=#a00}
+[Small caps]{smallcaps} and [wide]{tracking=2pt}.
+
+# The War {font=Chomsky size=Huge center}
 ```
+
+| Directive | Meaning |
+|---|---|
+| `font=<name>` | Font family. Generic families (`serif`, `monospace`…) stay unquoted in CSS. The font must be installed (or, on the web app, uploaded under Settings → Custom fonts). |
+| `size=<size>` | A LaTeX name (`tiny`, `scriptsize`, `footnotesize`, `small`, `normalsize`, `large`, `Large`, `LARGE`, `huge`, `Huge` — names are relative to the surrounding size, using the 10pt class ratios), a bare number (points: `size=24`), or a number with a unit (`1.5em`, `18px`, `120%`). |
+| `color=<colour>` | `#rgb`, `#rrggbb`, a colour name, or `rgb(…)` / `hsl(…)`. |
+| `bold` `italic` `underline` `smallcaps` | Flags. |
+| `spacing=<n>` | Line height multiplier. |
+| `tracking=<length>` | Letter spacing. |
+| `left` `center` `right` `justify` (or `align=…`) | Alignment (blocks and headings). |
+
+Inline spans only count as formatting when the braces hold at least one of
+`font`, `size`, `color`, `bold`, `italic`, `underline`, `smallcaps` or
+`tracking`; any other `[text]{…}` is left as literal text.
+
+**Heading attributes.** A trailing `{…}` on a heading styles that heading and is
+removed from its text, its anchor and its table-of-contents entry. Besides the
+formatting directives it accepts `notoc` (leave it out of `[TOC]`), `nolabel`
+(no chapter label, see below), `pagebreak` (start a new page before it) and
+`nopagebreak`.
+
+## Page breaks
+
+```
+[PAGEBREAK]
+```
+
+Alone on its line (`[NEWPAGE]` is the same). In the editor it shows as a dashed
+rule; in an exported PDF the next block starts on a fresh page. There is a
+toolbar button that inserts it.
+
+## Page setup
+
+```
+[PAGE size=A4 margin="2.5cm 2cm" spacing=1.2 paragraph=0.8em font="Garamond"
+      fontsize=12 header="Lore and Chaos" footer="Page {page} of {pages}"
+      numbers=bottom-center newpage=h1 chapter-label="Chapter"
+      h1-font=Chomsky h1-size=Huge h1-center h1-bold]
+```
+
+One line, anywhere in the document (conventionally the first). It never prints.
+Layout options restyle both the live preview and the export; the paper options
+(`size`, `margin`, `header`, `footer`, `numbers`, `first-page`) only exist in an
+exported PDF.
+
+| Option | Effect |
+|---|---|
+| `size=A4` | Paper size: `A3`–`A6`, `B4`/`B5`, `letter`, `legal`, `ledger`. |
+| `landscape` / `orientation=landscape` | Paper orientation. |
+| `margin=2cm` | One to four lengths (`"2cm 3cm"`), CSS order. |
+| `font=<name>` `fontsize=<size>` | Body font and size (`fontsize=12` is 12pt). |
+| `spacing=1.2` | Line spacing. |
+| `paragraph=0.8em` | Space after each paragraph. |
+| `indent=1.5em` | First-line indent for every paragraph after the first in a run. |
+| `header="…"` `footer="…"` | Running header/footer text. Placeholders: `{page}`, `{pages}`, `{title}`. |
+| `header-align=` `footer-align=` | `left`, `center` (default) or `right`. |
+| `header-font=` `header-size=` `footer-font=` `footer-size=` | Styling of the running text (default 10pt). |
+| `numbers=bottom-center` | Page number position: `top-`/`bottom-` + `left`/`center`/`right`; `on`/`bottom` = bottom-center; omitted = none. Shares a slot with header/footer text if they coincide. |
+| `first-page=plain` | No header, footer or number on the first page. |
+| `newpage=h1` | Every `h1`…`h6` of that level starts a new page (LaTeX `\chapter`). |
+| `chapter-label="Chapter"` | Puts "Chapter N" above every level-1 heading (counting from 1; `nolabel` opts one out). |
+| `h1-…` … `h6-…` | Any text directive for that heading level: `h1-font=`, `h1-size=`, `h1-color=`, `h1-center`, `h1-bold`… |
+| `title=off` | Don't print the file name as a title at the top of the export. (Also skipped automatically when the document itself starts with a level-1 heading.) |
+
+Headers, footers and page numbers are CSS page-margin boxes, which Chromium
+(the web app's PDF renderer, and Chrome/Edge printing) draws. WebKit-based
+print dialogs ignore them; the layout, sizes and page breaks still apply.
 
 ## Table of contents
 
 ```
 [TOC]
+[TOC title="Contents:" font=Chomsky size=Large center numbers=on depth=2]
 ```
 
 Alone on its line, case-insensitive. Expands to a nested list of every heading
@@ -141,6 +222,11 @@ in the document, linked to the heading anchors. Headings are given `id`
 attributes derived from their text: lowercased, non-alphanumerics stripped,
 spaces collapsed to `-`. Repeated headings are disambiguated with a numeric
 suffix — the second `## Notes` in a file gets `id="notes-1"`.
+
+Options: `title="…"` adds a heading above the list; `numbers=on` numbers the
+entries `1`, `1.1`, …; `depth=N` limits it to heading levels up to `N`; the
+text directives above (`font`, `size`, `color`, alignment…) style the whole
+block. Headings marked `notoc` are skipped. Entries carry no page numbers.
 
 ## Roman-numeral lists
 

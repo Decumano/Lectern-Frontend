@@ -126,25 +126,332 @@ function fCssFontFamilyValue(name)
   return "'" + name.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 
-function fParseBlockDirectives(line)
+// LaTeX size names -> multiples of the body size (the 10pt class ratios), so a
+// converted \Huge heading keeps its proportions whatever the body size is.
+var cNamedSizes = { tiny: 0.5, scriptsize: 0.7, footnotesize: 0.8, small: 0.9, normalsize: 1, large: 1.2, Large: 1.44, LARGE: 1.73, huge: 2.07, Huge: 2.49 };
+
+// Accepts a LaTeX name (Huge), a bare number (points: 24) or a number with a
+// unit (1.5em, 18px, 120%). Anything else yields '' so it can't inject CSS.
+function fCssSizeValue(value)
 {
-  var style = '',
-      re = /([A-Za-z]+)(?:=("([^"]*)"|'([^']*)'|[^\s]+))?/g,
+  value = (value || '').trim();
+
+  if (Object.prototype.hasOwnProperty.call(cNamedSizes, value))
+    return cNamedSizes[value] + 'em';
+
+  if (Object.prototype.hasOwnProperty.call(cNamedSizes, value.toLowerCase()))
+    return cNamedSizes[value.toLowerCase()] + 'em';
+
+  var m = /^(\d+(?:\.\d+)?)(pt|px|em|rem|%|cm|mm|in)?$/i.exec(value);
+
+  return m ? (m[1] + (m[2] ? m[2].toLowerCase() : 'pt')) : '';
+}
+
+function fCssLengthValue(value)
+{
+  var m = /^(\d+(?:\.\d+)?|\.\d+)(pt|px|em|rem|%|cm|mm|in)?$/i.exec((value || '').trim());
+
+  return m ? (m[1] + (m[2] ? m[2].toLowerCase() : 'pt')) : '';
+}
+
+function fCssColorValue(value)
+{
+  value = (value || '').trim();
+
+  return /^(#[0-9a-f]{3,8}|[a-z]{3,20}|(?:rgb|hsl)a?\([\d\s.,%]+\))$/i.test(value) ? value : '';
+}
+
+// Tokenises "left size=Huge font="Fette Fraktur" bold" into
+// [{key, hasValue, value}] - the shared syntax of block lines (::: ...),
+// inline spans ({...}), headings ({...}) and the [PAGE ...] / [TOC ...] macros.
+function fParseDirectiveTokens(line)
+{
+  var out = [],
+      re = /([A-Za-z][\w-]*)(?:=("([^"]*)"|'([^']*)'|[^\s"']+))?/g,
       match;
 
   while ((match = re.exec(line)))
   {
-    var key = match[1].toLowerCase(),
-        hasValue = match[2] !== undefined,
-        value = match[3] !== undefined ? match[3] : (match[4] !== undefined ? match[4] : match[2]);
-
-    if (!hasValue && (key === 'left' || key === 'center' || key === 'right' || key === 'justify'))
-      style += 'text-align:' + key + ';';
-    else if (hasValue && key === 'font' && value)
-      style += 'font-family:' + fEscHtml(fCssFontFamilyValue(value)) + ';';
+    out.push
+    (
+      {
+        key: match[1].toLowerCase(),
+        hasValue: match[2] !== undefined,
+        value: match[3] !== undefined ? match[3] : (match[4] !== undefined ? match[4] : (match[2] || ''))
+      }
+    );
   }
 
-  return style;
+  return out;
+}
+
+// One text-style directive -> CSS, or '' when the key isn't a style.
+function fDirectiveStyle(key, hasValue, value)
+{
+  var css;
+
+  if (!hasValue)
+  {
+    if (key === 'left' || key === 'center' || key === 'right' || key === 'justify')
+      return 'text-align:' + key + ';';
+    if (key === 'bold')       return 'font-weight:bold;';
+    if (key === 'italic')     return 'font-style:italic;';
+    if (key === 'underline')  return 'text-decoration:underline;';
+    if (key === 'smallcaps')  return 'font-variant:small-caps;';
+    return '';
+  }
+
+  if (key === 'font' && value)
+    return 'font-family:' + fEscHtml(fCssFontFamilyValue(value)) + ';';
+  if (key === 'size' && (css = fCssSizeValue(value)))
+    return 'font-size:' + css + ';';
+  if (key === 'color' && (css = fCssColorValue(value)))
+    return 'color:' + css + ';';
+  if (key === 'align' && /^(left|center|right|justify)$/i.test(value))
+    return 'text-align:' + value.toLowerCase() + ';';
+  if (key === 'spacing' && /^\d+(\.\d+)?$/.test(value))
+    return 'line-height:' + value + ';';
+  if (key === 'tracking' && (css = fCssLengthValue(value)))
+    return 'letter-spacing:' + css + ';';
+
+  return '';
+}
+
+function fParseBlockDirectives(line)
+{
+  return fParseDirectiveTokens(line).map
+  (
+    function(t) { return fDirectiveStyle(t.key, t.hasValue, t.value); }
+  ).join('');
+}
+
+// Keys that make a "{...}" group count as inline/heading formatting rather
+// than ordinary braced text.
+var cInlineAttrKeys = /^(?:font|size|color|bold|italic|underline|smallcaps|tracking)\b/i;
+var cHeadingAttrKeys = /^(?:font|size|color|bold|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak)\b/i;
+
+function fUnescapeEntities(text)
+{
+  return text.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+// Splits "Title {font=Chomsky size=Huge center}" into the clean title and the
+// parsed attributes. Works on plain text and on already-rendered heading HTML.
+function fSplitHeadingAttrs(text)
+{
+  var m = /\s*\{([^{}\n]*)\}\s*$/.exec(text);
+
+  if (!m)
+    return { text: text, tokens: [], style: '' };
+
+  var inner = fUnescapeEntities(m[1]).trim();
+
+  if (!cHeadingAttrKeys.test(inner))
+    return { text: text, tokens: [], style: '' };
+
+  var tokens = fParseDirectiveTokens(inner);
+
+  return  {
+            text: text.slice(0, m.index),
+            tokens: tokens,
+            style: tokens.map(function(t) { return fDirectiveStyle(t.key, t.hasValue, t.value); }).join('')
+          };
+}
+
+function fHasToken(tokens, key)
+{
+  return tokens.some(function(t) { return t.key === key && !t.hasValue; });
+}
+
+// ── PAGE SETUP ([PAGE ...]) ──
+// A document-level directive describing how the document looks as a page:
+//   [PAGE size=A4 margin=2.5cm spacing=1.2 paragraph=0.8em font="Garamond" fontsize=12
+//         header="Lore and Chaos" footer="Chapter notes" numbers=bottom-center
+//         newpage=h1 chapter-label="Chapter" h1-font=Chomsky h1-size=Huge h1-center h1-bold]
+// It is invisible in the exported document. Layout options apply to the
+// preview and the export; header/footer/numbers/size/margin only exist on
+// paper, so they take effect in the exported PDF.
+var cPaperSizes = /^(a[0-9]|b[0-9]|c[0-9]|letter|legal|ledger|tabloid)$/i;
+var cNumberSlots = { 'top-left': 1, 'top-center': 1, 'top-right': 1, 'bottom-left': 1, 'bottom-center': 1, 'bottom-right': 1 };
+
+function fParsePageOptions(line)
+{
+  var o = { headings: {} };
+
+  fParseDirectiveTokens(line || '').forEach
+  (
+    function(t)
+    {
+      var k = t.key, v = t.value, css, m;
+
+      if (k === 'size' && cPaperSizes.test(v))                     o.size = /^[a-z]\d$/i.test(v) ? v.toUpperCase() : v.toLowerCase();
+      else if (k === 'orientation' && /^(portrait|landscape)$/i.test(v)) o.orientation = v.toLowerCase();
+      else if (k === 'landscape' && !t.hasValue)                   o.orientation = 'landscape';
+      else if (k === 'margin')
+      {
+        var parts = v.split(/\s+/).map(fCssLengthValue);
+        if (parts.length >= 1 && parts.length <= 4 && parts.every(Boolean)) o.margin = parts.join(' ');
+      }
+      else if (k === 'spacing' && /^\d+(\.\d+)?$/.test(v))         o.spacing = v;
+      else if (k === 'paragraph' && (css = fCssLengthValue(v)))    o.paragraph = css;
+      else if (k === 'indent' && (css = fCssLengthValue(v)))       o.indent = css;
+      else if (k === 'font' && v)                                  o.font = v;
+      else if (k === 'fontsize' && (css = fCssSizeValue(v)))       o.fontSize = css;
+      else if (k === 'header')                                     o.header = v;
+      else if (k === 'footer')                                     o.footer = v;
+      else if (k === 'header-align' && /^(left|center|right)$/i.test(v)) o.headerAlign = v.toLowerCase();
+      else if (k === 'footer-align' && /^(left|center|right)$/i.test(v)) o.footerAlign = v.toLowerCase();
+      else if (k === 'header-font' && v)                           o.headerFont = v;
+      else if (k === 'footer-font' && v)                           o.footerFont = v;
+      else if (k === 'header-size' && (css = fCssSizeValue(v)))    o.headerSize = css;
+      else if (k === 'footer-size' && (css = fCssSizeValue(v)))    o.footerSize = css;
+      else if (k === 'numbers')
+      {
+        var n = v.toLowerCase();
+        if (n === 'on' || n === 'true' || n === 'yes' || n === 'bottom') o.numbers = 'bottom-center';
+        else if (n === 'top') o.numbers = 'top-center';
+        else if (cNumberSlots[n]) o.numbers = n;
+      }
+      else if (k === 'newpage' && /^h[1-6]$/i.test(v))            o.newPage = v.toLowerCase();
+      else if (k === 'chapter-label')                              o.chapterLabel = v || 'Chapter';
+      else if (k === 'first-page' && /^plain$/i.test(v))           o.firstPagePlain = true;
+      else if (k === 'title' && /^(off|no|false|none)$/i.test(v))  o.hideTitle = true;
+      else if ((m = /^h([1-6])-(.+)$/.exec(k)))
+      {
+        var level = m[1], style = fDirectiveStyle(m[2], t.hasValue, v);
+        if (style) o.headings[level] = (o.headings[level] || '') + style;
+      }
+    }
+  );
+
+  return o;
+}
+
+// "Page {page} of {pages} - {title}" -> a CSS content value for @page margin boxes.
+function fMarginContent(text, title)
+{
+  var out = [];
+
+  text.split(/(\{page\}|\{pages\}|\{title\})/i).forEach
+  (
+    function(part)
+    {
+      var lower = part.toLowerCase();
+
+      if (lower === '{page}')        out.push('counter(page)');
+      else if (lower === '{pages}')  out.push('counter(pages)');
+      else if (lower === '{title}')  out.push(fCssString(title || ''));
+      else if (part)                 out.push(fCssString(part));
+    }
+  );
+
+  return out.join(' ') || '""';
+}
+
+function fCssString(text)
+{
+  return '"' + text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ') + '"';
+}
+
+// scope: CSS selector the layout rules attach to ('#preview-content' in the
+// editor, 'body' in an export). forPaper adds the @page rules, which only mean
+// something when printing.
+function fBuildPageCss(o, scope, forPaper, title)
+{
+  var css = '', body = '';
+
+  if (o.font)      body += 'font-family:' + fCssFontFamilyValue(o.font) + ';';
+  if (o.fontSize)  body += 'font-size:' + o.fontSize + ';';
+  if (o.spacing)   body += 'line-height:' + o.spacing + ';';
+
+  if (body)
+    css += scope + '{' + body + '}\n';
+
+  if (o.paragraph)
+    css += scope + ' p{margin:0 0 ' + o.paragraph + ';}\n';
+
+  if (o.indent)
+    css += scope + ' p + p{text-indent:' + o.indent + ';}\n';
+
+  Object.keys(o.headings || {}).forEach
+  (
+    function(level)
+    {
+      css += scope + ' h' + level + '{' + o.headings[level] + '}\n';
+    }
+  );
+
+  if (forPaper)
+  {
+    if (o.newPage)
+      css += scope + ' ' + o.newPage + '{break-before:page;}\n' + scope + ' ' + o.newPage + ':first-child{break-before:auto;}\n';
+
+    var size = [o.size, o.orientation].filter(Boolean).join(' '),
+        slots = {},
+        addSlot = function(name, text) { (slots[name] = slots[name] || []).push(text); };
+
+    if (o.header) addSlot('top-' + (o.headerAlign || 'center'), fMarginContent(o.header, title));
+    if (o.footer) addSlot('bottom-' + (o.footerAlign || 'center'), fMarginContent(o.footer, title));
+    if (o.numbers) addSlot(o.numbers, 'counter(page)');
+
+    var rules = '', clear = '';
+
+    Object.keys(slots).forEach
+    (
+      function(name)
+      {
+        var top = name.indexOf('top') === 0,
+            font = top ? o.headerFont : o.footerFont,
+            fsize = top ? o.headerSize : o.footerSize;
+
+        rules += '@' + name + '{content:' + slots[name].join(' "  \\00b7  " ') + ';' +
+                 'font-size:' + (fsize || '10pt') + ';color:#444;' +
+                 (font ? 'font-family:' + fCssFontFamilyValue(font) + ';' : '') + '}';
+        clear += '@' + name + '{content:none;}';
+      }
+    );
+
+    if (size || o.margin || rules)
+      css += '@page{' + (size ? 'size:' + size + ';' : '') + (o.margin ? 'margin:' + o.margin + ';' : '') + rules + '}\n';
+
+    if (o.firstPagePlain && rules)
+      css += '@page :first{' + clear + '}\n';
+  }
+
+  return css;
+}
+
+var docPageSettings = {};
+var chapterRenderCount = 0;
+
+// The one place a document is turned into HTML: resets the per-render state
+// the extensions rely on (heading ids, task checkboxes, chapter counter, [PAGE]
+// settings), lexes, collects headings, and parses.
+function fRenderMarkdownDoc(source)
+{
+  documentHeadings = [];
+  slugCounts = {};
+  headingRenderCursor = 0;
+  checkboxRenderIndex = 0;
+  chapterRenderCount = 0;
+  docPageSettings = { headings: {} };
+
+  var tokens = marked.lexer(source);
+  fCollectHeadings(tokens);
+
+  var first = tokens.filter(function(t) { return t.type !== 'space' && t.type !== 'pageSetup'; })[0];
+
+  var result =  {
+                  html: marked.parser(tokens),
+                  settings: docPageSettings,
+                  startsWithTitle: !!(first && first.type === 'heading' && first.depth === 1)
+                };
+
+  // Other renderers (slides, diagrams) share the heading renderer; don't let
+  // this document's chapter-label setting leak into them.
+  docPageSettings = { headings: {} };
+
+  return result;
 }
 
 var checkboxRenderIndex = 0;
@@ -213,7 +520,26 @@ function fConfigureMarkedExtensions()
             headingRenderCursor++;
           }
 
-          return '<h' + level + (id ? (' id="' + id + '"') : '') + '>' + text + '</h' + level + '>\n';
+          // Trailing "{font=... size=... center}" formats just this heading.
+          // (Parsed from the plain text at collection time: in the rendered HTML a
+          // "#a00" colour would already have been turned into a tag pill.)
+          var parts = entry ? { tokens: entry.tokens, style: entry.style } : { tokens: [], style: '' },
+              label = '',
+              classes = [];
+
+          if (level === 1 && docPageSettings.chapterLabel && !fHasToken(parts.tokens, 'nolabel'))
+          {
+            chapterRenderCount++;
+            label = '<span class="chapter-label">' + fEscHtml(docPageSettings.chapterLabel + ' ' + chapterRenderCount) + '</span>';
+          }
+
+          if (fHasToken(parts.tokens, 'pagebreak'))   classes.push('force-break');
+          if (fHasToken(parts.tokens, 'nopagebreak')) classes.push('no-break');
+
+          return '<h' + level + (id ? (' id="' + id + '"') : '') +
+                 (classes.length ? ' class="' + classes.join(' ') + '"' : '') +
+                 (parts.style ? ' style="' + parts.style + '"' : '') + '>' +
+                 label + (parts.tokens.length ? text.replace(/\s*\{[^{}]*\}\s*$/, '') : text) + '</h' + level + '>\n';
         },
         code: function(code, infostring)
         {
@@ -375,51 +701,94 @@ function fConfigureMarkedExtensions()
           }
         },
         {
+          // Inline formatting: [text]{font=Georgia}, [text]{size=Huge},
+          // [text]{font="Fette Fraktur" size=24 color=#a00 bold}.
           name: 'fontSpan',
           level: 'inline',
           start: function(src)
           {
-            var match = /\[[^\]\n]+\]\{font=/.exec(src);
+            var match = /\[[^\]\n]+\]\{(?:font|size|color|bold|italic|underline|smallcaps|tracking)\b/i.exec(src);
             return match ? match.index : undefined;
           },
           tokenizer: function(src)
           {
-            var match = /^\[([^\]\n]+)\]\{font=("([^"]*)"|'([^']*)'|[^\s}]+)\}/.exec(src);
+            var match = /^\[([^\]\n]+)\]\{([^{}\n]*)\}/.exec(src);
 
-            if (!match)
+            if (!match || !cInlineAttrKeys.test(match[2].trim()))
               return undefined;
 
-            var fontName = match[3] !== undefined ? match[3] : (match[4] !== undefined ? match[4] : match[2]);
+            var style = fParseBlockDirectives(match[2]);
+
+            if (!style)
+              return undefined;
 
             return  {
                       type: 'fontSpan',
                       raw: match[0],
-                      fontName: fontName,
+                      style: style,
                       tokens: this.lexer.inlineTokens(match[1])
                     };
           },
           renderer: function(token)
           {
-            return '<span style="font-family:' + fEscHtml(fCssFontFamilyValue(token.fontName)) + ';">' +
-                   this.parser.parseInline(token.tokens) + '</span>';
+            return '<span style="' + token.style + '">' + this.parser.parseInline(token.tokens) + '</span>';
           }
         },
         {
+          // [TOC] or [TOC title="Contents:" font=Chomsky size=Large center numbers=on depth=2]
           name: 'tocBlock',
           level: 'block',
           start: function(src)
           {
-            var match = /^\[TOC\][ \t]*$/im.exec(src);
+            var match = /^\[TOC(?:[ \t][^\]\n]*)?\][ \t]*$/im.exec(src);
             return match ? match.index : undefined;
           },
           tokenizer: function(src)
           {
-            var match = /^\[TOC\][ \t]*(?:\n+|$)/i.exec(src);
-            return match ? { type: 'tocBlock', raw: match[0] } : undefined;
+            var match = /^\[TOC(?:[ \t]+([^\]\n]*))?\][ \t]*(?:\n+|$)/i.exec(src);
+            return match ? { type: 'tocBlock', raw: match[0], opts: match[1] || '' } : undefined;
+          },
+          renderer: function(token)
+          {
+            return fRenderTOC(token.opts);
+          }
+        },
+        {
+          // [PAGEBREAK] (or [NEWPAGE]): the next block starts on a new page.
+          name: 'pageBreak',
+          level: 'block',
+          start: function(src)
+          {
+            var match = /^\[(?:PAGEBREAK|NEWPAGE)\][ \t]*$/im.exec(src);
+            return match ? match.index : undefined;
+          },
+          tokenizer: function(src)
+          {
+            var match = /^\[(?:PAGEBREAK|NEWPAGE)\][ \t]*(?:\n+|$)/i.exec(src);
+            return match ? { type: 'pageBreak', raw: match[0] } : undefined;
           },
           renderer: function()
           {
-            return fRenderTOC();
+            return '<div class="page-break" role="separator"><span>page break</span></div>\n';
+          }
+        },
+        {
+          // [PAGE size=A4 margin=2.5cm ...]: document-wide page layout; see fParsePageOptions.
+          name: 'pageSetup',
+          level: 'block',
+          start: function(src)
+          {
+            var match = /^\[PAGE[ \t][^\]\n]*\][ \t]*$/im.exec(src);
+            return match ? match.index : undefined;
+          },
+          tokenizer: function(src)
+          {
+            var match = /^\[PAGE[ \t]+([^\]\n]*)\][ \t]*(?:\n+|$)/i.exec(src);
+            return match ? { type: 'pageSetup', raw: match[0], opts: match[1] } : undefined;
+          },
+          renderer: function(token)
+          {
+            return '<div class="page-setup-note">Page setup: ' + fEscHtml(token.opts.trim()) + '</div>\n';
           }
         },
         {
@@ -657,16 +1026,26 @@ function fCollectHeadings(tokens)
   (
     function(token)
     {
-      if (token.type === 'heading')
+      if (token.type === 'pageSetup')
       {
-        var text = fExtractPlainText(token.tokens);
+        var opts = fParsePageOptions(token.opts);
+        Object.keys(opts.headings).forEach(function(l) { docPageSettings.headings[l] = (docPageSettings.headings[l] || '') + opts.headings[l]; });
+        Object.keys(opts).forEach(function(k) { if (k !== 'headings') docPageSettings[k] = opts[k]; });
+      }
+      else if (token.type === 'heading')
+      {
+        var parts = fSplitHeadingAttrs(fExtractPlainText(token.tokens)),
+            text = parts.text;
 
         documentHeadings.push
         (
           {
             depth: token.depth,
             text: text,
-            slug: fMakeSlug(text)
+            slug: fMakeSlug(text),
+            tokens: parts.tokens,
+            style: parts.style,
+            inToc: !fHasToken(parts.tokens, 'notoc')
           }
         );
       }
@@ -688,24 +1067,35 @@ function fCollectHeadings(tokens)
   );
 }
 
-function fRenderTOC()
+function fRenderTOC(optionText)
 {
-  if (!documentHeadings.length)
+  var opts = {};
+
+  fParseDirectiveTokens(optionText || '').forEach(function(t) { opts[t.key] = t; });
+
+  var entries = documentHeadings.filter(function(h) { return h.inToc !== false; });
+
+  if (opts.depth && /^[1-6]$/.test(opts.depth.value))
+  {
+    var maxDepth = parseInt(opts.depth.value, 10);
+    entries = entries.filter(function(h) { return h.depth <= maxDepth; });
+  }
+
+  if (!entries.length)
     return '<div class="toc toc-empty">No headings yet.</div>';
 
-  var minDepth = documentHeadings.reduce
-  (
-    function(min, h)
-    {
-      return Math.min(min, h.depth);
-    },
-    documentHeadings[0].depth
-  );
+  var style = fParseBlockDirectives((optionText || '').replace(/\b(?:title|numbers|depth)=("[^"]*"|'[^']*'|\S+)/gi, '')),
+      numbered = opts.numbers && /^(on|true|yes)$/i.test(opts.numbers.value),
+      counters = [0, 0, 0, 0, 0, 0, 0],
+      minDepth = entries.reduce(function(min, h) { return Math.min(min, h.depth); }, entries[0].depth);
 
-  var html = '<nav class="toc">',
+  var html = '<nav class="toc"' + (style ? ' style="' + style + '"' : '') + '>',
       openDepth = minDepth - 1;
 
-  documentHeadings.forEach
+  if (opts.title && opts.title.value)
+    html += '<div class="toc-title">' + fEscHtml(opts.title.value) + '</div>';
+
+  entries.forEach
   (
     function(h)
     {
@@ -721,7 +1111,16 @@ function fRenderTOC()
         openDepth--;
       }
 
-      html += '<li><a href="#' + h.slug + '">' + fEscHtml(h.text) + '</a></li>';
+      var number = '';
+
+      if (numbered)
+      {
+        counters[h.depth]++;
+        for (var d = h.depth + 1; d < counters.length; d++) counters[d] = 0;
+        number = '<span class="toc-num">' + counters.slice(minDepth, h.depth + 1).join('.') + '</span> ';
+      }
+
+      html += '<li><a href="#' + h.slug + '">' + number + fEscHtml(h.text) + '</a></li>';
     }
   );
 
@@ -750,18 +1149,17 @@ function fUpdatePreview(deferBacklinks)
   var source = document.getElementById('editor').value,
       html = source;
 
+  var pageCss = '';
+
   if (typeof marked !== 'undefined')
   {
-    documentHeadings = [];
-    slugCounts = {};
-    headingRenderCursor = 0;
-    checkboxRenderIndex = 0;
+    var rendered = fRenderMarkdownDoc(source);
 
-    var tokens = marked.lexer(source);
-    fCollectHeadings(tokens);
-
-    html = marked.parser(tokens);
+    html = rendered.html;
+    pageCss = fBuildPageCss(rendered.settings, '#preview-content', false);
   }
+
+  fSetPreviewPageStyle(pageCss);
 
   var previewContent = document.getElementById('preview-content');
   previewContent.innerHTML = fSanitizeHtml(html);
@@ -777,6 +1175,26 @@ function fUpdatePreview(deferBacklinks)
 
   if (typeof fFrAfterPreviewRender === 'function')
     fFrAfterPreviewRender();
+}
+
+// The [PAGE ...] layout options (fonts, spacing, heading styles) restyle the
+// live preview through one <style> element that is rewritten on each render.
+function fSetPreviewPageStyle(css)
+{
+  var tag = document.getElementById('doc-page-style');
+
+  if (!tag)
+  {
+    if (!css)
+      return;
+
+    tag = document.createElement('style');
+    tag.id = 'doc-page-style';
+    document.head.appendChild(tag);
+  }
+
+  if (tag.textContent !== css)
+    tag.textContent = css;
 }
 
 function fRenderPreviewBacklinks()

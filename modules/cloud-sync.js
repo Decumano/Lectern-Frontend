@@ -248,7 +248,9 @@ async function fResolveSyncConflict(choice)
 // Wraps rendered body markup (doc HTML or a sheet table) into a standalone,
 // printable HTML document - intentionally light-themed regardless of the
 // app's dark UI, since this is meant to be portable/readable on its own.
-function fWrapExportHtml(title, bodyHtml)
+// extraCss is appended last so a document's own [PAGE ...] options (page size,
+// margins, running headers, heading styles) override the defaults below.
+function fWrapExportHtml(title, bodyHtml, extraCss)
 {
   return  '<!DOCTYPE html>\n'+
           '<html lang="en">\n'+
@@ -257,15 +259,43 @@ function fWrapExportHtml(title, bodyHtml)
           '<title>' + fEscHtml(title) + '</title>\n'+
           '<style>\n'+
           '@page{size:A4;margin:2cm;}\n'+
-          'body{font-family:Georgia,\'Times New Roman\',serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6;}\n'+
-          'h1,h2,h3,h4,h5,h6{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}\n'+
+          'body{font-family:Georgia,\'Times New Roman\',serif;font-size:11pt;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;}\n'+
+          'h1,h2,h3,h4,h5,h6{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.25;margin:1.4em 0 .5em;}\n'+
+          'h1{font-size:1.9em;}h2{font-size:1.5em;}h3{font-size:1.25em;}h4{font-size:1.1em;}\n'+
+          'p{margin:0 0 .8em;orphans:3;widows:3;}\n'+
+          'a{color:#1a4d8f;text-decoration:none;}\n'+
+          'ul,ol{margin:0 0 .8em;padding-left:1.6em;}\n'+
+          'li{margin:.15em 0;}\n'+
           'table{border-collapse:collapse;width:100%;font-family:Consolas,monospace;font-size:13px;}\n'+
           'td{border:1px solid #ccc;padding:4px 8px;}\n'+
-          'code{background:#f0f0f0;padding:2px 4px;border-radius:3px;}\n'+
-          'pre{background:#f0f0f0;padding:12px;border-radius:6px;overflow-x:auto;}\n'+
+          'th{border:1px solid #ccc;padding:4px 8px;background:#f2f2f2;text-align:left;}\n'+
+          'code{background:#f0f0f0;padding:2px 4px;border-radius:3px;font-size:.9em;}\n'+
+          'pre{background:#f0f0f0;padding:12px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;}\n'+
+          'pre code{background:none;padding:0;}\n'+
           'blockquote{border-left:3px solid #ccc;margin-left:0;padding-left:16px;color:#555;}\n'+
+          'hr{border:none;border-top:1px solid #ccc;margin:1.5em 0;}\n'+
+          'img{max-width:100%;}\n'+
           '.mermaid-diagram{text-align:center;margin:1.5em 0;}\n'+
           '.mermaid-diagram svg{max-width:100%;height:auto;}\n'+
+          '.math-block{text-align:center;margin:1em 0;overflow-x:auto;overflow-y:hidden;}\n'+
+          '.doc-fields{display:flex;flex-wrap:wrap;gap:4px 12px;margin:.8em 0;padding:8px 12px;background:#f6f6f6;border:1px solid #ddd;border-left:3px solid #7a6a4f;border-radius:4px;font-size:.85em;break-inside:avoid;}\n'+
+          '.doc-field b{margin-right:4px;}\n'+
+          '.doc-fields-vertical{display:inline-grid;grid-template-columns:auto 1fr;gap:3px 16px;}\n'+
+          '.doc-field-key{font-weight:bold;}\n'+
+          '.toc{margin:1em 0;}\n'+
+          '.toc-title{font-size:1.4em;font-weight:bold;margin-bottom:.5em;}\n'+
+          '.toc ul{list-style:none;margin:.15em 0;padding-left:1.4em;}\n'+
+          '.toc > ul{padding-left:0;}\n'+
+          '.toc a{color:inherit;}\n'+
+          '.toc-num{display:inline-block;min-width:1.6em;}\n'+
+          '.doc-tag{background:#eee;border-radius:10px;padding:0 7px;font-size:.85em;}\n'+
+          'input.preview-checkbox{margin-right:.4em;}\n'+
+          'ul:has(> li > input.preview-checkbox){list-style:none;padding-left:.4em;}\n'+
+          '.chapter-label{display:block;font-size:.45em;font-weight:normal;letter-spacing:.04em;margin-bottom:.3em;}\n'+
+          '.page-break{break-after:page;height:0;margin:0;padding:0;border:0;overflow:hidden;}\n'+
+          '.page-break span,.page-setup-note{display:none;}\n'+
+          '.force-break{break-before:page;}\n'+
+          '.no-break{break-before:avoid;}\n'+
           'table,tr,blockquote,pre,.mermaid-diagram,.notebook-page{break-inside:avoid;}\n'+
           'h1,h2,h3,h4,h5,h6{break-after:avoid;}\n'+
           '.notebook-page{break-after:page;}\n'+
@@ -273,29 +303,84 @@ function fWrapExportHtml(title, bodyHtml)
           '@media print{\n'+
           'body{max-width:none;margin:0;padding:0;}\n'+
           '}\n'+
+          (extraCss || '') +
           '</style>\n'+
           '</head>\n'+
           '<body>\n' + bodyHtml + '\n</body>\n'+
           '</html>';
 }
 
-function fBuildDocExportHtml(file)
+// KaTeX's stylesheet points at font files by relative URL, which don't resolve
+// once the HTML is printed from an iframe or posted to the PDF renderer - the
+// formulas come out as unstyled soup. So the stylesheet is inlined with its
+// woff2 fonts as data URIs (cached; only built for documents that use math).
+var katexExportCssCache = null;
+
+async function fGetKatexExportCss()
 {
-  var bodyHtml = fEscHtml(file.content || '');
+  if (katexExportCssCache !== null)
+    return katexExportCssCache;
+
+  try
+  {
+    var css = await (await fetch('vendor/katex/katex.min.css')).text(),
+        srcRe = /src:url\(fonts\/([^)]+)\.woff2\) format\("woff2"\),url\([^)]+\) format\("woff"\),url\([^)]+\) format\("truetype"\)/g,
+        names = {};
+
+    css.replace(srcRe, function(all, name) { names[name] = null; return all; });
+
+    await Promise.all
+    (
+      Object.keys(names).map
+      (
+        async function(name)
+        {
+          var bytes = new Uint8Array(await (await fetch('vendor/katex/fonts/' + name + '.woff2')).arrayBuffer()),
+              binary = '';
+
+          for (var i = 0; i < bytes.length; i += 0x8000)
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+
+          names[name] = btoa(binary);
+        }
+      )
+    );
+
+    katexExportCssCache = css.replace(srcRe, function(all, name) { return 'src:url(data:font/woff2;base64,' + names[name] + ') format("woff2")'; });
+  }
+  catch(e)
+  {
+    console.warn('KaTeX export CSS unavailable', e);
+    katexExportCssCache = '';
+  }
+
+  return katexExportCssCache;
+}
+
+async function fBuildDocExportHtml(file)
+{
+  var bodyHtml = fEscHtml(file.content || ''),
+      settings = { headings: {} },
+      showTitle = true;
 
   if (typeof marked !== 'undefined')
   {
-    documentHeadings = [];
-    slugCounts = {};
-    headingRenderCursor = 0;
+    var rendered = fRenderMarkdownDoc(file.content || '');
 
-    var tokens = marked.lexer(file.content || '');
-    fCollectHeadings(tokens);
-
-    bodyHtml = marked.parser(tokens);
+    bodyHtml = rendered.html;
+    settings = rendered.settings;
+    showTitle = !settings.hideTitle && !rendered.startsWithTitle;
   }
 
-  return fWrapExportHtml(file.name, '<h1>' + fEscHtml(file.name) + '</h1>\n' + fSanitizeHtml(bodyHtml));
+  // Sanitise first, then inline mermaid as static SVG (the diagram library
+  // isn't shipped inside an exported file).
+  bodyHtml = await fInlineMermaidSvgs(fSanitizeHtml(bodyHtml));
+
+  var extraCss = bodyHtml.indexOf('class="katex') !== -1 ? await fGetKatexExportCss() : '';
+
+  extraCss += fBuildPageCss(settings, 'body', true, file.name);
+
+  return fWrapExportHtml(file.name, (showTitle ? '<h1>' + fEscHtml(file.name) + '</h1>\n' : '') + bodyHtml, extraCss);
 }
 
 function fBuildSheetExportHtml(file)
@@ -477,7 +562,7 @@ async function fExportCurrentAs(format)
   else if (f.type === 'notebook')
     html = await fBuildNotebookExportHtml(f);
   else
-    html = fBuildDocExportHtml(f);
+    html = await fBuildDocExportHtml(f);
 
   if (format === 'pdf')
   {

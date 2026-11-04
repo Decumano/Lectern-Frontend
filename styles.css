@@ -4648,3 +4648,53 @@ body.tab-drag-active #split-embed { pointer-events: none; }
 #cloud-sync-errors {
   color: var(--red);
 }
+
+/* ── DOCS: page macros ([PAGEBREAK], [PAGE ...], chapter labels, TOC title) ── */
+:is(#preview-content, #split-rendered) .page-break
+{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2em 0;
+  color: var(--text3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-ui, sans-serif);
+}
+:is(#preview-content, #split-rendered) .page-break::before,
+:is(#preview-content, #split-rendered) .page-break::after
+{
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--border2);
+}
+:is(#preview-content, #split-rendered) .page-setup-note
+{
+  margin: 0.8em 0;
+  padding: 6px 12px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  color: var(--text3);
+  font-size: 11px;
+  font-family: var(--font-ui, sans-serif);
+}
+:is(#preview-content, #split-rendered) .chapter-label
+{
+  display: block;
+  font-size: 0.45em;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3em;
+}
+:is(#preview-content, #split-rendered) .toc-title
+{
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0 0 0.5em -16px;
+}
+:is(#preview-content, #split-rendered) .toc-num
+{
+  display: inline-block;
+  min-width: 1.6em;
+}
