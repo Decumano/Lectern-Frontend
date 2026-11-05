@@ -123,16 +123,41 @@ The symbol form requires nothing after the symbol on the opening line, which is
 what keeps `:::` (right-align) from colliding with `::: center` (keyword form) —
 the keyword form always has trailing text.
 
+**One-line form** — the symbol before and after the text, on a single line:
+
+```
+;; This line is centered. ;;
+;;; This one is justified. ;;;
+```
+
+Options go in parentheses straight after the opening symbol, and are added to
+the symbol's own alignment (so `:::(center bold) text :::` is centered and bold):
+
+```
+:::(size=Large color=#a00 italic) A large red italic line :::
+```
+
+The closer must repeat the exact same symbol, preceded by a space.
+
 ## Fonts
 
 A font block is the **only** way to change the font, in any file type that
-renders Markdown:
+renders Markdown. The options go in parentheses. On one line:
 
 ```
-||font=Fette Fraktur size=14 spacing=1.5
+Some ||(font=Fette Fraktur size=14 spacing=1.5) text in Fette Fraktur, 14pt, line-height 1.5 || and back.
+```
+
+or over several lines, with the opener on a line of its own and a bare `||` to close:
+
+```
+||(font=Fette Fraktur size=14 spacing=1.5)
 Text in Fette Fraktur, 14pt, line-height 1.5.
 ||
 ```
+
+The older spelling without parentheses, `||font=Fette Fraktur size=14` on a line of
+its own, still works for the multi-line form.
 
 | Option | Meaning |
 |---|---|
@@ -140,7 +165,26 @@ Text in Fette Fraktur, 14pt, line-height 1.5.
 | `size=<n>` | Size in points. |
 | `spacing=<v>` | CSS `line-height`: a multiplier (`1.5`) or a length (`20pt`). |
 
-Each option is optional, but one is required; a bare `||` closes the block.
+Each option is optional, but one is required; a bare `||` closes the block. On
+one line the closer is a `||` not followed by `(` and pairs with the nearest
+opener, so one-line blocks nest too:
+`||(font=Georgia) outer ||(font=Courier) inner || outer again ||`. An opener with
+text after it but no closer on its line is left as literal text, and code spans
+are never touched.
+
+**In a heading, and in the table of contents.** A font on a heading carries to its
+`[TOC]` entry, whichever way it is written:
+
+```
+# ||(font=Arial) Title ||
+
+||(font=Georgia)
+## Another
+||
+```
+
+Only the font carries over: a heading set at `size=40` does not make a 40pt
+contents line.
 
 **Fonts in the project.** Put `.ttf`, `.otf`, `.woff` or `.woff2` files in a folder
 named `fonts` (any depth, any capitalisation) and they load automatically:
@@ -154,9 +198,7 @@ my-project/
 ```
 
 ```
-||font=Brand Sans||
-Set in the project's own font.
-||
+||(font=Brand Sans) Set in the project's own font. ||
 ```
 
 The name to use is the font's own family name (read from the file; the file name

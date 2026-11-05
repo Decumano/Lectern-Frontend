@@ -316,6 +316,94 @@ function fParseFontBlockOptions(text)
   return found ? style : null;
 }
 
+// One-line form, options in parentheses:
+//   Some ||(font=Georgia size=14 spacing=1.5) text in Georgia || and back again.
+// The closer is a `||` not followed by `(`, and pairs with the nearest opener
+// on the same line, so these nest. An opener with nothing after it on its
+// line starts an ordinary multi-line block instead; any other unpaired opener
+// is left as literal text. Code spans are left alone.
+// Returns { text, opened } (opened: 1 when a multi-line block was started), or
+// null when the line has nothing to convert.
+function fInlineFontMacros(line, styles)
+{
+  var codeRanges = [],
+      codeRe = /`[^`\n]*`/g,
+      match;
+
+  while ((match = codeRe.exec(line)))
+    codeRanges.push([match.index, match.index + match[0].length]);
+
+  var inCode = function(at)
+  {
+    return codeRanges.some(function(r) { return at >= r[0] && at < r[1]; });
+  };
+
+  var re = /\|\|\(([^()\n]*)\)|\|\|(?!\()/g,
+      open = [],      // unpaired openers, innermost last
+      edits = [];     // { start, end, kind: 'open'|'close'|'drop', style }
+
+  while ((match = re.exec(line)))
+  {
+    if (inCode(match.index))
+      continue;
+
+    if (match[1] !== undefined)
+    {
+      var style = fParseFontBlockOptions(match[1]);
+
+      if (style)
+        open.push({ start: match.index, end: match.index + match[0].length, style: style });
+    }
+    else if (open.length)
+    {
+      var opener = open.pop();
+
+      edits.push({ start: opener.start, end: opener.end, kind: 'open', style: opener.style });
+      edits.push({ start: match.index, end: match.index + 2, kind: 'close' });
+    }
+  }
+
+  var opened = 0;
+
+  if (open.length)
+  {
+    var last = open[open.length - 1];
+
+    if (!line.slice(last.end).trim())
+    {
+      edits.push({ start: last.start, end: last.end, kind: 'open', style: last.style });
+      opened = 1;
+    }
+  }
+
+  if (!edits.length)
+    return null;
+
+  edits.sort(function(a, b) { return a.start - b.start; });
+
+  var text = '', at = 0;
+
+  edits.forEach
+  (
+    function(edit)
+    {
+      text += line.slice(at, edit.start);
+
+      if (edit.kind === 'open')
+      {
+        text += cFontOpenMark + styles.length + cFontOpenMarkEnd;
+        styles.push(edit.style);
+      }
+      else
+        text += cFontCloseMark;
+
+      at = edit.end;
+    }
+  );
+
+  return { text: text + line.slice(at), opened: opened };
+}
+
 function fPreprocessFontBlocks(source)
 {
   if (source.indexOf('||') === -1)
@@ -347,11 +435,11 @@ function fPreprocessFontBlocks(source)
 
     if (!fence && !fenceMatch && !inMath)
     {
-      var open = /^ {0,3}\|\|[ \t]*((?:font|size|spacing)=.*?)[ \t\r]*$/i.exec(line);
+      var open = /^ {0,3}\|\|[ \t]*(?:\(([^()\n]*)\)|((?:font|size|spacing)=.*?))[ \t\r]*$/i.exec(line);
 
       if (open)
       {
-        var style = fParseFontBlockOptions(open[1]);
+        var style = fParseFontBlockOptions(open[1] !== undefined ? open[1] : open[2]);
 
         if (style)
         {
@@ -364,6 +452,17 @@ function fPreprocessFontBlocks(source)
       {
         marker = cFontCloseMark;
         depth--;
+      }
+      else if (line.indexOf('||(') !== -1)
+      {
+        var inline = fInlineFontMacros(line, styles);
+
+        if (inline)
+        {
+          depth += inline.opened;
+          out.push(inline.text);
+          continue;
+        }
       }
     }
 
@@ -711,7 +810,11 @@ function fRenderMarkdownDoc(source)
   var pre = fPreprocessFontBlocks(source),
       tokens = marked.lexer(pre.text);
 
-  fCollectHeadings(tokens);
+  // The TOC adds font-only styles to this same table (see fRenderTOC).
+  fontStyleTable = pre.styles;
+  tocFontIndexByCss = {};
+
+  fCollectHeadings(tokens, []);
 
   // Looks inside wrappers, so a centered "# Title" counts as opening with a title.
   var first = tokens.filter(function(t) { return t.type !== 'space' && t.type !== 'pageSetup'; })[0];
@@ -949,6 +1052,45 @@ function fConfigureMarkedExtensions()
       },
       extensions:
       [
+        {
+          // The one-line form of the alignment symbols and of the ::: keyword
+          // form, the symbol repeated after the text:
+          //   ;; centered ;;            ;;; justified ;;;
+          //   :::(center bold) text :::   options go in parentheses, no space before them
+          // Tried before the block forms below, which it would otherwise
+          // collide with (":::(...)" and "::: text :::" both open a ::: block).
+          name: 'alignOneLine',
+          level: 'block',
+          start: function(src)
+          {
+            var match = /^(?:::(?!:)|:::(?!:)|;;(?!;)|;;;(?!;))(?:\([^()\n]*\)[ \t]*|[ \t]+)\S[^\n]*?[ \t]+(?:::|;;)[ \t]*$/m.exec(src);
+            return match ? match.index : undefined;
+          },
+          tokenizer: function(src)
+          {
+            var match = /^(::(?!:)|:::(?!:)|;;(?!;)|;;;(?!;))(?:\(([^()\n]*)\)[ \t]*|[ \t]+)(\S[^\n]*?)[ \t]+\1[ \t]*(?:\n+|$)/.exec(src);
+
+            if (!match)
+              return undefined;
+
+            var align = { '::': 'left', ':::': 'right', ';;': 'center', ';;;': 'justify' }[match[1]],
+                extra = match[2] !== undefined ? fParseBlockDirectives(match[2]) : '';
+
+            if (match[2] !== undefined && !extra)
+              return undefined;
+
+            return  {
+                      type: 'alignOneLine',
+                      raw: match[0],
+                      style: 'text-align:' + align + ';' + extra,
+                      tokens: this.lexer.blockTokens(match[3], [])
+                    };
+          },
+          renderer: function(token)
+          {
+            return '<div style="' + token.style + '">\n' + this.parser.parse(token.tokens) + '</div>\n';
+          }
+        },
         {
           name: 'styledBlock',
           level: 'block',
@@ -1344,7 +1486,9 @@ function fExtractPlainText(tokens)
 
 function fMakeSlug(text)
 {
-  var base = text.toLowerCase()
+  // Font markers (and the style number inside them) are not part of a name.
+  var base = text.replace(/\uE000\d+\uE001|\uE002/g, '')
+                  .toLowerCase()
                   .trim()
                   .replace(/[^a-z0-9\s-]/g, '')
                   .replace(/\s+/g, '-')
@@ -1357,8 +1501,26 @@ function fMakeSlug(text)
   return count === 0 ? base : (base + '-' + count);
 }
 
-function fCollectHeadings(tokens)
+// The font blocks open around each heading, read from the markers in the
+// tokens before it, so the TOC can show an entry in its heading's font.
+function fAdvanceFontStack(stack, raw)
 {
+  var re = /\uE000(\d+)\uE001|\uE002/g,
+      match;
+
+  while ((match = re.exec(raw || '')))
+  {
+    if (match[1] !== undefined)
+      stack.push(parseInt(match[1], 10));
+    else
+      stack.pop();
+  }
+}
+
+function fCollectHeadings(tokens, stack)
+{
+  stack = stack || [];
+
   tokens.forEach
   (
     function(token)
@@ -1382,7 +1544,8 @@ function fCollectHeadings(tokens)
             slug: fMakeSlug(text),
             tokens: parts.tokens,
             style: parts.style,
-            inToc: !fHasToken(parts.tokens, 'notoc')
+            inToc: !fHasToken(parts.tokens, 'notoc'),
+            fontStack: stack.slice()
           }
         );
       }
@@ -1392,16 +1555,49 @@ function fCollectHeadings(tokens)
         (
           function(item)
           {
-            fCollectHeadings(item.tokens);
+            fCollectHeadings(item.tokens, stack.slice());
           }
         );
       }
       else if (token.tokens)
       {
-        fCollectHeadings(token.tokens);
+        fCollectHeadings(token.tokens, stack.slice());
       }
+
+      fAdvanceFontStack(stack, token.raw);
     }
   );
+}
+
+// An entry in the TOC takes the font of its heading, and only the font: a
+// 40pt title does not make a 40pt contents line.
+function fTocFontIndex(styleIndex)
+{
+  var css = (fontStyleTable[styleIndex] || {}).font || '';
+
+  if (!(css in tocFontIndexByCss))
+  {
+    fontStyleTable.push(css ? { font: css } : {});
+    tocFontIndexByCss[css] = fontStyleTable.length - 1;
+  }
+
+  return tocFontIndexByCss[css];
+}
+
+function fTocEntryHtml(h)
+{
+  // Inline ||(font=…) text|| inside the heading keeps its markers; restyle them.
+  var html = fEscHtml(h.text).replace(/\uE000(\d+)\uE001/g, function(all, index)
+  {
+    return cFontOpenMark + fTocFontIndex(parseInt(index, 10)) + cFontOpenMarkEnd;
+  });
+
+  // Blocks around the heading (||font=… / # Title / ||).
+  var around = (h.fontStack || []).filter(function(index) { return (fontStyleTable[index] || {}).font; });
+
+  return around.map(function(index) { return cFontOpenMark + fTocFontIndex(index) + cFontOpenMarkEnd; }).join('') +
+         html +
+         around.map(function() { return cFontCloseMark; }).join('');
 }
 
 function fRenderTOC(optionText)
@@ -1457,7 +1653,7 @@ function fRenderTOC(optionText)
         number = '<span class="toc-num">' + counters.slice(minDepth, h.depth + 1).join('.') + '</span> ';
       }
 
-      html += '<li><a href="#' + h.slug + '">' + number + fEscHtml(h.text) + '</a></li>';
+      html += '<li><a href="#' + h.slug + '">' + number + fTocEntryHtml(h) + '</a></li>';
     }
   );
 
