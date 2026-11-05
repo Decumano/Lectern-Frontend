@@ -136,11 +136,35 @@ Text in Fette Fraktur, 14pt, line-height 1.5.
 
 | Option | Meaning |
 |---|---|
-| `font=<name>` | The font's name. Spaces need no quotes. Generic families (`serif`, `monospace`…) work. The font must be installed (or, on the web app, uploaded under Settings → Custom fonts). |
+| `font=<name>` | The font's name. Spaces need no quotes. Generic families (`serif`, `monospace`…) work. The font must be installed, be in a `fonts` folder of the project (below), or, on the web app, be uploaded under Settings → Custom fonts. |
 | `size=<n>` | Size in points. |
 | `spacing=<v>` | CSS `line-height`: a multiplier (`1.5`) or a length (`20pt`). |
 
 Each option is optional, but one is required; a bare `||` closes the block.
+
+**Fonts in the project.** Put `.ttf`, `.otf`, `.woff` or `.woff2` files in a folder
+named `fonts` (any depth, any capitalisation) and they load automatically:
+
+```
+my-project/
+  fonts/
+    BrandSans-Regular.ttf
+    BrandSans-Bold.ttf
+  report.md
+```
+
+```
+||font=Brand Sans||
+Set in the project's own font.
+||
+```
+
+The name to use is the font's own family name (read from the file; the file name
+is the fallback), and the weights and italics of one family are grouped under it,
+so `**bold**` picks `BrandSans-Bold.ttf`. The files sync with the project, and an
+exported PDF embeds the ones the document uses. Settings → Project fonts lists
+what was found. WOFF2 files are named from their file name only
+(`Name-BoldItalic.woff2`).
 
 **Blocks nest, and they aren't paragraphs.** The marker lines disappear and the
 text flows on, so only a blank line separates paragraphs:

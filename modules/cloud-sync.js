@@ -393,6 +393,10 @@ async function fBuildDocExport(file, overrides, mode)
 
   extraCss += fBuildPageCss(settings, 'body', mode || 'paper', file.name);
 
+  // Fonts from the project's `fonts` folder that this document uses travel
+  // inside the file, so the PDF doesn't depend on what the renderer has.
+  extraCss += await fProjectFontsExportCss(bodyHtml + extraCss);
+
   return  {
             html: fWrapExportHtml(file.name, (showTitle ? '<h1>' + fEscHtml(file.name) + '</h1>\n' : '') + bodyHtml, extraCss),
             settings: settings
