@@ -196,8 +196,9 @@ other `[text]{…}` is left as literal text.
 **Heading attributes.** A trailing `{…}` on a heading styles that heading and is
 removed from its text, its anchor and its table-of-contents entry. Besides the
 formatting directives it accepts `notoc` (leave it out of `[TOC]`), `nolabel`
-(no chapter label, see below), `pagebreak` (start a new page before it) and
-`nopagebreak`.
+(no chapter label, see below), `pagebreak` (start a new page before it),
+`nopagebreak`, and `fill` / `space` (PDF spacing before it, see
+[Spacing](#spacing)).
 
 ## PDF output
 
@@ -222,8 +223,48 @@ nothing at all in the editor preview:
 \\\
 ```
 
-`[PAGEBREAK]` (or `[NEWPAGE]`) does the same, but shows a dashed rule in the
-preview. The toolbar button inserts `\\\`.
+The toolbar button inserts it.
+
+### Spacing
+
+Space that exists only on paper (nothing shows in the editor), for covers,
+signature blocks and the like. Two backslashes make a fixed space; a number after
+them makes a flexible one:
+
+| Line | Meaning | LaTeX |
+|---|---|---|
+| `\\` | A fixed vertical space of one blank line | `\vspace` |
+| `\\2cm` | A fixed space of that length (`pt`, `px`, `em`, `rem`, `cm`, `mm`, `in`) | `\vspace{2cm}` |
+| `\\1` or `\\1.5` | A fill with that weight: it takes a share of whatever is left of the page, in proportion to the weights of the other fills on it | `\vfill` |
+
+A number with no unit is a fill weight; with a unit, a length. The same things can
+hang off a heading, which puts them before it: `# Title {fill}`, `{fill=1.5}`,
+`{space}`, `{space=2cm}`.
+
+```
+\\1
+
+;;
+# {size=Huge}
+The Lore of Chaos
+;;
+
+\\1
+
+;;
+An Account in Six Volumes
+;;
+
+\\2
+
+\\\
+```
+
+centres the title between two equal fills and sets the subtitle with twice as much
+room below it. A space that falls at the top of a page the text merely ran onto is
+dropped (as LaTeX drops a `\vspace` there); one after a deliberate page break is
+kept. On the server's PDF a fill is stretched within the text between two page
+breaks, so it needs that much room to work in.
 
 ### Page setup
 

@@ -224,8 +224,15 @@ function fPaginateDocument(doc, l)
     }
   }
 
-  function fNewPage()
+  // True when the current page began because text ran off the one before it,
+  // not because the author asked for a break: a \\ space at the top of such a
+  // page is dropped, as LaTeX drops a \vspace there.
+  var topIsAuto = false;
+
+  function fNewPage(explicit)
   {
+    topIsAuto = !explicit && pages.length > 0;
+
     if (cur && content)
       fPruneEmpty(cur);
 
@@ -523,16 +530,35 @@ function fPaginateDocument(doc, l)
 
   function fPlace(el)
   {
+    if (el.classList.contains('pdf-space'))
+    {
+      if (fPageIsEmpty() && topIsAuto)
+        return;
+
+      cur.appendChild(el);
+
+      if (!fFits(el))
+        cur.removeChild(el);  // no room: the space is lost at the page break
+
+      return;
+    }
+
+    if (el.classList.contains('pdf-fill'))
+    {
+      cur.appendChild(el);  // stretched once the page is complete (fResolveFills)
+      return;
+    }
+
     if (el.classList.contains('page-break'))
     {
       if (!fPageIsEmpty())
-        fNewPage();
+        fNewPage(true);
 
       return;
     }
 
     if (fWantsBreakBefore(el) && !fPageIsEmpty())
-      fNewPage();
+      fNewPage(true);
 
     cur.appendChild(el);
 
@@ -644,9 +670,134 @@ function fPaginateDocument(doc, l)
     }
   );
 
+  fResolveFills(pages);
   fDrawPageBands(doc, pages, l);
 
   return pages.length;
+}
+
+// Gives each page's fills (\\1, {fill}) their share of what is left of the page,
+// in proportion to their weights. Done once the page is final, so the space
+// they take is exactly what the text didn't.
+function fResolveFills(pages)
+{
+  pages.forEach
+  (
+    function(page)
+    {
+      var box = page.querySelector('.pdf-content'),
+          fills = box ? box.querySelectorAll('.pdf-fill') : [];
+
+      if (!fills.length)
+        return;
+
+      var boxRect = box.getBoundingClientRect(),
+          bottom = boxRect.top,
+          total = 0;
+
+      Array.prototype.forEach.call
+      (
+        box.querySelectorAll('*'),
+        function(el)
+        {
+          if (!el.classList.contains('pdf-fill'))
+            bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+        }
+      );
+
+      Array.prototype.forEach.call(fills, function(f) { total += parseFloat(f.getAttribute('data-fill')) || 1; });
+
+      var spare = boxRect.bottom - bottom;
+
+      if (spare < 1)
+        return;
+
+      Array.prototype.forEach.call
+      (
+        fills,
+        function(f)
+        {
+          var weight = parseFloat(f.getAttribute('data-fill')) || 1;
+          // A hair short of the whole, so rounding can never tip the page over.
+          f.style.height = (spare * weight / total * 0.995).toFixed(2) + 'px';
+        }
+      );
+    }
+  );
+}
+
+// For the server's CSS-paginated PDF, which cannot stretch space across a page
+// by itself: the text between two forced breaks that holds a fill becomes one
+// page-height flex column, in which each fill grows with its weight. (A segment
+// longer than a page just flows on as ordinary text, the fills collapsing.)
+function fWrapFillSections(html, settings, title)
+{
+  var layout = fPageLayoutFromSettings(settings, title),
+      sheetMm = layout.heightMm - layout.margins.top - layout.margins.bottom - 3,
+      template = document.createElement('template');
+
+  template.innerHTML = html;
+
+  var breakTag = layout.newPage,
+      segments = [[]],
+      isBreakBefore = function(node)
+      {
+        return node.nodeType === 1 &&
+               (node.classList.contains('force-break') ||
+                (breakTag && node.tagName.toLowerCase() === breakTag));
+      };
+
+  Array.prototype.slice.call(template.content.childNodes).forEach
+  (
+    function(node)
+    {
+      if (node.nodeType === 1 && node.classList.contains('page-break'))
+      {
+        segments.push([node], []);          // the marker stands alone
+        return;
+      }
+
+      if (isBreakBefore(node) && segments[segments.length - 1].length)
+        segments.push([]);
+
+      segments[segments.length - 1].push(node);
+    }
+  );
+
+  var out = document.createElement('div');
+
+  segments.forEach
+  (
+    function(nodes)
+    {
+      var hasFill = nodes.some(function(n) { return n.nodeType === 1 && (n.classList.contains('pdf-fill') || n.querySelector('.pdf-fill')); });
+
+      if (!hasFill)
+      {
+        nodes.forEach(function(n) { out.appendChild(n); });
+        return;
+      }
+
+      var sheet = document.createElement('div');
+
+      sheet.className = 'pdf-sheet';
+      sheet.style.minHeight = sheetMm + 'mm';
+
+      nodes.forEach
+      (
+        function(n)
+        {
+          if (n.nodeType === 1 && n.classList.contains('pdf-fill'))
+            n.style.flex = (parseFloat(n.getAttribute('data-fill')) || 1) + ' 1 0';
+
+          sheet.appendChild(n);
+        }
+      );
+      out.appendChild(sheet);
+    }
+  );
+
+  return out.innerHTML;
 }
 
 function fDrawPageBands(doc, pages, l)

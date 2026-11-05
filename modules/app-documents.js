@@ -83,19 +83,30 @@ function fScheduleSave()
   clearTimeout(saveTimer);
   saveTimer = setTimeout
   (
-    function()
+    async function()
     {
-        if (currentFileId)
+        var id = currentFileId;
+
+        if (id)
         {
-          files[currentFileId].modified = Date.now();
-          fPersistFileEntry(currentFileId);
+          // Fold in anything that arrived from someone else first, so this
+          // save can't overwrite it.
+          if (typeof fLiveSyncBeforeSave === 'function')
+          {
+            try { await fLiveSyncBeforeSave(id); } catch(e) {}
+          }
+
+          if (!files[id]) return;
+
+          files[id].modified = Date.now();
+          fPersistFileEntry(id);
 
           // Keep the side pane in step while its file is being edited
-          if (splitState.fileId === currentFileId)
+          if (splitState.fileId === id)
             fRenderSplitPane();
         }
     },
-    800
+    typeof fAutosaveDelay === 'function' ? fAutosaveDelay() : 800
   );
 }
 
@@ -225,7 +236,7 @@ function fParseBlockDirectives(line)
 // Keys that make a "{...}" group count as inline/heading formatting rather
 // than ordinary braced text.
 var cInlineAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking)\b/i;
-var cHeadingAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak)\b/i;
+var cHeadingAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak|fill|space)\b/i;
 
 function fUnescapeEntities(text)
 {
@@ -721,6 +732,32 @@ function fRenderMarkdownDoc(source)
   return result;
 }
 
+// ── PDF SPACING (\\ , \\N , {fill} , {space}) ──
+// Space that only exists on paper, written the same three ways as a page break:
+// a line of its own, or an attribute on a heading (where it goes before it).
+//   fixed   \\ or \\2cm      {space} or {space=2cm}     LaTeX \vspace
+//   fill    \\1 or \\1.5     {fill} or {fill=1.5}       LaTeX \vfill
+// Fills on one page split what is left of it in proportion to their weights, so
+// "\\1 / title / \\1" centres the title and "\\1 / text" sets it at the bottom.
+var cDefaultSpace = '1.5em';
+
+// Returns the markup for one spacer. `amount` is '' (the default), a length
+// ("2cm") or, for a fill, a bare weight ("1.5"). `kind` says which an empty or
+// bare value means: 'space' (a default length) or 'fill' (weight 1).
+function fPdfSpaceHtml(amount, kind)
+{
+  var bare = /^(?:\d+(?:\.\d+)?|\.\d+)$/.test(amount);
+
+  // From a "\\N" line a bare number is a fill; from {space=N} it is em.
+  if (kind === 'space' && bare)
+    return '<div class="pdf-fill" data-fill="' + parseFloat(amount) + '" style="height:0"></div>\n';
+  if (kind === 'fill')
+    return '<div class="pdf-fill" data-fill="' + (bare ? parseFloat(amount) : 1) + '" style="height:0"></div>\n';
+
+  var length = !amount ? cDefaultSpace : (fCssLengthValue(amount) || cDefaultSpace);
+  return '<div class="pdf-space" style="height:' + length + '"></div>\n';
+}
+
 var checkboxRenderIndex = 0;
 
 // ── MATH (KaTeX) ──
@@ -764,12 +801,37 @@ var mathInlineExtension =
   renderer: function(token) { return fKatexRenderTex(token.text, false); }
 };
 
+// marked asks every block extension "where in this text could you start?" for
+// each paragraph, handing over everything left of the document. A search that
+// runs to the end of a megabyte each time makes lexing quadratic: a 1 MB
+// document spent 4 s in the lexer and 25 ms rendering. A paragraph ends at the
+// first blank line, so nothing past it can interrupt it, and the search is cut
+// there. (A block that begins right after a blank line is found by its
+// tokenizer, which never uses start().)
+function fBoundExtensionStart(extension)
+{
+  if (extension.level !== 'block' || typeof extension.start !== 'function')
+    return extension;
+
+  var start = extension.start;
+
+  extension.start = function(src)
+  {
+    var end = src.indexOf('\n\n');
+
+    return start.call(this, end === -1 ? src : src.slice(0, end + 1));
+  };
+  extension.start.unbounded = start; // for comparing the two in tests
+
+  return extension;
+}
+
 function fConfigureMarkedExtensions()
 {
   if (typeof marked === 'undefined')
     return;
 
-  marked.use({ extensions: [mathBlockExtension, mathInlineExtension] });
+  marked.use({ extensions: [mathBlockExtension, mathInlineExtension].map(fBoundExtensionStart) });
 
   marked.use
   (
@@ -803,7 +865,21 @@ function fConfigureMarkedExtensions()
           if (fHasToken(parts.tokens, 'pagebreak'))   classes.push('force-break');
           if (fHasToken(parts.tokens, 'nopagebreak')) classes.push('no-break');
 
-          return '<h' + level + (id ? (' id="' + id + '"') : '') +
+          // {fill} / {space} put that spacer before the heading.
+          var spacers = '';
+          parts.tokens.forEach(function(t)
+          {
+            if (t.key === 'fill')
+              spacers += fPdfSpaceHtml(t.hasValue ? t.value : '', 'fill');
+            else if (t.key === 'space')
+            {
+              // {space=2} means 2em here; a unit makes it a length.
+              var amount = t.hasValue && /^(?:\d+(?:\.\d+)?|\.\d+)$/.test(t.value) ? t.value + 'em' : (t.hasValue ? t.value : '');
+              spacers += fPdfSpaceHtml(amount, 'heading-space');
+            }
+          });
+
+          return spacers + '<h' + level + (id ? (' id="' + id + '"') : '') +
                  (classes.length ? ' class="' + classes.join(' ') + '"' : '') +
                  (parts.style ? ' style="' + parts.style + '"' : '') + '>' +
                  label + (parts.tokens.length ? text.replace(/\s*\{[^{}]*\}\s*$/, '') : text) + '</h' + level + '>\n';
@@ -989,25 +1065,6 @@ function fConfigureMarkedExtensions()
           }
         },
         {
-          // [PAGEBREAK] (or [NEWPAGE]): the next block starts on a new page.
-          name: 'pageBreak',
-          level: 'block',
-          start: function(src)
-          {
-            var match = /^\[(?:PAGEBREAK|NEWPAGE)\][ \t]*$/im.exec(src);
-            return match ? match.index : undefined;
-          },
-          tokenizer: function(src)
-          {
-            var match = /^\[(?:PAGEBREAK|NEWPAGE)\][ \t]*(?:\n+|$)/i.exec(src);
-            return match ? { type: 'pageBreak', raw: match[0] } : undefined;
-          },
-          renderer: function()
-          {
-            return '<div class="page-break" role="separator"><span>page break</span></div>\n';
-          }
-        },
-        {
           // A line holding just \\\ : a new page in the PDF, nothing at all on screen.
           name: 'pdfPageBreak',
           level: 'block',
@@ -1024,6 +1081,32 @@ function fConfigureMarkedExtensions()
           renderer: function()
           {
             return '<div class="page-break pdf-only"></div>\n';
+          }
+        },
+        {
+          // A line holding two backslashes and an optional amount, PDF only
+          // (nothing shows on screen):
+          //   \\        a fixed vertical space, one blank line (LaTeX \vspace)
+          //   \\2cm     a fixed vertical space of that size
+          //   \\1.5     flexible space with weight 1.5, which shares what is left of
+          //             the page with the other fills on it (LaTeX \vfill)
+          // A number with no unit is a fill weight; one with a unit is a length.
+          // Three backslashes stay the page break above.
+          name: 'pdfSpace',
+          level: 'block',
+          start: function(src)
+          {
+            var match = /^ {0,3}\\\\(?!\\)/m.exec(src);
+            return match ? match.index : undefined;
+          },
+          tokenizer: function(src)
+          {
+            var match = /^ {0,3}\\\\((?:\d+(?:\.\d+)?|\.\d+)(?:pt|px|em|rem|cm|mm|in)?)?[ \t]*(?:\n+|$)/.exec(src);
+            return match ? { type: 'pdfSpace', raw: match[0], amount: match[1] || '' } : undefined;
+          },
+          renderer: function(token)
+          {
+            return fPdfSpaceHtml(token.amount, 'space');
           }
         },
         {
@@ -1201,7 +1284,7 @@ function fConfigureMarkedExtensions()
             return '<span class="doc-tag" onclick="fFilterByTag(\'' + fEscAttr(token.tag) + '\')">#' + fEscHtml(token.tag) + '</span>';
           }
         }
-      ]
+      ].map(fBoundExtensionStart)
     }
   );
 }
@@ -1389,6 +1472,54 @@ function fRenderTOC(optionText)
   return html;
 }
 
+// Brings the preview up to date by replacing only the blocks that changed.
+// Typing touches one place, so the blocks before and after it are left alone:
+// no re-parse, no re-layout, and an unchanged diagram, formula or chart keeps
+// what it had drawn. The unchanged stretch at each end is found by comparing
+// the new blocks with the live ones; everything between is swapped.
+function fSameBlock(live, fresh)
+{
+  if (live.nodeType !== fresh.nodeType)
+    return false;
+
+  // A rendered diagram no longer looks like its source; compare by the source
+  // it was drawn from.
+  if (live.nodeType === 1 && live.classList.contains('mermaid') && fresh.classList.contains('mermaid'))
+    return live.getAttribute('data-mermaid-src') === fresh.textContent;
+
+  return live.isEqualNode(fresh);
+}
+
+function fPatchPreview(container, html)
+{
+  var template = document.createElement('template');
+
+  template.innerHTML = html;
+
+  var fresh = Array.prototype.slice.call(template.content.childNodes),
+      live = Array.prototype.slice.call(container.childNodes),
+      head = 0,
+      freshEnd = fresh.length,
+      liveEnd = live.length;
+
+  while (head < freshEnd && head < liveEnd && fSameBlock(live[head], fresh[head]))
+    head++;
+
+  while (freshEnd > head && liveEnd > head && fSameBlock(live[liveEnd - 1], fresh[freshEnd - 1]))
+  {
+    freshEnd--;
+    liveEnd--;
+  }
+
+  var before = liveEnd < live.length ? live[liveEnd] : null;
+
+  for (var i = head; i < liveEnd; i++)
+    container.removeChild(live[i]);
+
+  for (var j = head; j < freshEnd; j++)
+    container.insertBefore(fresh[j], before);
+}
+
 function fUpdatePreview(deferBacklinks)
 {
   // A direct call supersedes any queued typing refresh.
@@ -1416,7 +1547,7 @@ function fUpdatePreview(deferBacklinks)
   fSetPreviewPageStyle(pageCss);
 
   var previewContent = document.getElementById('preview-content');
-  previewContent.innerHTML = fSanitizeHtml(html);
+  fPatchPreview(previewContent, fSanitizeHtml(html));
   fRenderMermaidDiagrams(previewContent);
   fRenderEmbeddedSheetCharts(previewContent);
 

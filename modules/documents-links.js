@@ -384,12 +384,16 @@ function fRenderEmbeddedSheetCharts(container)
 
   embeds.forEach(function(div)
   {
+    // An unchanged embed keeps its drawn chart across a preview refresh.
+    if (div.getAttribute('data-charted')) return;
+
     try
     {
       var config = JSON.parse(div.getAttribute('data-chart-config')),
           canvas = div.querySelector('canvas');
 
       if (canvas) new Chart(canvas.getContext('2d'), config);
+      div.setAttribute('data-charted', 'true');
     }
     catch(e) { console.warn('Embedded chart render error', e); }
   });

@@ -78,24 +78,147 @@ function fUpdateGraphPreview()
 // Renders any `.mermaid` placeholder divs produced by the marked code-block
 // override into actual diagrams. Re-running on freshly-built markup is safe
 // since each call works on brand-new, unprocessed nodes.
+// ── Diagram rendering ──
+// Turning a mermaid source into an SVG costs on the order of 200 ms, so it is
+// done as little as possible: a diagram is rendered once per distinct source (the
+// result is cached, so an unchanged diagram reappears instantly after every
+// edit), and only when it is near the screen, so a document with dozens of
+// diagrams doesn't render them all up front.
+var mermaidSvgCache = {};
+var mermaidCacheOrder = [];
+var cMermaidCacheMax = 80;
+var mermaidRenderSeq = 0;
+var mermaidQueue = Promise.resolve();
+var mermaidObservers = [];
+
+function fMermaidShow(node, svg)
+{
+  node.innerHTML = svg;
+  node.setAttribute('data-processed', 'true');
+  node.classList.remove('mermaid-pending');
+}
+
+function fMermaidRender(node)
+{
+  var source = node.getAttribute('data-mermaid-src');
+
+  if (!source || node.getAttribute('data-processed'))
+    return;
+
+  if (mermaidSvgCache[source])
+  {
+    fMermaidShow(node, mermaidSvgCache[source]);
+    return;
+  }
+
+  // One at a time: mermaid.render shares scratch elements between calls.
+  mermaidQueue = mermaidQueue.then(function()
+  {
+    if (!node.isConnected || node.getAttribute('data-processed'))
+      return;
+
+    return mermaid.render('mmd-' + (++mermaidRenderSeq), source).then
+    (
+      function(result)
+      {
+        mermaidSvgCache[source] = result.svg;
+        mermaidCacheOrder.push(source);
+
+        if (mermaidCacheOrder.length > cMermaidCacheMax)
+          delete mermaidSvgCache[mermaidCacheOrder.shift()];
+
+        if (node.isConnected)
+          fMermaidShow(node, result.svg);
+      }
+    ).catch
+    (
+      function(e)
+      {
+        // A diagram with a syntax error stays as its source, as before.
+        node.classList.remove('mermaid-pending');
+        console.warn('Mermaid render error', e);
+      }
+    );
+  });
+}
+
+// The nearest ancestor that scrolls, so "near the screen" means near the
+// visible part of the preview rather than of the whole window.
+function fScrollParentOf(element)
+{
+  for (var el = element.parentElement; el; el = el.parentElement)
+  {
+    var overflow = getComputedStyle(el).overflowY;
+
+    if (overflow === 'auto' || overflow === 'scroll')
+      return el;
+  }
+
+  return null;
+}
+
 function fRenderMermaidDiagrams(container)
 {
   if ((typeof mermaid === 'undefined') || !container)
     return;
 
-  var nodes = container.querySelectorAll('.mermaid');
+  var nodes = container.querySelectorAll('.mermaid:not([data-processed])');
 
   if (!nodes.length)
     return;
 
-  try
+  var observer = null;
+
+  if (typeof IntersectionObserver !== 'undefined')
   {
-    mermaid.run({ nodes: nodes, suppressErrors: true });
+    observer = new IntersectionObserver
+    (
+      function(entries)
+      {
+        entries.forEach
+        (
+          function(entry)
+          {
+            if (!entry.isIntersecting)
+              return;
+
+            observer.unobserve(entry.target);
+            fMermaidRender(entry.target);
+          }
+        );
+      },
+      { root: fScrollParentOf(container), rootMargin: '1200px 0px' }
+    );
   }
-  catch(e)
-  {
-    console.warn('Mermaid render error', e);
-  }
+
+  // Observers of an earlier pass over this container are obsolete.
+  mermaidObservers = mermaidObservers.filter(function(o) { if (o.container === container) { o.observer.disconnect(); return false; } return true; });
+  if (observer) mermaidObservers.push({ container: container, observer: observer });
+
+  Array.prototype.forEach.call
+  (
+    nodes,
+    function(node)
+    {
+      // The source is kept on the node: its text is about to become the SVG.
+      var source = node.getAttribute('data-mermaid-src');
+
+      if (source === null)
+      {
+        source = node.textContent;
+        node.setAttribute('data-mermaid-src', source);
+      }
+
+      if (mermaidSvgCache[source])
+        fMermaidShow(node, mermaidSvgCache[source]);
+      else
+      {
+        node.classList.add('mermaid-pending');
+        if (observer) observer.observe(node);
+        else fMermaidRender(node);
+      }
+    }
+  );
 }
 
 function fSetGraphView(newView)

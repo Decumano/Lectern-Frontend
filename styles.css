@@ -3002,6 +3002,20 @@ mark.fr-hl.fr-current
   justify-content: center;
   margin: 1.2em 0;
 }
+:is(#preview-content, #split-rendered) .mermaid.mermaid-pending
+{
+  min-height: 160px;
+  align-items: center;
+  color: transparent; /* the source shows only if it never renders */
+  font-size: 0;
+}
+/* ── Rendering cost: the browser skips layout and painting for blocks that are
+   off screen. Headings are left out so jumping to one lands accurately. ── */
+:is(#preview-content, #split-rendered) > :not(h1, h2, h3, h4, h5, h6)
+{
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 4em;
+}
 :is(#preview-content, #split-rendered) .mermaid svg
 {
   max-width: 100%;
@@ -4650,25 +4664,6 @@ body.tab-drag-active #split-embed { pointer-events: none; }
 }
 
 /* ── DOCS: page macros ([PAGEBREAK], [PAGE ...], chapter labels, TOC title) ── */
-:is(#preview-content, #split-rendered) .page-break
-{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 2em 0;
-  color: var(--text3);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: var(--font-ui, sans-serif);
-}
-:is(#preview-content, #split-rendered) .page-break::before,
-:is(#preview-content, #split-rendered) .page-break::after
-{
-  content: '';
-  flex: 1;
-  border-top: 1px dashed var(--border2);
-}
 :is(#preview-content, #split-rendered) .page-setup-note
 {
   margin: 0.8em 0;
@@ -4699,9 +4694,9 @@ body.tab-drag-active #split-embed { pointer-events: none; }
   min-width: 1.6em;
 }
 
-:is(#preview-content, #split-rendered) .page-break.pdf-only
+:is(#preview-content, #split-rendered) :is(.page-break, .pdf-space, .pdf-fill)
 {
-  display: none;
+  display: none; /* paper only: nothing shows in the editor */
 }
 
 /* ── PDF export options ── */

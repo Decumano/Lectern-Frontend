@@ -297,6 +297,9 @@ function fWrapExportHtml(title, bodyHtml, extraCss)
           '.page-break{break-after:page;height:0;margin:0;padding:0;border:0;overflow:hidden;}\n'+
           '.page-break span,.page-setup-note{display:none;}\n'+
           '.force-break{break-before:page;}\n'+
+          '.pdf-fill,.pdf-space{margin:0;padding:0;border:0;}\n'+
+          '.pdf-sheet{display:flex;flex-direction:column;}\n'+
+          '.pdf-sheet>*{flex:0 0 auto;}\n'+
           '.no-break{break-before:avoid;}\n'+
           'tr,.mermaid-diagram,.math-block,.notebook-page{break-inside:avoid;}\n'+
           'h1,h2,h3,h4,h5,h6{break-after:avoid;}\n'+
@@ -381,6 +384,10 @@ async function fBuildDocExport(file, overrides, mode)
   // Sanitise first, then inline mermaid as static SVG (the diagram library
   // isn't shipped inside an exported file).
   bodyHtml = await fInlineMermaidSvgs(fSanitizeHtml(bodyHtml));
+
+  // The server paginates with CSS, which cannot stretch a fill across a page.
+  if ((mode || 'paper') === 'paper' && bodyHtml.indexOf('pdf-fill') !== -1)
+    bodyHtml = fWrapFillSections(bodyHtml, settings, file.name);
 
   var extraCss = bodyHtml.indexOf('class="katex') !== -1 ? await fGetKatexExportCss() : '';
 
