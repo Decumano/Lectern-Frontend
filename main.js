@@ -53,6 +53,7 @@
     'relations-graph.js',
     'file-history.js',
     'work-folder.js',
+    'project-fonts.js',
 
     // The structured data apps, and the modal/tag machinery they share.
     'data-apps-common.js',

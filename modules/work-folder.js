@@ -93,6 +93,10 @@ async function fLoadWorkFolderTree()
 
   fPruneOpenTabs(); // ids are rel paths; anything renamed/moved/deleted on disk is gone
   fRenderFileList();
+
+  // Fonts in a `fonts` folder (see project-fonts.js). Not awaited: the tree
+  // is usable at once and the text re-flows when a font arrives.
+  fLoadProjectFonts(entries).catch(function(e) { console.warn('Project fonts', e); });
 }
 
 async function fCreateWorkFile(name, type, content)

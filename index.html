@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lectern</title>
   <link rel="icon" type="image/png" href="assets/lectern.png">
-  <link rel="stylesheet" href="styles.css?v=29">
+  <link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
   <div id="auth-gate" style="position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:#14161a;font-family:system-ui,sans-serif;">
@@ -1029,6 +1029,13 @@
           <button type="button" class="btn-cancel settings-theme-reset" onclick="fResetTheme()">Reset to default</button>
         </div>
       </div>
+      <div class="settings-section" id="project-fonts-section">
+        <div class="settings-field-label">Project fonts</div>
+        <p class="settings-help-text">Any <code>.ttf</code>, <code>.otf</code>, <code>.woff</code> or <code>.woff2</code> file inside a
+          folder named <code>fonts</code> in your workspace is loaded automatically. Use it by name,
+          e.g. <code>||font=My Brand Sans||</code>. The font travels with the project and is embedded in exported PDFs.</p>
+        <div id="project-fonts-list" class="custom-fonts-list"></div>
+      </div>
       <div class="settings-section" id="custom-fonts-section" style="display:none;">
         <div class="settings-field-label">Custom fonts</div>
         <p class="settings-help-text">Upload TTF/OTF/WOFF/WOFF2 files (5MB max, 30 fonts max). They render in the editor,
@@ -1187,7 +1194,7 @@
     </div>
   </div>
 
-  <script type="text/javascript" src="auth-gate.js?v=29"></script>
+  <script type="text/javascript" src="auth-gate.js?v=30"></script>
 
   <!-- TRAVEL DETAIL POPOVER -->
   <div id="travel-popover" style="display:none;position:fixed;z-index:901;min-width:300px;max-width:360px;">

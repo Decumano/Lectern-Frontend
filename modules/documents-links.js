@@ -599,7 +599,7 @@ async function fGetAvailableFonts()
   var baseNames = (names && names.length) ? names : cFallbackFontList.slice();
 
   if (customFontsCache === null) await fRefreshCustomFonts();
-  var customNames = (customFontsCache || []).map(function(f){ return f.familyName; });
+  var customNames = fProjectFontFamilies().concat((customFontsCache || []).map(function(f){ return f.familyName; }));
 
   // Custom (uploaded, always-renders-correctly) fonts first, then whatever
   // the OS/fallback list contributed, deduped.

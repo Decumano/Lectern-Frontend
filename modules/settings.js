@@ -738,6 +738,8 @@ async function fInjectCustomFontsStyle()
 
 function fRenderCustomFontsSection()
 {
+  fRenderProjectFontsSection();
+
   var section = document.getElementById('custom-fonts-section');
   if (!section) return;
 
