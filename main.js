@@ -86,6 +86,7 @@
     'cloud-sync.js',
     'pdf-pagination.js',
     'sharing.js',
+    'live-merge.js',
     'live-sync.js',
 
     // Slides. Appended rather than placed by the other editors: it only

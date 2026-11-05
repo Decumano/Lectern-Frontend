@@ -15,6 +15,12 @@ var Platform = (function () {
   })();
   var tauri = tauriGlobal && tauriGlobal.core;
 
+  // Identifies this browser tab to the server (see fApi and live-sync.js).
+  var deviceId = 'web-' + Array.prototype.map.call(
+    (window.crypto || { getRandomValues: function (a) { return a.map(function () { return Math.floor(Math.random() * 256); }); } })
+      .getRandomValues(new Uint8Array(8)),
+    function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+
   // Sentinel returned by fPickWorkFolder() once authenticated: there's no
   // folder to pick on the web, just an implicit per-user workspace.
   var cCloudRoot = 'cloud';
@@ -52,6 +58,9 @@ var Platform = (function () {
   function fApi(path, options) {
     options = options || {};
     options.credentials = 'include';
+    // Names this page to the server, so a change it writes isn't announced
+    // back to it over the live-sync socket.
+    options.headers = Object.assign({ 'X-Lectern-Device': deviceId }, options.headers || {});
     return fetch('/api' + path, options).then(function (res) {
       if (!res.ok) {
         return res.json().catch(function () { return {}; }).then(function (body) {
@@ -532,6 +541,7 @@ var Platform = (function () {
 
   return {
     isNative: !!tauri,
+    deviceId: deviceId,
     fSetCloudWorkspace: fSetCloudWorkspace,
     fPickWorkFolder: fPickWorkFolder,
     fListWorkFolder: fListWorkFolder,

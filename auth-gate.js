@@ -18,7 +18,7 @@
   function fLoadApp() {
     gate.style.display = 'none';
     var script = document.createElement('script');
-    script.src = 'main.js?v=26'; // keep the version in step with index.html's asset tags
+    script.src = 'main.js?v=29'; // keep the version in step with index.html's asset tags
     // main.js is the loader; it reuses this ?v= for the modules it pulls
     // in, so bumping the number here busts the whole frontend at once.
     document.body.appendChild(script);
