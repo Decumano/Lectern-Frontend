@@ -486,7 +486,8 @@ function fWrapBlock(align)
   fOnEditorChange();
 }
 
-// The one font syntax: ||font=Name ... ||. Blocks flow with the surrounding
+// The one font syntax: ||(font=Name) text || on one line, or
+// ||(font=Name) / text / || over several. Blocks flow with the surrounding
 // text (see fPreprocessFontBlocks), so this works mid-sentence as well.
 function fWrapFontBlock(fontName)
 {
@@ -497,7 +498,9 @@ function fWrapFontBlock(fontName)
       selectionEnd = editor.selectionEnd,
       selection = editor.value.slice(selectionStart, selectionEnd) || 'Text';
 
-  var block = '\n||font=' + fontName + '\n' + selection + '\n||\n';
+  var block = selection.indexOf('\n') === -1
+    ? '||(font=' + fontName + ') ' + selection + ' ||'
+    : '\n||(font=' + fontName + ')\n' + selection + '\n||\n';
 
   editor.value = editor.value.slice(0, selectionStart) + block + editor.value.slice(selectionEnd);
   editor.selectionStart = editor.selectionEnd = selectionStart + block.length;

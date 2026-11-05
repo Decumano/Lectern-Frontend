@@ -175,6 +175,8 @@ let ROWS = 40,
     COLS = 26;
 
 let documentHeadings = [];
+let fontStyleTable = [],      // the font-block styles of the render in progress
+    tocFontIndexByCss = {};
 let headingRenderCursor = 0;
 let slugCounts = {};
 

@@ -7,7 +7,7 @@
 // Any TTF/OTF/WOFF/WOFF2 file inside a folder named `fonts` (at any depth,
 // any capitalisation) of the work folder is registered as a font, so
 //
-//     ||font=My Brand Sans||
+//     ||(font=My Brand Sans) text ||
 //
 // works with nothing installed and nothing uploaded. The files travel with
 // the project: they sync like any other file, and an exported document
