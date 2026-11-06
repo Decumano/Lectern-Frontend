@@ -1104,15 +1104,35 @@ async function fInitSecondaryContext()
       // pending debounced save makes disk content momentarily stale.
       if (!f || Date.now() - lastLocalEditAt < 5000) return;
 
+      // A file that live sync follows is merged into the editor in place, as
+      // changes arrive (and its writes are in flight, or about to be). Reloading
+      // it from disk here would race that, throw away unsaved text, and send the
+      // view back to the top.
+      if (id === liveSyncFileId || saveTimer !== null || autosaveBusy) return;
+
       try
       {
         var content = await Platform.fReadWorkFile(workFolderRoot, id);
 
-        if (content !== f.content)
+        if (content !== f.content && id === currentFileId && saveTimer === null && !autosaveBusy)
         {
+          // Keep the reader's place: the text changed under them, they didn't move.
+          var ed = document.getElementById('editor'),
+              pv = document.getElementById('preview-content'),
+              pane = pv ? fScrollParentOf(pv) : null,
+              at = { edit: ed.scrollTop, pane: pane ? pane.scrollTop : 0, start: ed.selectionStart, end: ed.selectionEnd };
+
           f.content = content;
           f.contentLoaded = true;
           await fOpenFile(id);
+
+          if (currentFileId === id)
+          {
+            ed.scrollTop = at.edit;
+            ed.selectionStart = Math.min(at.start, ed.value.length);
+            ed.selectionEnd = Math.min(at.end, ed.value.length);
+            if (pane) pane.scrollTop = at.pane;
+          }
         }
       }
       catch(e) {}

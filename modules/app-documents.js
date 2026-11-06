@@ -1924,17 +1924,31 @@ function fVerifyChunkedPreview()
   if (!editor || editor.value !== previewVerifySource || previewTimer !== null)
     return;
 
-  var single = fSanitizeHtml(fRenderMarkdownDoc(previewVerifySource, {}).html);
+  // In two steps with a breath between, so neither is a pause long enough to
+  // feel: the single-pass render, then sanitizing and comparing it.
+  var rendered = fRenderMarkdownDoc(previewVerifySource, {}),
+      source = previewVerifySource,
+      signature = previewVerifySignature;
 
-  if (single === previewVerifyHtml)
-  {
-    previewVerifiedSignature = previewVerifySignature;
-    return;
-  }
+  setTimeout
+  (
+    function()
+    {
+      if (editor.value !== source || previewTimer !== null || previewVerifySource !== source)
+        return;
 
-  console.warn('Chunked preview differed from a single pass; redrawing without chunking.');
-  previewOffSignature = previewVerifySignature;
-  fUpdatePreview(true);
+      if (fSanitizeHtml(rendered.html) === previewVerifyHtml)
+      {
+        previewVerifiedSignature = signature;
+        return;
+      }
+
+      console.warn('Chunked preview differed from a single pass; redrawing without chunking.');
+      previewOffSignature = signature;
+      fUpdatePreview(true);
+    },
+    0
+  );
 }
 
 function fUpdatePreview(deferBacklinks)

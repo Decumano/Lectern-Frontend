@@ -382,18 +382,49 @@ function fApplyRemoteDocContent(id)
 
   if (before !== merged)
   {
-    var start = editor.selectionStart, end = editor.selectionEnd, top = editor.scrollTop;
+    var start = editor.selectionStart, end = editor.selectionEnd, top = editor.scrollTop, left = editor.scrollLeft;
 
     docTextUndo.fForceSnapshot();
-    editor.value = merged;
-    editor.selectionStart = fMapOffset(before, merged, start);
-    editor.selectionEnd   = fMapOffset(before, merged, end);
+
+    // Only the part that differs is replaced. Putting the whole text back means
+    // the browser lays out the whole document again, a visible stall on a long
+    // one, and sends the view to the top; replacing a range leaves the rest, and
+    // the scroll position, alone. Changes from elsewhere are almost always one
+    // place (a line added, a word typed), so that range is small.
+    var common = Math.min(before.length, merged.length),
+        p = 0, s = 0;
+
+    while (p < common && before.charCodeAt(p) === merged.charCodeAt(p)) p++;
+    while (s < common - p && before.charCodeAt(before.length - 1 - s) === merged.charCodeAt(merged.length - 1 - s)) s++;
+
+    // Never cut between the two halves of a character outside the BMP.
+    if (p > 0 && /[\uD800-\uDBFF]/.test(before[p - 1])) p--;
+    if (s > 0 && /[\uDC00-\uDFFF]/.test(before[before.length - s])) s--;
+
+    var oldEnd = before.length - s,
+        newEnd = merged.length - s,
+        shift = merged.length - before.length,
+        // A caret before the change stays, one after it moves with it, one inside
+        // it goes to the same distance into the new text (or its end).
+        map = function(o) { return o <= p ? o : (o >= oldEnd ? o + shift : p + Math.min(o - p, newEnd - p)); };
+
+    editor.setRangeText(merged.slice(p, newEnd), p, oldEnd, 'preserve');
+
+    if (editor.value !== merged)   // cannot happen; but never leave the wrong text showing
+      editor.value = merged;
+
+    editor.selectionStart = map(start);
+    editor.selectionEnd   = map(end);
     editor.scrollTop      = top;
+    editor.scrollLeft     = left;
   }
 
-  fUpdatePreview(true);
-  fUpdateStatus();
-  fRenderFileList();
+  // Through the same debounce as typing, so a change from elsewhere and a
+  // keystroke landing together cost one render, not two.
+  fSchedulePreviewUpdate();
+
+  // The sidebar only needs the new modified time; not before the next breath.
+  fScheduleSaveFollowUp(id, true);
 }
 
 // The desktop's sync engine just wrote these files into the work folder (a
