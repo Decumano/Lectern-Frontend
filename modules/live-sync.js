@@ -395,18 +395,33 @@ function fApplyRemoteDocContent(id)
 // The desktop's sync engine just wrote these files into the work folder (a
 // change from the server, merged or not). If the open one is among them, fold
 // its new text into the editor.
+// Set when the desktop sync engine reports that it wrote the open file.
+var liveSyncDiskChanged = false;
+
 function fOnCloudFilesChanged(paths)
 {
   if (!liveSyncFileId || !paths || paths.indexOf(liveSyncFileId) === -1) return;
+  liveSyncDiskChanged = true;
   fLiveSyncTick();
 }
 
 // Run just before the open file is saved, so a save never overwrites a change
-// that arrived since the last check.
+// that arrived since the last check. On the desktop that check reads the whole
+// file back from disk, so it is only made when the sync engine has said the file
+// changed (it announces every write); edits made outside the app are caught by
+// the folder poll. On the web the check is a small request for the file's hash.
 async function fLiveSyncBeforeSave(id)
 {
-  if (id && id === liveSyncFileId && id === currentFileId)
-    await fLiveSyncTick();
+  if (!id || id !== liveSyncFileId || id !== currentFileId)
+    return;
+
+  if (Platform.isNative)
+  {
+    if (!liveSyncDiskChanged) return;
+    liveSyncDiskChanged = false;
+  }
+
+  await fLiveSyncTick();
 }
 
 // How long typing waits before it is saved, and so shared: short for a file

@@ -65,6 +65,7 @@
     // Documents.
     'app-documents.js',
     'doc-definitions.js',
+    'doc-incremental.js',
     'documents-find.js',
     'documents-links.js',
 

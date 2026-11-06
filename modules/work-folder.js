@@ -125,8 +125,64 @@ async function fCreateWorkFile(name, type, content)
 // both by the autosave debounce (acting on currentFileId) and by sidebar
 // inline-rename (which may target a file that isn't the open one). A rename
 // is implemented as a move within the same parent folder.
-async function fPersistFileEntry(id)
+// What an autosave leaves for later. Writing the file is the save; refreshing
+// the backlink index, re-sorting the sidebar and redrawing the side pane are
+// bookkeeping that nothing is waiting on, and on a long document or a big
+// workspace they cost more than the write. They run once, when typing has
+// stopped for a moment, however many saves came before.
+var saveFollowUpTimer = null,
+    saveFollowUpIds = {},
+    saveFollowUpList = false,
+    saveFollowUpSplit = false;
+
+function fScheduleSaveFollowUp(id, relist)
 {
+  saveFollowUpIds[id] = true;
+  saveFollowUpList = saveFollowUpList || !!relist;
+  saveFollowUpSplit = saveFollowUpSplit || splitState.fileId === id;
+
+  clearTimeout(saveFollowUpTimer);
+  saveFollowUpTimer = setTimeout(fRunSaveFollowUp, 900);
+}
+
+async function fRunSaveFollowUp()
+{
+  saveFollowUpTimer = null;
+
+  // Still typing: this isn't the moment. Try again once it has paused.
+  if (Date.now() - lastLocalEditAt < 900)
+  {
+    saveFollowUpTimer = setTimeout(fRunSaveFollowUp, 900);
+    return;
+  }
+
+  var ids = Object.keys(saveFollowUpIds),
+      relist = saveFollowUpList,
+      split = saveFollowUpSplit;
+
+  saveFollowUpIds = {};
+  saveFollowUpList = false;
+  saveFollowUpSplit = false;
+
+  for (var i = 0; i < ids.length; i++)
+  {
+    try { if (files[ids[i]]) await fUpdateBacklinksForFile(ids[i]); }
+    catch(e) { console.warn('Backlink update error', e); }
+  }
+
+  if (relist)
+    fRenderFileList();
+
+  if (split && typeof fRenderSplitPane === 'function')
+    fRenderSplitPane();
+}
+
+// options.background: an autosave. The same write, with the bookkeeping above
+// postponed instead of done before returning.
+async function fPersistFileEntry(id, options)
+{
+  var background = !!(options && options.background);
+
   if (!files[id])
     return;
 
@@ -152,6 +208,13 @@ async function fPersistFileEntry(id)
 
   if (!workFolderRoot)
   {
+    if (background)
+    {
+      fSaveToStorage();
+      fScheduleSaveFollowUp(id, true);
+      return;
+    }
+
     await fUpdateBacklinksForFile(id);
     fSaveToStorage();
     fRenderFileList();
@@ -194,14 +257,26 @@ async function fPersistFileEntry(id)
   {
     await Platform.fWriteWorkFile(workFolderRoot, activeId, files[activeId].content || '');
     if (activeId === liveSyncFileId) { liveSyncBase = files[activeId].content || ''; liveSyncServerHash = null; }
-    await fUpdateBacklinksForFile(activeId);
+
+    if (!background)
+      await fUpdateBacklinksForFile(activeId);
   }
   catch(e)
   {
     console.warn('Work folder write error', e);
   }
 
-  fRenderFileList();
+  // A rename changes the sidebar now; otherwise only the order (by time saved)
+  // does, which can wait.
+  if (background && activeId === id)
+    fScheduleSaveFollowUp(activeId, true);
+  else
+  {
+    if (background)
+      fScheduleSaveFollowUp(activeId, false);
+
+    fRenderFileList();
+  }
 
   if (currentFileId === activeId)
   {

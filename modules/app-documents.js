@@ -77,37 +77,72 @@ function fFlushPreviewUpdate()
   fUpdateStatus();
 }
 
+// Autosave, as an editor does it: a pause in typing starts one write of the
+// latest text, never two at once (edits made meanwhile are picked up by the next
+// one, in order), nothing is written if nothing changed, and the housekeeping
+// that follows a save is postponed until typing has stopped (see
+// fScheduleSaveFollowUp).
+var autosaveBusy = false,
+    autosaveAgain = false,
+    autosaveWritten = {}; // id -> { name, content } as last written here
+
 function fScheduleSave()
 {
   lastLocalEditAt = Date.now();
   clearTimeout(saveTimer);
-  saveTimer = setTimeout
-  (
-    async function()
+  saveTimer = setTimeout(fRunAutosave, typeof fAutosaveDelay === 'function' ? fAutosaveDelay() : 800);
+}
+
+async function fRunAutosave()
+{
+  saveTimer = null;
+
+  if (autosaveBusy)
+  {
+    autosaveAgain = true;
+    return;
+  }
+
+  var id = currentFileId;
+
+  if (!id)
+    return;
+
+  autosaveBusy = true;
+
+  try
+  {
+    // Fold in anything that arrived from someone else first, so this
+    // save can't overwrite it.
+    if (typeof fLiveSyncBeforeSave === 'function')
     {
-        var id = currentFileId;
+      try { await fLiveSyncBeforeSave(id); } catch(e) {}
+    }
 
-        if (id)
-        {
-          // Fold in anything that arrived from someone else first, so this
-          // save can't overwrite it.
-          if (typeof fLiveSyncBeforeSave === 'function')
-          {
-            try { await fLiveSyncBeforeSave(id); } catch(e) {}
-          }
+    var file = files[id],
+        written = autosaveWritten[id];
 
-          if (!files[id]) return;
+    if (file && !(written && written.content === file.content && written.name === file.name))
+    {
+      file.modified = Date.now();
+      await fPersistFileEntry(id, { background: true });
 
-          files[id].modified = Date.now();
-          fPersistFileEntry(id);
+      // The file may have been renamed (and so re-keyed) by the write.
+      var now = files[id] || files[currentFileId];
+      if (now)
+        autosaveWritten[files[id] ? id : currentFileId] = { name: now.name, content: now.content };
+    }
+  }
+  finally
+  {
+    autosaveBusy = false;
 
-          // Keep the side pane in step while its file is being edited
-          if (splitState.fileId === id)
-            fRenderSplitPane();
-        }
-    },
-    typeof fAutosaveDelay === 'function' ? fAutosaveDelay() : 800
-  );
+    if (autosaveAgain)
+    {
+      autosaveAgain = false;
+      fScheduleSave();
+    }
+  }
 }
 
 // ── MARKDOWN EXTENSIONS (styled blocks, font spans, table of contents) ──
@@ -863,8 +898,15 @@ var chapterRenderCount = 0;
 // The one place a document is turned into HTML: resets the per-render state
 // the extensions rely on (heading ids, task checkboxes, chapter counter, [PAGE]
 // settings), lexes, collects headings, and parses.
-function fRenderMarkdownDoc(source)
+// options.preview is for the live preview, which re-renders after every pause:
+// the document is lexed in remembered chunks and the HTML returned is already
+// sanitized, chunk by chunk (see doc-incremental.js), so the caller must not
+// sanitize it again. Everything else (exports, the page-setup readers) gets the
+// plain single pass.
+function fRenderMarkdownDoc(source, options)
 {
+  var preview = !!(options && options.preview);
+
   documentHeadings = [];
   slugCounts = {};
   headingRenderCursor = 0;
@@ -877,7 +919,8 @@ function fRenderMarkdownDoc(source)
   var styles = [],
       definitions = fParseDocumentDefinitions(source),
       pre = fPreprocessFontBlocks(definitions ? fExpandDefinitions(definitions, styles) : source, styles),
-      tokens = marked.lexer(pre.text);
+      lexed = fLexDocument(pre.text, preview, options && options.offSignature),
+      tokens = lexed.tokens;
 
   // The TOC adds font-only styles to this same table (see fRenderTOC).
   fontStyleTable = pre.styles;
@@ -891,9 +934,44 @@ function fRenderMarkdownDoc(source)
   while (first && first.type !== 'heading' && first.tokens && first.tokens.length)
     first = first.tokens.filter(function(t) { return t.type !== 'space'; })[0];
 
+  // Parsed chunk by chunk, in order: the heading and checkbox counters the
+  // renderers share advance exactly as they would over one pass.
+  // Chunk by chunk, each chunk's HTML is finished and sanitized on its own. That
+  // is only exact while every chunk is well-formed by itself, which is true of
+  // everything Lectern generates; raw HTML the author left open can run on into
+  // the next chunk, so then the whole document is finished and sanitized at once.
+  var keptSanitized = new Map(),
+      perChunk = preview && !lexed.chunks.some(function(chunk) { return chunk.rawHtml; }),
+      parts = lexed.chunks.map
+      (
+        function(chunk)
+        {
+          var part = marked.parser(chunk.tokens);
+
+          if (!perChunk)
+            return part;
+
+          part = fApplyFontMarkers(part, pre.styles);
+
+          return fSanitizeChunk(part, keptSanitized);
+        }
+      ),
+      html = parts.join('');
+
+  if (perChunk)
+    sanitizedCache = keptSanitized;
+  else
+  {
+    html = fApplyFontMarkers(html, pre.styles);
+
+    if (preview)
+      html = fSanitizeHtml(html);
+  }
+
   var result =  {
-                  html: fApplyFontMarkers(marked.parser(tokens), pre.styles),
+                  html: html,
                   settings: docPageSettings,
+                  chunkSignature: lexed.signature,
                   startsWithTitle: !!(first && first.type === 'heading' && first.depth === 1)
                 };
 
@@ -1795,6 +1873,55 @@ function fPatchPreview(container, html)
     container.insertBefore(fresh[j], before);
 }
 
+// The chunked render cuts the document where its own tracking says blocks end,
+// and for some odd syntax (an unclosed fence beside raw HTML, say) the lexer
+// disagrees. Whenever the cuts have moved, once typing has paused, the same
+// document is rendered in one pass and compared; if the two differ the preview
+// is redone from the single pass, and these cuts aren't used again.
+var previewOffSignature = null,
+    previewVerifiedSignature = null,
+    previewVerifySignature = null,
+    previewVerifySource = null,
+    previewVerifyHtml = null,
+    previewVerifyTimer = null;
+
+function fNoteChunkedPreview(signature, source, html)
+{
+  clearTimeout(previewVerifyTimer);
+  previewVerifyTimer = null;
+
+  if (!signature || signature === previewVerifiedSignature)
+    return;
+
+  previewVerifySignature = signature;
+  previewVerifySource = source;
+  previewVerifyHtml = html;
+  previewVerifyTimer = setTimeout(fVerifyChunkedPreview, 1200);
+}
+
+function fVerifyChunkedPreview()
+{
+  previewVerifyTimer = null;
+
+  var editor = document.getElementById('editor');
+
+  // Typed since: the next preview render will ask again.
+  if (!editor || editor.value !== previewVerifySource || previewTimer !== null)
+    return;
+
+  var single = fSanitizeHtml(fRenderMarkdownDoc(previewVerifySource, {}).html);
+
+  if (single === previewVerifyHtml)
+  {
+    previewVerifiedSignature = previewVerifySignature;
+    return;
+  }
+
+  console.warn('Chunked preview differed from a single pass; redrawing without chunking.');
+  previewOffSignature = previewVerifySignature;
+  fUpdatePreview(true);
+}
+
 function fUpdatePreview(deferBacklinks)
 {
   // A direct call supersedes any queued typing refresh.
@@ -1813,16 +1940,19 @@ function fUpdatePreview(deferBacklinks)
 
   if (typeof marked !== 'undefined')
   {
-    var rendered = fRenderMarkdownDoc(source);
+    var rendered = fRenderMarkdownDoc(source, { preview: true, offSignature: previewOffSignature });
 
     html = rendered.html;
     pageCss = fBuildPageCss(rendered.settings, '#preview-content', 'screen');
+    fNoteChunkedPreview(rendered.chunkSignature, source, html);
   }
+  else
+    html = fSanitizeHtml(html);
 
   fSetPreviewPageStyle(pageCss);
 
   var previewContent = document.getElementById('preview-content');
-  fPatchPreview(previewContent, fSanitizeHtml(html));
+  fPatchPreview(previewContent, html);
   fRenderMermaidDiagrams(previewContent);
   fRenderEmbeddedSheetCharts(previewContent);
 
