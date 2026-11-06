@@ -147,7 +147,7 @@ function fRenderOpenTabs()
   {
     var f = files[id];
 
-    return '<div class="open-tab' + (id === currentFileId ? ' active' : '') + '" draggable="true" ondragstart="fOnTabDragStart(event,\'' + fEscAttr(id) + '\')" ondragend="fOnTabDragEnd(event)" onclick="fOpenFile(\'' + fEscAttr(id) + '\')" oncontextmenu="fShowTabContextMenu(event,\'' + fEscAttr(id) + '\')" title="' + fEscAttr(f.name) + '">' +
+    return '<div class="open-tab' + (id === currentFileId ? ' active' : '') + '" draggable="true" ondragstart="fOnTabDragStart(event,\'' + fEscAttr(id) + '\')" ondragend="fOnTabDragEnd(event)" onmousedown="if(event.button===1)event.preventDefault()" onauxclick="if(event.button===1)fCloseOpenTab(event,\'' + fEscAttr(id) + '\')" onclick="fOpenFile(\'' + fEscAttr(id) + '\')" oncontextmenu="fShowTabContextMenu(event,\'' + fEscAttr(id) + '\')" title="' + fEscAttr(f.name) + '">' +
              '<span class="open-tab-icon">' + fFileTypeIcon(f.type) + '</span>' +
              '<span class="open-tab-name">' + fEscHtml(f.name) + '</span>' +
              '<button class="open-tab-close" onclick="fCloseOpenTab(event,\'' + fEscAttr(id) + '\')" title="Close tab">×</button>' +

@@ -3014,7 +3014,12 @@ mark.fr-hl.fr-current
    Not in WebKit (the desktop app's engine, and Safari): with a long document
    showing, it works out which of thousands of blocks are on screen on every
    frame, and typing next to the preview ran at ten frames a second. ── */
-html:not(.engine-webkit) :is(#preview-content, #split-rendered) > :not(h1, h2, h3, h4, h5, h6)
+/* A plain <div> here is a wrapper (a whole document inside one alignment or font
+   setting, say), not a block: skipping it would collapse the entire document to
+   one block's height and make the scroll position jump. Its children get the
+   rule instead. */
+html:not(.engine-webkit) :is(#preview-content, #split-rendered) > :not(h1, h2, h3, h4, h5, h6, div:not([class])),
+html:not(.engine-webkit) :is(#preview-content, #split-rendered) > div:not([class]) > :not(h1, h2, h3, h4, h5, h6)
 {
   content-visibility: auto;
   contain-intrinsic-block-size: auto 4em;

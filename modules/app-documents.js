@@ -1896,16 +1896,75 @@ function fPatchPreview(container, html)
     return;
   }
 
-  // Only the blocks that really differ are replaced. Trimming the unchanged
-  // ends and replacing everything between would, with a contents list at the
-  // top and a heading edited at the bottom, tear out the whole document: every
-  // block is new again, the browser has forgotten how tall they were, and a
-  // reader halfway down is thrown back toward the top.
+  container.lkBlocks = { nodes: fPatchChildren(container, live, liveSigs, fresh, freshSigs), sigs: freshSigs };
+}
+
+// A block that holds many others (a whole document inside one <div>, as a page
+// alignment or a font setting for everything makes it) is patched from the
+// inside when it changes; replacing it would be replacing the whole document.
+var cNestedPatchMin = 8;
+
+function fShallowKey(node)
+{
+  if (node.nodeType !== 1)
+    return null;
+
+  return node.tagName + ' ' + node.getAttributeNames().map(function(n) { return n + '=' + node.getAttribute(n); }).join(' ');
+}
+
+// Brings `container`'s children in line with `fresh` touching only the blocks
+// that really differ. Trimming the unchanged ends and replacing everything
+// between would, with a contents list at the top and a heading edited at the
+// bottom, tear out the whole document: every block is new again, the browser
+// has forgotten how tall they were, and a reader halfway down is thrown back
+// toward the top. Returns the container's children, in order.
+function fPatchChildren(container, live, liveSigs, fresh, freshSigs)
+{
   var pairs = fLcsPairs(liveSigs, freshSigs),
       keptLive = {},
-      pairOfFresh = {};
+      pairOfFresh = {},
+      prevLive = -1,
+      prevFresh = -1;
 
   pairs.forEach(function(p) { keptLive[p[0]] = true; pairOfFresh[p[1]] = p[0]; });
+
+  // Between two matched blocks, a big block that changed in place and has a
+  // namesake on the other side is patched rather than replaced.
+  pairs.concat([[live.length, fresh.length]]).forEach
+  (
+    function(p)
+    {
+      var l = prevLive + 1;
+
+      for (var f = prevFresh + 1; f < p[1] && l < p[0]; f++)
+      {
+        var freshNode = fresh[f];
+
+        if (freshNode.nodeType !== 1 || freshNode.childNodes.length < cNestedPatchMin)
+          continue;
+
+        for (var m = l; m < p[0]; m++)
+        {
+          var liveNode = live[m];
+
+          if (liveNode.nodeType !== 1 || liveNode.childNodes.length < cNestedPatchMin || fShallowKey(liveNode) !== fShallowKey(freshNode))
+            continue;
+
+          var liveKids = Array.prototype.slice.call(liveNode.childNodes),
+              freshKids = Array.prototype.slice.call(freshNode.childNodes);
+
+          fPatchChildren(liveNode, liveKids, liveKids.map(fBlockSignature), freshKids, freshKids.map(fBlockSignature));
+          keptLive[m] = true;
+          pairOfFresh[f] = m;
+          l = m + 1;
+          break;
+        }
+      }
+
+      prevLive = p[0];
+      prevFresh = p[1];
+    }
+  );
 
   live.forEach(function(node, index) { if (!keptLive[index]) container.removeChild(node); });
 
@@ -1928,7 +1987,7 @@ function fPatchPreview(container, html)
     }
   );
 
-  container.lkBlocks = { nodes: nodes, sigs: freshSigs };
+  return nodes;
 }
 
 // The chunked render cuts the document where its own tracking says blocks end,
