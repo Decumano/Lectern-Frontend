@@ -84,6 +84,7 @@ function fFlushPreviewUpdate()
 // fScheduleSaveFollowUp).
 var autosaveBusy = false,
     autosaveAgain = false,
+    autosaveRetry = false,
     autosaveWritten = {}; // id -> { name, content } as last written here
 
 function fScheduleSave()
@@ -124,13 +125,22 @@ async function fRunAutosave()
 
     if (file && !(written && written.content === file.content && written.name === file.name))
     {
-      file.modified = Date.now();
-      await fPersistFileEntry(id, { background: true });
+      // Note what is being written now. Text typed while the write runs is not
+      // in it, and must still count as unsaved afterwards.
+      var snapshot = { name: file.name, content: file.content };
 
-      // The file may have been renamed (and so re-keyed) by the write.
-      var now = files[id] || files[currentFileId];
-      if (now)
-        autosaveWritten[files[id] ? id : currentFileId] = { name: now.name, content: now.content };
+      file.modified = Date.now();
+
+      if (await fPersistFileEntry(id, { background: true }))
+      {
+        // (A rename re-keys the file, so it may be under its new name now.)
+        autosaveWritten[files[id] ? id : currentFileId] = snapshot;
+      }
+      else
+      {
+        // Not written: try again shortly rather than believing it is saved.
+        autosaveRetry = true;
+      }
     }
   }
   finally
@@ -141,6 +151,11 @@ async function fRunAutosave()
     {
       autosaveAgain = false;
       fScheduleSave();
+    }
+    else if (autosaveRetry)
+    {
+      autosaveRetry = false;
+      setTimeout(fScheduleSave, 3000);
     }
   }
 }

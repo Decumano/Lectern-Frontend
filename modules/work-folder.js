@@ -177,14 +177,31 @@ async function fRunSaveFollowUp()
     fRenderSplitPane();
 }
 
+// Writes to one file go out one at a time, in the order they were asked for.
+// Two in flight can land in either order, and the older one landing last puts
+// stale text on disk (and on the server) over newer text.
+var writeChains = {};
+
+function fSerialWrite(key, task)
+{
+  var run = (writeChains[key] || Promise.resolve()).catch(function() {}).then(task);
+
+  writeChains[key] = run;
+  run.catch(function() {}).then(function() { if (writeChains[key] === run) delete writeChains[key]; });
+
+  return run;
+}
+
 // options.background: an autosave. The same write, with the bookkeeping above
-// postponed instead of done before returning.
+// postponed instead of done before returning. Resolves true once what was asked
+// for is on disk, false if the write failed (so the caller can try again).
 async function fPersistFileEntry(id, options)
 {
-  var background = !!(options && options.background);
+  var background = !!(options && options.background),
+      saved = true;
 
   if (!files[id])
-    return;
+    return true;
 
   // Files opened from "Shared with me" never touch my own workspace: they're
   // written back through the share (edit permission) or not at all.
@@ -201,9 +218,9 @@ async function fPersistFileEntry(id, options)
           await Platform.fWriteSharedFile(sharedCtx.shareId, sharedCtx.subPath, sharedContent);
         if (id === liveSyncFileId) { liveSyncBase = sharedContent; liveSyncServerHash = null; }
       }
-      catch(e) { console.warn('Shared write error', e); }
+      catch(e) { console.warn('Shared write error', e); saved = false; }
     }
-    return;
+    return saved;
   }
 
   if (!workFolderRoot)
@@ -212,13 +229,13 @@ async function fPersistFileEntry(id, options)
     {
       fSaveToStorage();
       fScheduleSaveFollowUp(id, true);
-      return;
+      return true;
     }
 
     await fUpdateBacklinksForFile(id);
     fSaveToStorage();
     fRenderFileList();
-    return;
+    return true;
   }
 
   const file = files[id],
@@ -255,8 +272,13 @@ async function fPersistFileEntry(id, options)
 
   try
   {
-    await Platform.fWriteWorkFile(workFolderRoot, activeId, files[activeId].content || '');
-    if (activeId === liveSyncFileId) { liveSyncBase = files[activeId].content || ''; liveSyncServerHash = null; }
+    // What is written is what is recorded as the last agreed text. Reading
+    // files[activeId].content again after the write would pick up whatever was
+    // typed while it ran, and record text that never reached the disk.
+    var writtenText = files[activeId].content || '';
+
+    await fSerialWrite(workFolderRoot + '\0' + activeId, function() { return Platform.fWriteWorkFile(workFolderRoot, activeId, writtenText); });
+    if (activeId === liveSyncFileId) { liveSyncBase = writtenText; liveSyncServerHash = null; }
 
     if (!background)
       await fUpdateBacklinksForFile(activeId);
@@ -264,6 +286,7 @@ async function fPersistFileEntry(id, options)
   catch(e)
   {
     console.warn('Work folder write error', e);
+    saved = false;
   }
 
   // A rename changes the sidebar now; otherwise only the order (by time saved)
@@ -289,6 +312,8 @@ async function fPersistFileEntry(id, options)
     else if (file.type === 'slides')
       document.getElementById('slides-title-input').value = file.name;
   }
+
+  return saved;
 }
 
 async function fRenameFolderEntry(path, newName)

@@ -322,9 +322,13 @@ async function fLiveSyncTick()
       {
         try
         {
-          if (target.link)       await Platform.fWriteLinkFile(target.link, target.subPath, merged);
-          else if (target.share) await Platform.fWriteSharedFile(target.share, target.subPath, merged);
-          else                   await Platform.fWriteWorkFile(workFolderRoot, target.path, merged);
+          // In line with the autosave's writes to this file (see fSerialWrite).
+          await fSerialWrite((target.link || target.share || workFolderRoot) + '\0' + (target.path || target.subPath || ''), function()
+          {
+            if (target.link)       return Platform.fWriteLinkFile(target.link, target.subPath, merged);
+            else if (target.share) return Platform.fWriteSharedFile(target.share, target.subPath, merged);
+            else                   return Platform.fWriteWorkFile(workFolderRoot, target.path, merged);
+          });
           liveSyncBase = merged;
           liveSyncServerHash = null; // our write changed the server hash; re-read it next tick
         }
