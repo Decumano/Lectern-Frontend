@@ -230,6 +230,52 @@ don't set. Code and math keep their own typography.
 A block's `size` applies to everything inside it, headings included. A `||` with
 no block open stays literal text, and so does the old `||Georgia` form.
 
+## Definitions at the top of a file
+
+Lines at the very start of a document, each written `(selector)[attributes]`, set
+how things look for the whole file. They are not shown in the rendered document,
+and the first line that isn't a definition (or is blank) after them ends the list.
+
+**Heading styles** — the selector is a heading level: `#` to `######` (or `h1`
+to `h6`), several allowed with commas.
+
+```
+(#)[font=Arial, size=15pt, ;; {command} ;;]
+(##, ###)[color=#2a5, smallcaps]
+```
+
+Every `# heading` is now Arial, 15pt and centered. A heading's own trailing
+`{size=Huge}` still applies on top, and a heading's font carries into its
+`[TOC]` entry as usual.
+
+**Macros of your own** — the selector is the text before and after `{text}`:
+
+```
+(new_macro{text}end_of_new_macro)[font=default, size=11pt, smallcaps]
+(<<{text}>>)[font=Courier, bold, color=#a00]
+
+A new_macro quiet words end_of_new_macro and a <<code-ish>> bit.
+```
+
+A macro lives on one line, nests with the other macros, and is left alone inside
+code spans and fenced blocks. Defining a macro that already exists replaces it
+for this file: `(;;{text};;)[italic, size=18pt, center]` changes what
+`;; text ;;` means. The longer opener wins, so redefining `;;;` and `;;` are
+separate things.
+
+**Attributes** are separated by commas:
+
+| Attribute | Meaning |
+|---|---|
+| `font=<name>` | A font. `font=default` is the surrounding text's own font. |
+| `size=<n>`, `spacing=<v>` | As in a font block. |
+| `color=…`, `tracking=…` | As in `[text]{…}`. |
+| `bold` `italic` `underline` `smallcaps` | Text style. |
+| `left` `center` `right` `justify` | Alignment of the line or heading. |
+| a template around `{command}` | Everything that macro would do. `;; {command} ;;` is "centered", `||(font=Georgia) {command} ||` is that font, `[{command}]{color=#a00}` is that colour, and a macro defined on an earlier line works the same way. `{text}` is accepted in place of `{command}`. |
+
+Definitions can use macros defined above them, never below.
+
 ## Sizes and text formatting
 
 Everything except the font can be set in three places: a keyword block, an inline

@@ -64,6 +64,7 @@
 
     // Documents.
     'app-documents.js',
+    'doc-definitions.js',
     'documents-find.js',
     'documents-links.js',
 

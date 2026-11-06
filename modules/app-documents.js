@@ -404,14 +404,15 @@ function fInlineFontMacros(line, styles)
   return { text: text + line.slice(at), opened: opened };
 }
 
-function fPreprocessFontBlocks(source)
+function fPreprocessFontBlocks(source, styles)
 {
+  styles = styles || [];
+
   if (source.indexOf('||') === -1)
-    return { text: source, styles: [] };
+    return { text: source, styles: styles };
 
   var lines = source.split('\n'),
       out = [],
-      styles = [],
       depth = 0,
       fence = null,
       inMath = false;
@@ -491,20 +492,42 @@ function fPreprocessFontBlocks(source)
 
 function fFontRunCss(stack, styles)
 {
-  var merged = {};
+  var merged = {},
+      extra = ''; // free CSS from the document's own definitions, in order
 
   stack.forEach
   (
     function(index)
     {
       var style = styles[index];
-      Object.keys(style).forEach(function(k) { merged[k] = style[k]; });
+
+      Object.keys(style).forEach
+      (
+        function(k)
+        {
+          if (k === 'css')
+            extra += style.css;
+          else
+            merged[k] = style[k];
+        }
+      );
     }
   );
 
   return  (merged.font ? 'font-family:' + merged.font + ';' : '') +
           (merged.size ? 'font-size:' + merged.size + ';' : '') +
-          (merged.spacing ? 'line-height:' + merged.spacing + ';' : '');
+          (merged.spacing ? 'line-height:' + merged.spacing + ';' : '') +
+          extra;
+}
+
+// text-align belongs to the block, not to a run of text inside it.
+function fFontRunAlign(stack, styles)
+{
+  for (var i = stack.length - 1; i >= 0; i--)
+    if (styles[stack[i]].align)
+      return styles[stack[i]].align;
+
+  return null;
 }
 
 function fFontRunSpacing(stack, styles)
@@ -561,14 +584,16 @@ function fApplyFontMarkers(html, styles)
             if (!run)
               return;
 
-            if (!stack.length || !run.trim())
+            var runCss = stack.length ? fFontRunCss(stack, styles) : '';
+
+            if (!runCss || !run.trim())
             {
               fragment.appendChild(document.createTextNode(run));
             }
             else
             {
               var span = document.createElement('span');
-              span.setAttribute('style', fFontRunCss(stack, styles));
+              span.setAttribute('style', runCss);
               span.textContent = run;
               fragment.appendChild(span);
             }
@@ -580,7 +605,7 @@ function fApplyFontMarkers(html, styles)
               if (block)
               {
                 if (!blocks.has(block)) blocks.set(block, []);
-                blocks.get(block).push(fFontRunSpacing(stack, styles));
+                blocks.get(block).push({ spacing: fFontRunSpacing(stack, styles), align: fFontRunAlign(stack, styles) });
               }
             }
           };
@@ -608,10 +633,13 @@ function fApplyFontMarkers(html, styles)
   // spacing, set it on the block too so smaller spacings work as well.
   blocks.forEach
   (
-    function(spacings, block)
+    function(runs, block)
     {
-      if (spacings[0] && spacings.every(function(v) { return v === spacings[0]; }))
-        block.style.lineHeight = spacings[0];
+      if (runs[0].spacing && runs.every(function(r) { return r.spacing === runs[0].spacing; }))
+        block.style.lineHeight = runs[0].spacing;
+
+      if (runs[0].align && runs.every(function(r) { return r.align === runs[0].align; }))
+        block.style.textAlign = runs[0].align;
     }
   );
 
@@ -807,7 +835,11 @@ function fRenderMarkdownDoc(source)
   chapterRenderCount = 0;
   docPageSettings = { headings: {} };
 
-  var pre = fPreprocessFontBlocks(source),
+  // Definitions at the top of the file (see doc-definitions.js) become the same
+  // markers the font blocks use, so both share one style table.
+  var styles = [],
+      definitions = fParseDocumentDefinitions(source),
+      pre = fPreprocessFontBlocks(definitions ? fExpandDefinitions(definitions, styles) : source, styles),
       tokens = marked.lexer(pre.text);
 
   // The TOC adds font-only styles to this same table (see fRenderTOC).
