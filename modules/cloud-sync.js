@@ -303,6 +303,7 @@ function fWrapExportHtml(title, bodyHtml, extraCss)
           '.no-break{break-before:avoid;}\n'+
           'tr,.mermaid-diagram,.math-block,.notebook-page{break-inside:avoid;}\n'+
           'h1,h2,h3,h4,h5,h6{break-after:avoid;}\n'+
+          '.toc-with-pages .toc-leader,.toc-with-pages .toc-page{display:none;}\n'+
           '.notebook-page{break-after:page;}\n'+
           '.notebook-page:last-child{break-after:auto;}\n'+
           '@media print{\n'+
@@ -472,8 +473,19 @@ async function fConfirmPdfOptions()
     }
     else
     {
-      var served = await fBuildDocExport(file, overrides, 'paper');
-      await Platform.fExportPdf(file.name.replace(/\s+/g,'_') + '.pdf', served.html);
+      var served = await fBuildDocExport(file, overrides, 'paper'),
+          html = served.html;
+
+      // The server's CSS engine can't tell a contents page which page a heading
+      // landed on, nor skip a header on some pages only. When the document asks
+      // for that, lay it out here and send the finished pages.
+      if (fNeedsPaginator(served.settings))
+      {
+        var paged = await fBuildDocExport(file, overrides, 'paged');
+        html = await fPaginateHtmlOffscreen(paged.html, fPageLayoutFromSettings(paged.settings, file.name));
+      }
+
+      await Platform.fExportPdf(file.name.replace(/\s+/g,'_') + '.pdf', html);
     }
   }
   catch(e)
@@ -605,6 +617,48 @@ async function fBuildGraphExportHtml(file)
 // resulting PDF comes out blank. Keeping the content visibly on-screen
 // sidesteps that entirely, and lets the user see what they're printing.
 var printPreviewJob = null;
+
+// fPaginateDocument in a hidden frame, returning the paginated page as HTML.
+// For the web app, whose server prints what it is given and runs no script.
+function fPaginateHtmlOffscreen(html, layout)
+{
+  return new Promise
+  (
+    function(resolve, reject)
+    {
+      var frame = document.createElement('iframe');
+
+      frame.setAttribute('aria-hidden', 'true');
+      frame.style.cssText = 'position:fixed;left:-20000px;top:0;width:1200px;height:900px;border:0;visibility:hidden;';
+
+      frame.onload = async function()
+      {
+        try
+        {
+          var doc = frame.contentDocument;
+
+          // Measuring before the fonts arrive would put every break in the wrong place.
+          if (doc.fonts && doc.fonts.ready)
+            await doc.fonts.ready;
+
+          fPaginateDocument(doc, layout);
+          resolve('<!DOCTYPE html>\n' + doc.documentElement.outerHTML);
+        }
+        catch(e)
+        {
+          reject(e);
+        }
+        finally
+        {
+          frame.remove();
+        }
+      };
+
+      frame.srcdoc = html;
+      document.body.appendChild(frame);
+    }
+  );
+}
 
 // paged: { layout, name } lays the document out into real pages once it has
 // loaded, in this frame's engine, the one that goes on to print it.

@@ -164,6 +164,13 @@ function fCssLengthValue(value)
   return m ? (m[1] + (m[2] ? m[2].toLowerCase() : 'pt')) : '';
 }
 
+function fCssWeightValue(value)
+{
+  value = (value || '').trim().toLowerCase();
+
+  return /^(normal|bold|bolder|lighter|[1-9]00)$/.test(value) ? value : '';
+}
+
 function fCssColorValue(value)
 {
   value = (value || '').trim();
@@ -205,6 +212,8 @@ function fDirectiveStyle(key, hasValue, value)
     if (key === 'left' || key === 'center' || key === 'right' || key === 'justify')
       return 'text-align:' + key + ';';
     if (key === 'bold')       return 'font-weight:bold;';
+    // CSS's relative and absolute weights: bolder/lighter step from the surrounding text.
+    if (key === 'normal' || key === 'bolder' || key === 'lighter') return 'font-weight:' + key + ';';
     if (key === 'italic')     return 'font-style:italic;';
     if (key === 'underline')  return 'text-decoration:underline;';
     if (key === 'smallcaps')  return 'font-variant:small-caps;';
@@ -213,6 +222,13 @@ function fDirectiveStyle(key, hasValue, value)
 
   if (key === 'size' && (css = fCssSizeValue(value)))
     return 'font-size:' + css + ';';
+  // weight=normal|bold|bolder|lighter|100…900  (bold=… is the same thing)
+  if ((key === 'weight' || key === 'bold') && (css = fCssWeightValue(value)))
+    return 'font-weight:' + css + ';';
+  // A hairline outline in the text colour: a little heavier than regular,
+  // for fonts that come in one weight and so can't do anything in between.
+  if (key === 'stroke' && (css = fCssLengthValue(value)))
+    return '-webkit-text-stroke:' + css + ' currentColor;';
   if (key === 'color' && (css = fCssColorValue(value)))
     return 'color:' + css + ';';
   if (key === 'align' && /^(left|center|right|justify)$/i.test(value))
@@ -235,8 +251,8 @@ function fParseBlockDirectives(line)
 
 // Keys that make a "{...}" group count as inline/heading formatting rather
 // than ordinary braced text.
-var cInlineAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking)\b/i;
-var cHeadingAttrKeys = /^(?:size|color|bold|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak|fill|space)\b/i;
+var cInlineAttrKeys = /^(?:size|color|bold|bolder|lighter|normal|weight|stroke|italic|underline|smallcaps|tracking)\b/i;
+var cHeadingAttrKeys = /^(?:size|color|bold|bolder|lighter|normal|weight|stroke|italic|underline|smallcaps|tracking|align|left|center|right|notoc|nolabel|pagebreak|nopagebreak|fill|space)\b/i;
 
 function fUnescapeEntities(text)
 {
@@ -288,7 +304,7 @@ var cFontOpenMark = '', cFontOpenMarkEnd = '', cFontCloseMark = '';
 
 function fParseFontBlockOptions(text)
 {
-  var re = /(font|size|spacing)=("[^"]*"|'[^']*'|.*?)(?=\s+(?:font|size|spacing)=|\s*$)/gi,
+  var re = /(font|size|spacing|weight)=("[^"]*"|'[^']*'|.*?)(?=\s+(?:font|size|spacing|weight)=|\s*$)/gi,
       style = {},
       found = false,
       match;
@@ -305,6 +321,8 @@ function fParseFontBlockOptions(text)
       css = fCssSizeValue(value);
     else if (key === 'spacing' && /^\d+(\.\d+)?(pt|px|em|rem|%|cm|mm|in)?$/i.test(value))
       css = value.toLowerCase();
+    else if (key === 'weight')
+      css = fCssWeightValue(value);
 
     if (css)
     {
@@ -436,7 +454,7 @@ function fPreprocessFontBlocks(source, styles)
 
     if (!fence && !fenceMatch && !inMath)
     {
-      var open = /^ {0,3}\|\|[ \t]*(?:\(([^()\n]*)\)|((?:font|size|spacing)=.*?))[ \t\r]*$/i.exec(line);
+      var open = /^ {0,3}\|\|[ \t]*(?:\(([^()\n]*)\)|((?:font|size|spacing|weight)=.*?))[ \t\r]*$/i.exec(line);
 
       if (open)
       {
@@ -517,6 +535,7 @@ function fFontRunCss(stack, styles)
   return  (merged.font ? 'font-family:' + merged.font + ';' : '') +
           (merged.size ? 'font-size:' + merged.size + ';' : '') +
           (merged.spacing ? 'line-height:' + merged.spacing + ';' : '') +
+          (merged.weight ? 'font-weight:' + merged.weight + ';' : '') +
           extra;
 }
 
@@ -713,7 +732,25 @@ function fParsePageOptions(line)
       }
       else if (k === 'newpage' && /^(h[1-6]|none)$/i.test(v))      o.newPage = v.toLowerCase();
       else if (k === 'chapter-label')                              o.chapterLabel = v || 'Chapter';
-      else if (k === 'first-page' && /^plain$/i.test(v))           o.firstPagePlain = true;
+      else if (k === 'first-page')
+      {
+        // first-page=plain (no header, footer or number), first-page=uncounted
+        // (the next page is page 1), or both: first-page=plain,uncounted
+        var firsts = v.toLowerCase().split(/[,+]/);
+
+        if (firsts.indexOf('plain') !== -1)     o.firstPagePlain = true;
+        if (firsts.indexOf('uncounted') !== -1) o.firstPageUncounted = true;
+      }
+      else if (k === 'header-skip' || k === 'footer-skip' || k === 'numbers-skip')
+      {
+        // Pages that go without: first, toc, h1…h6 (a page that opens with that
+        // heading; chapter is h1). e.g. header-skip=first,toc,h1
+        var skips = v.toLowerCase().split(/[,+]/).map(function(w) { return w === 'chapter' ? 'h1' : w; })
+                     .filter(function(w) { return /^(first|toc|h[1-6])$/.test(w); });
+
+        if (skips.length)
+          o[k === 'header-skip' ? 'headerSkip' : k === 'footer-skip' ? 'footerSkip' : 'numbersSkip'] = skips;
+      }
       else if (k === 'title' && /^(off|no|false|none)$/i.test(v))  o.hideTitle = true;
       else if ((m = /^h([1-6])-(.+)$/.exec(k)))
       {
@@ -1192,7 +1229,7 @@ function fConfigureMarkedExtensions()
           level: 'inline',
           start: function(src)
           {
-            var match = /\[[^\]\n]+\]\{(?:size|color|bold|italic|underline|smallcaps|tracking)\b/i.exec(src);
+            var match = /\[[^\]\n]+\]\{(?:size|color|bold|bolder|lighter|normal|weight|stroke|italic|underline|smallcaps|tracking)\b/i.exec(src);
             return match ? match.index : undefined;
           },
           tokenizer: function(src)
@@ -1649,12 +1686,20 @@ function fRenderTOC(optionText)
   if (!entries.length)
     return '<div class="toc toc-empty">No headings yet.</div>';
 
-  var style = fParseBlockDirectives((optionText || '').replace(/\b(?:title|numbers|depth)=("[^"]*"|'[^']*'|\S+)/gi, '')),
+  // [TOC pages] (or pages=on) adds the page each entry is on, flush right, in
+  // a PDF. leader=none drops the dots between title and number.
+  var withPages = !!opts.pages && (!opts.pages.hasValue || /^(on|true|yes)$/i.test(opts.pages.value)),
+      leaders = !(opts.leader && /^(none|off|no)$/i.test(opts.leader.value));
+
+  if (withPages)
+    docPageSettings.tocPages = true;
+
+  var style = fParseBlockDirectives((optionText || '').replace(/\b(?:title|numbers|depth|pages|leader)=("[^"]*"|'[^']*'|\S+)/gi, '')),
       numbered = opts.numbers && /^(on|true|yes)$/i.test(opts.numbers.value),
       counters = [0, 0, 0, 0, 0, 0, 0],
       minDepth = entries.reduce(function(min, h) { return Math.min(min, h.depth); }, entries[0].depth);
 
-  var html = '<nav class="toc"' + (style ? ' style="' + style + '"' : '') + '>',
+  var html = '<nav class="toc' + (withPages ? ' toc-with-pages' : '') + (withPages && !leaders ? ' toc-no-leader' : '') + '"' + (style ? ' style="' + style + '"' : '') + '>',
       openDepth = minDepth - 1;
 
   if (opts.title && opts.title.value)
@@ -1685,7 +1730,9 @@ function fRenderTOC(optionText)
         number = '<span class="toc-num">' + counters.slice(minDepth, h.depth + 1).join('.') + '</span> ';
       }
 
-      html += '<li><a href="#' + h.slug + '">' + number + fTocEntryHtml(h) + '</a></li>';
+      html += withPages
+        ? '<li><a href="#' + h.slug + '"><span class="toc-title">' + number + fTocEntryHtml(h) + '</span><span class="toc-leader"></span><span class="toc-page" data-toc-target="' + h.slug + '"></span></a></li>'
+        : '<li><a href="#' + h.slug + '">' + number + fTocEntryHtml(h) + '</a></li>';
     }
   );
 

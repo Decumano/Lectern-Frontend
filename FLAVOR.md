@@ -297,12 +297,15 @@ Lore and Chaos
 | `size=<size>` | A LaTeX name (`tiny`, `scriptsize`, `footnotesize`, `small`, `normalsize`, `large`, `Large`, `LARGE`, `huge`, `Huge` — names are relative to the surrounding size, using the 10pt class ratios), a bare number (points: `size=24`), or a number with a unit (`1.5em`, `18px`, `120%`). |
 | `color=<colour>` | `#rgb`, `#rrggbb`, a colour name, or `rgb(…)` / `hsl(…)`. |
 | `bold` `italic` `underline` `smallcaps` | Flags. |
+| `weight=<w>` (or a bare `normal` / `bolder` / `lighter`) | CSS's font weights: `normal`, `bold`, `bolder`, `lighter` (the last two step up or down from the surrounding text) or `100`–`900`. `bold=<w>` is the same. Also accepted in a font block: `||(font=Arial weight=bolder) text ||`. |
+| `stroke=<length>` | A hairline outline in the text colour. A font that comes in one weight can't do anything between regular and the browser's synthetic bold; `stroke=0.2pt` is a little heavier than regular, which is how a Type 3 font looks in a LaTeX PDF. |
 | `spacing=<n>` | Line height multiplier (blocks). |
 | `tracking=<length>` | Letter spacing. |
 | `left` `center` `right` `justify` (or `align=…`) | Alignment (blocks and headings). |
 
 Inline spans only count as formatting when the braces hold at least one of
-`size`, `color`, `bold`, `italic`, `underline`, `smallcaps` or `tracking`; any
+`size`, `color`, `bold`, `bolder`, `lighter`, `normal`, `weight`, `stroke`, `italic`,
+`underline`, `smallcaps` or `tracking`; any
 other `[text]{…}` is left as literal text.
 
 **Heading attributes.** A trailing `{…}` on a heading styles that heading and is
@@ -405,6 +408,8 @@ Text options restyle the live preview too; `size`, `margin`, `header`, `footer`,
 | `header-size=` `footer-size=` | Size of the running text (default 10pt). |
 | `numbers=bottom-center` | Page number position: `top-`/`bottom-` + `left`/`center`/`right`; `on`/`bottom` = bottom-center; omitted = none. Shares a slot with header/footer text if they coincide. |
 | `first-page=plain` | No header, footer or number on the first page. |
+| `first-page=uncounted` | The first page isn't counted: it carries no number, the second page is page 1, and `{pages}` and a `[TOC pages]` entry's number follow suit. Combine with `plain`: `first-page=plain,uncounted`. |
+| `header-skip=` `footer-skip=` `numbers-skip=` | Pages that go without that item, comma separated: `first`, `toc` (a page with part of the table of contents on it), `h1`…`h6` (a page that opens with that heading level; `chapter` is `h1`). `header-skip=first,toc,h1` puts the header on neither the first page, the contents, nor the first page of a chapter. |
 | `newpage=h1` | Which heading level starts a new page: `h1` (default) to `h6`, or `none`. |
 | `chapter-label="Chapter"` | Puts "Chapter N" above every level-1 heading (counting from 1; `nolabel` opts one out). |
 | `h1-…` … `h6-…` | Any text directive for that heading level: `h1-size=`, `h1-color=`, `h1-center`, `h1-bold`… |
@@ -425,7 +430,23 @@ suffix — the second `## Notes` in a file gets `id="notes-1"`.
 
 Options: `title="…"` adds a heading above the list; `numbers=on` numbers the
 entries `1`, `1.1`, …; `depth=N` limits it to heading levels up to `N`; the
-text directives above (`size`, `color`, alignment…) style the whole block. Headings marked `notoc` are skipped. Entries carry no page numbers.
+text directives above (`size`, `color`, alignment…) style the whole block. Headings marked `notoc` are skipped.
+
+**Page numbers.** `[TOC pages]` (or `pages=on`) makes it a traditional contents
+page: each entry has its title on the left, a dotted leader, and the page it is on
+flush right. `leader=none` drops the dots.
+
+```
+[TOC pages title="Contents"]
+```
+
+The numbers exist only in a PDF, because only a PDF has pages: on screen and in
+an HTML export the entries are ordinary links. They count pages the way the page
+numbers do, so with `first-page=uncounted` the page after the cover is 1.
+On the web app, a document that uses `[TOC pages]`, `first-page=uncounted` or a
+`…-skip` option is laid out in the browser before it is sent to the server (whose
+CSS engine can't look ahead), so its page breaks are measured with your
+browser's fonts.
 
 ## Roman-numeral lists
 

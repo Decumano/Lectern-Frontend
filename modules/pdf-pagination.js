@@ -68,6 +68,10 @@ function fPageLayoutFromSettings(settings, title)
             footerSize: settings.footerSize || '10pt',
             numbers: settings.numbers || '',
             firstPagePlain: !!settings.firstPagePlain,
+            firstPageUncounted: !!settings.firstPageUncounted,
+            headerSkip: settings.headerSkip || [],
+            footerSkip: settings.footerSkip || [],
+            numbersSkip: settings.numbersSkip || [],
             title: title || ''
           };
 }
@@ -75,6 +79,49 @@ function fPageLayoutFromSettings(settings, title)
 function fPageSlotText(text, page, pages, title)
 {
   return text.replace(/\{page\}/gi, page).replace(/\{pages\}/gi, pages).replace(/\{title\}/gi, title);
+}
+
+// Whether the result depends on knowing where the pages fall, which only
+// fPaginateDocument can say (the server's CSS engine cannot look ahead).
+function fNeedsPaginator(settings)
+{
+  return !!(settings.tocPages || settings.firstPageUncounted ||
+            (settings.headerSkip && settings.headerSkip.length) ||
+            (settings.footerSkip && settings.footerSkip.length) ||
+            (settings.numbersSkip && settings.numbersSkip.length));
+}
+
+// What a finished page is, for the skip lists: { first, toc, level } where level
+// is the heading level the page opens with, or 0.
+function fPageKind(page, index)
+{
+  var content = page.querySelector('.pdf-content'),
+      node = content && content.firstElementChild,
+      level = 0;
+
+  while (node && /(^|\s)(page-break|pdf-space|pdf-fill)(\s|$)/.test(node.className || ''))
+    node = node.nextElementSibling;
+
+  while (node)
+  {
+    if (cHeadingTags.test(node.tagName))
+    {
+      level = parseInt(node.tagName[1], 10);
+      break;
+    }
+
+    if (!/^(DIV|SECTION|ARTICLE|BLOCKQUOTE)$/.test(node.tagName))
+      break;
+
+    node = node.firstElementChild;
+  }
+
+  return { first: index === 0, toc: !!page.querySelector('.toc'), level: level };
+}
+
+function fPageIsSkipped(kind, skips)
+{
+  return skips.some(function(w) { return w === 'first' ? kind.first : w === 'toc' ? kind.toc : kind.level === parseInt(w[1], 10); });
 }
 
 function fPaginationCss(l)
@@ -92,6 +139,13 @@ function fPaginationCss(l)
           '.pdf-band-top{top:' + (m.top / 2) + 'mm;}\n' +
           '.pdf-band-bottom{top:' + (l.heightMm - m.bottom / 2) + 'mm;}\n' +
           '.pdf-band span{flex:1;min-width:0;white-space:nowrap;}\n' +
+          '.toc-has-pages ul{list-style:none;padding-left:1.2em;}\n' +
+          '.toc-has-pages>ul{padding-left:0;}\n' +
+          '.toc-has-pages li a{display:flex;align-items:baseline;gap:.4em;text-decoration:none;color:inherit;}\n' +
+          '.toc-has-pages .toc-title{flex:0 1 auto;}\n' +
+          '.toc-has-pages .toc-leader{display:block;flex:1 1 1em;min-width:1em;border-bottom:1.5px dotted currentColor;transform:translateY(-.3em);}\n' +
+          '.toc-no-leader .toc-leader{border-bottom-color:transparent;}\n' +
+          '.toc-has-pages .toc-page{display:block;flex:none;min-width:2em;text-align:right;font-variant-numeric:tabular-nums;}\n' +
           '.pdf-slot-center{text-align:center;}\n' +
           '.pdf-slot-right{text-align:right;}\n' +
           'p,li,td,th,pre,h1,h2,h3,h4,h5,h6{overflow-wrap:anywhere;}\n' +
@@ -671,6 +725,7 @@ function fPaginateDocument(doc, l)
   );
 
   fResolveFills(pages);
+  fFillTocPages(doc, pages, l);
   fDrawPageBands(doc, pages, l);
 
   return pages.length;
@@ -802,19 +857,27 @@ function fWrapFillSections(html, settings, title)
 
 function fDrawPageBands(doc, pages, l)
 {
+  // Each slot holds what goes in it, and which pages it goes without.
   var slots = {};
 
-  function fAdd(slot, text) { (slots[slot] = slots[slot] || []).push(text); }
+  function fAdd(slot, text, skips) { (slots[slot] = slots[slot] || []).push({ text: text, skips: skips }); }
 
-  if (l.header) fAdd('top-' + l.headerAlign, l.header);
-  if (l.footer) fAdd('bottom-' + l.footerAlign, l.footer);
-  if (l.numbers) fAdd(l.numbers, '{page}');
+  if (l.header) fAdd('top-' + l.headerAlign, l.header, l.headerSkip);
+  if (l.footer) fAdd('bottom-' + l.footerAlign, l.footer, l.footerSkip);
+  if (l.numbers) fAdd(l.numbers, '{page}', l.numbersSkip);
+
+  // first-page=uncounted: the second sheet is page 1, and the first has no number.
+  var offset = l.firstPageUncounted ? 1 : 0,
+      counted = pages.length - offset;
 
   pages.forEach
   (
     function(page, index)
     {
-      if (l.firstPagePlain && index === 0)
+      var kind = fPageKind(page, index),
+          plain = l.firstPagePlain && index === 0;
+
+      if (plain)
         return;
 
       ['top', 'bottom'].forEach
@@ -822,9 +885,30 @@ function fDrawPageBands(doc, pages, l)
         function(edge)
         {
           var names = ['left', 'center', 'right'],
-              used = names.some(function(n) { return slots[edge + '-' + n]; });
+              texts = {};
 
-          if (!used)
+          names.forEach
+          (
+            function(n)
+            {
+              var shown = (slots[edge + '-' + n] || []).filter
+              (
+                function(item)
+                {
+                  // The page number of an uncounted page doesn't exist.
+                  if (/\{page\}/i.test(item.text) && index < offset)
+                    return false;
+
+                  return !fPageIsSkipped(kind, item.skips);
+                }
+              );
+
+              if (shown.length)
+                texts[n] = shown.map(function(item) { return fPageSlotText(item.text, index + 1 - offset, counted, l.title); }).join('  ·  ');
+            }
+          );
+
+          if (!Object.keys(texts).length)
             return;
 
           var band = doc.createElement('div');
@@ -840,11 +924,8 @@ function fDrawPageBands(doc, pages, l)
 
               cell.className = 'pdf-slot-' + n;
 
-              if (slots[edge + '-' + n])
-                cell.textContent = slots[edge + '-' + n].map
-                (
-                  function(t) { return fPageSlotText(t, index + 1, pages.length, l.title); }
-                ).join('  ·  ');
+              if (texts[n])
+                cell.textContent = texts[n];
 
               band.appendChild(cell);
             }
@@ -855,4 +936,36 @@ function fDrawPageBands(doc, pages, l)
       );
     }
   );
+}
+
+// [TOC pages]: writes the number of the page each entry is on, once the pages
+// exist. An entry on an uncounted page (a cover) gets no number.
+function fFillTocPages(doc, pages, l)
+{
+  var offset = l.firstPageUncounted ? 1 : 0,
+      targets = doc.querySelectorAll('.toc-page[data-toc-target]');
+
+  if (!targets.length)
+    return;
+
+  var pageOf = new Map();
+
+  pages.forEach(function(page, index) { pageOf.set(page, index); });
+
+  Array.prototype.forEach.call
+  (
+    targets,
+    function(cell)
+    {
+      var id = cell.getAttribute('data-toc-target'),
+          heading = doc.getElementById(id),
+          page = heading && heading.closest('.pdf-page'),
+          index = page ? pageOf.get(page) : undefined;
+
+      if (index !== undefined && index >= offset)
+        cell.textContent = index + 1 - offset;
+    }
+  );
+
+  Array.prototype.forEach.call(doc.querySelectorAll('nav.toc-with-pages'), function(nav) { nav.classList.add('toc-has-pages'); });
 }

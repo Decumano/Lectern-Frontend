@@ -4725,3 +4725,7 @@ body.tab-drag-active #split-embed { pointer-events: none; }
   font-size: 11px;
   margin: 0 0 8px;
 }
+
+/* [TOC pages]: the dots and numbers only exist once a PDF has been laid out. */
+.toc-with-pages .toc-leader,
+.toc-with-pages .toc-page { display: none; }

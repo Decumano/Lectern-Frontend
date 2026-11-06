@@ -63,14 +63,14 @@ function fSplitTopLevel(text, sep)
 
 function fMergeDefinitionStyle(into, from)
 {
-  ['font', 'size', 'spacing', 'align'].forEach(function(k) { if (from[k]) into[k] = from[k]; });
+  ['font', 'size', 'spacing', 'weight', 'align'].forEach(function(k) { if (from[k]) into[k] = from[k]; });
   into.css = (into.css || '') + (from.css || '');
   return into;
 }
 
 function fIsEmptyDefinitionStyle(style)
 {
-  return !style.font && !style.size && !style.spacing && !style.align && !style.css;
+  return !style.font && !style.size && !style.spacing && !style.weight && !style.align && !style.css;
 }
 
 // One bare attribute ("smallcaps", "color=#a00", "center") → style.
