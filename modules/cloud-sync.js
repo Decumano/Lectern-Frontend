@@ -558,16 +558,13 @@ function fBuildSheetExportHtml(file)
 }
 
 // Mermaid's library isn't shipped inside exported files, so any `.mermaid`
-// placeholder is rendered to a static <svg> here (via mermaid.render, which
-// works off-DOM) and the markup is inlined directly - keeping the exported
+// placeholder is rendered to a static <svg> here (via fDiagramSvg: Pele,
+// or Mermaid's off-DOM render) and the markup is inlined directly - keeping the exported
 // HTML/PDF fully self-contained and immune to script execution quirks in
 // whatever renders it later (the server-side PDF renderer, or the Tauri
 // print-preview iframe).
 async function fInlineMermaidSvgs(html)
 {
-  if (typeof mermaid === 'undefined')
-    return html;
-
   var container = document.createElement('div');
   container.innerHTML = html;
 
@@ -583,8 +580,8 @@ async function fInlineMermaidSvgs(html)
 
     try
     {
-      var result = await mermaid.render('mermaid-export-' + Date.now() + '-' + i, source);
-      node.outerHTML = '<div class="mermaid-diagram">' + result.svg + '</div>';
+      var svg = await fDiagramSvg(source, 'mermaid-export-' + Date.now() + '-' + i);
+      node.outerHTML = '<div class="mermaid-diagram">' + svg + '</div>';
     }
     catch(e)
     {

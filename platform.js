@@ -1,3 +1,12 @@
+// WebKit without Chrome in its user agent: WebKitGTK (the desktop app) and Safari.
+// styles.css switches off a rendering shortcut that Chromium does well and WebKit
+// does badly (content-visibility).
+(function () {
+  var ua = navigator.userAgent;
+  if (/AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua))
+    document.documentElement.classList.add('engine-webkit');
+})();
+
 // Platform adapter: isolates every native file-system call behind one small
 // interface, so main.js never talks to window.__TAURI__ (or the web API)
 // directly. On Tauri, calls go through window.__TAURI__.core.invoke. In this

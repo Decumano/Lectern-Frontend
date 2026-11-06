@@ -3010,8 +3010,11 @@ mark.fr-hl.fr-current
   font-size: 0;
 }
 /* ── Rendering cost: the browser skips layout and painting for blocks that are
-   off screen. Headings are left out so jumping to one lands accurately. ── */
-:is(#preview-content, #split-rendered) > :not(h1, h2, h3, h4, h5, h6)
+   off screen. Headings are left out so jumping to one lands accurately.
+   Not in WebKit (the desktop app's engine, and Safari): with a long document
+   showing, it works out which of thousands of blocks are on screen on every
+   frame, and typing next to the preview ran at ten frames a second. ── */
+html:not(.engine-webkit) :is(#preview-content, #split-rendered) > :not(h1, h2, h3, h4, h5, h6)
 {
   content-visibility: auto;
   contain-intrinsic-block-size: auto 4em;

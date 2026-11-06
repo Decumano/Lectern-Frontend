@@ -11,6 +11,12 @@ a summary index, not a replacement for those headers.
 - Copyright (c) 2025 Chart.js Contributors
 - https://www.chartjs.org
 
+## Pele — `vendor/pele.global.js`
+
+- License: MIT (the file carries its own header)
+- https://github.com/obsidianmd/pele
+- Draws Mermaid diagrams; Mermaid below is loaded only as a fallback.
+
 ## Mermaid — `vendor/mermaid.min.js`
 
 - License: MIT

@@ -79,11 +79,53 @@ function fUpdateGraphPreview()
 // override into actual diagrams. Re-running on freshly-built markup is safe
 // since each call works on brand-new, unprocessed nodes.
 // ── Diagram rendering ──
-// Turning a mermaid source into an SVG costs on the order of 200 ms, so it is
+// Turning a Mermaid source into an SVG costs on the order of 200 ms with Mermaid itself (about 1 ms with Pele), so it is
 // done as little as possible: a diagram is rendered once per distinct source (the
 // result is cached, so an unchanged diagram reappears instantly after every
 // edit), and only when it is near the screen, so a document with dozens of
 // diagrams doesn't render them all up front.
+// Pele (vendor/pele.global.js) draws the diagram in about a millisecond and is
+// synchronous. It covers Mermaid's diagram types but has its own layout, so
+// should it reject a source, Mermaid itself is loaded (once, only then) and
+// given the same source: nothing that rendered before stops rendering.
+var mermaidLoading = null;
+
+function fLoadMermaid()
+{
+  if (typeof mermaid !== 'undefined')
+    return Promise.resolve();
+
+  if (!mermaidLoading)
+    mermaidLoading = new Promise
+    (
+      function(resolve, reject)
+      {
+        var script = document.createElement('script');
+        script.src = 'vendor/mermaid.min.js';
+        script.onload = function() { mermaid.initialize({ startOnLoad: false }); resolve(); };
+        script.onerror = function() { mermaidLoading = null; reject(new Error('Mermaid could not be loaded')); };
+        document.head.appendChild(script);
+      }
+    );
+
+  return mermaidLoading;
+}
+
+// Source text -> SVG markup (a promise). `id` only matters to Mermaid.
+function fDiagramSvg(source, id)
+{
+  if (typeof pele !== 'undefined')
+  {
+    try
+    {
+      return Promise.resolve(pele.render(source).svg);
+    }
+    catch(e) { /* fall through to Mermaid */ }
+  }
+
+  return fLoadMermaid().then(function() { return mermaid.render(id, source); }).then(function(result) { return result.svg; });
+}
+
 var mermaidSvgCache = {};
 var mermaidCacheOrder = [];
 var cMermaidCacheMax = 80;
@@ -111,24 +153,24 @@ function fMermaidRender(node)
     return;
   }
 
-  // One at a time: mermaid.render shares scratch elements between calls.
+  // One at a time: Mermaid's render shares scratch elements between calls.
   mermaidQueue = mermaidQueue.then(function()
   {
     if (!node.isConnected || node.getAttribute('data-processed'))
       return;
 
-    return mermaid.render('mmd-' + (++mermaidRenderSeq), source).then
+    return fDiagramSvg(source, 'mmd-' + (++mermaidRenderSeq)).then
     (
-      function(result)
+      function(svg)
       {
-        mermaidSvgCache[source] = result.svg;
+        mermaidSvgCache[source] = svg;
         mermaidCacheOrder.push(source);
 
         if (mermaidCacheOrder.length > cMermaidCacheMax)
           delete mermaidSvgCache[mermaidCacheOrder.shift()];
 
         if (node.isConnected)
-          fMermaidShow(node, result.svg);
+          fMermaidShow(node, svg);
       }
     ).catch
     (
@@ -159,7 +201,7 @@ function fScrollParentOf(element)
 
 function fRenderMermaidDiagrams(container)
 {
-  if ((typeof mermaid === 'undefined') || !container)
+  if (!container)
     return;
 
   var nodes = container.querySelectorAll('.mermaid:not([data-processed])');

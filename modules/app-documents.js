@@ -1622,16 +1622,6 @@ function fRomanToInt(text)
   return (total > 0 && total < 4000) ? total : 0;
 }
 
-function fConfigureMermaid()
-{
-  if (typeof mermaid === 'undefined')
-    return;
-
-  mermaid.initialize({ startOnLoad: false });
-}
-
-fConfigureMermaid();
-
 function fExtractPlainText(tokens)
 {
   if (!tokens || !tokens.length)
@@ -1858,6 +1848,14 @@ function fSameBlock(live, fresh)
   return live.isEqualNode(fresh);
 }
 
+// A top-level block's identity: what it was rendered from, not how it looks now.
+// A diagram or chart is redrawn in place after it is inserted, so comparing the
+// live node with a fresh one would call it changed on every update.
+function fBlockSignature(node)
+{
+  return node.nodeType === 1 ? node.outerHTML : '#' + node.nodeValue;
+}
+
 function fPatchPreview(container, html)
 {
   var template = document.createElement('template');
@@ -1865,27 +1863,72 @@ function fPatchPreview(container, html)
   template.innerHTML = html;
 
   var fresh = Array.prototype.slice.call(template.content.childNodes),
+      freshSigs = fresh.map(fBlockSignature),
       live = Array.prototype.slice.call(container.childNodes),
-      head = 0,
-      freshEnd = fresh.length,
-      liveEnd = live.length;
+      known = container.lkBlocks; // { nodes, sigs } as this function left them
 
-  while (head < freshEnd && head < liveEnd && fSameBlock(live[head], fresh[head]))
-    head++;
+  // The signatures of the live blocks, if nothing else has moved them since.
+  var liveSigs = null;
 
-  while (freshEnd > head && liveEnd > head && fSameBlock(live[liveEnd - 1], fresh[freshEnd - 1]))
+  if (known && known.nodes.length === live.length)
   {
-    freshEnd--;
-    liveEnd--;
+    liveSigs = known.sigs;
+
+    for (var k = 0; k < live.length; k++)
+      if (live[k] !== known.nodes[k]) { liveSigs = null; break; }
   }
 
-  var before = liveEnd < live.length ? live[liveEnd] : null;
+  if (!liveSigs)
+  {
+    // First render, or the container was changed from outside: compare the nodes
+    // themselves, as before, and take the signatures from the fresh ones.
+    var head = 0, freshEnd = fresh.length, liveEnd = live.length;
 
-  for (var i = head; i < liveEnd; i++)
-    container.removeChild(live[i]);
+    while (head < freshEnd && head < liveEnd && fSameBlock(live[head], fresh[head])) head++;
+    while (freshEnd > head && liveEnd > head && fSameBlock(live[liveEnd - 1], fresh[freshEnd - 1])) { freshEnd--; liveEnd--; }
 
-  for (var j = head; j < freshEnd; j++)
-    container.insertBefore(fresh[j], before);
+    var before = liveEnd < live.length ? live[liveEnd] : null;
+
+    for (var a = head; a < liveEnd; a++) container.removeChild(live[a]);
+    for (var b = head; b < freshEnd; b++) container.insertBefore(fresh[b], before);
+
+    container.lkBlocks = { nodes: Array.prototype.slice.call(container.childNodes), sigs: freshSigs };
+    return;
+  }
+
+  // Only the blocks that really differ are replaced. Trimming the unchanged
+  // ends and replacing everything between would, with a contents list at the
+  // top and a heading edited at the bottom, tear out the whole document: every
+  // block is new again, the browser has forgotten how tall they were, and a
+  // reader halfway down is thrown back toward the top.
+  var pairs = fLcsPairs(liveSigs, freshSigs),
+      keptLive = {},
+      pairOfFresh = {};
+
+  pairs.forEach(function(p) { keptLive[p[0]] = true; pairOfFresh[p[1]] = p[0]; });
+
+  live.forEach(function(node, index) { if (!keptLive[index]) container.removeChild(node); });
+
+  var cursor = container.firstChild,
+      nodes = [];
+
+  fresh.forEach
+  (
+    function(node, index)
+    {
+      if (pairOfFresh[index] !== undefined)
+      {
+        node = live[pairOfFresh[index]];
+        cursor = node.nextSibling;
+      }
+      else
+        container.insertBefore(node, cursor);
+
+      nodes.push(node);
+    }
+  );
+
+  container.lkBlocks = { nodes: nodes, sigs: freshSigs };
 }
 
 // The chunked render cuts the document where its own tracking says blocks end,

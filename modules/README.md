@@ -22,7 +22,7 @@ four repositories share.
 
 **Order matters.** The list in `main.js` is the original file's order. A module
 only sees what earlier modules have already defined, so anything running at
-load time — the `addEventListener` wiring, `fConfigureMermaid()`,
+load time — the `addEventListener` wiring,
 `fConfigureChartJs()` — must come after what it uses. Appending a new module is
 safe. Reordering the existing ones is not.
 
