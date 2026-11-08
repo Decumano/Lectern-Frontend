@@ -1736,10 +1736,28 @@ function fTocFontIndex(styleIndex)
   return tocFontIndexByCss[css];
 }
 
+// The heading's text as the reader sees it. The lexer hands over text with the
+// HTML characters already escaped (& < > " ' as entities), so escaping it again
+// for the entry put "&amp;" and "&quot;" on the page; decoding first, then
+// escaping once, shows the symbols themselves. A tag the author wrote in the
+// heading is not part of what is seen, and entities such as &copy; are decoded
+// the way the browser decodes them in the heading.
+var tocDecoder = null;
+
+function fHeadingVisibleText(text)
+{
+  if (!tocDecoder)
+    tocDecoder = document.createElement('textarea');
+
+  tocDecoder.innerHTML = text.replace(/<\/?[A-Za-z][^<>]*>/g, '');
+
+  return tocDecoder.value;
+}
+
 function fTocEntryHtml(h)
 {
   // Inline ||(font=…) text|| inside the heading keeps its markers; restyle them.
-  var html = fEscHtml(h.text).replace(/\uE000(\d+)\uE001/g, function(all, index)
+  var html = fEscHtml(fHeadingVisibleText(h.text)).replace(/\uE000(\d+)\uE001/g, function(all, index)
   {
     return cFontOpenMark + fTocFontIndex(parseInt(index, 10)) + cFontOpenMarkEnd;
   });
