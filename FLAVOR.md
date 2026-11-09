@@ -429,7 +429,7 @@ spaces collapsed to `-`. Repeated headings are disambiguated with a numeric
 suffix — the second `## Notes` in a file gets `id="notes-1"`.
 
 Options: `title="…"` adds a heading above the list; `numbers=on` numbers the
-entries `1`, `1.1`, …; `depth=N` limits it to heading levels up to `N`; the
+entries `1`, `1.1`, …; `depth=N` limits it to heading levels up to `N`; `bullets=off` takes away the dots in front of the entries (a contents list with page numbers has none anyway); the
 text directives above (`size`, `color`, alignment…) style the whole block. Headings marked `notoc` are skipped.
 
 **Page numbers.** `[TOC pages]` (or `pages=on`) makes it a traditional contents

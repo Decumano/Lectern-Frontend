@@ -590,7 +590,7 @@ function fRenderContextMenu()
 
   let html = '<button class="file-menu-item" onclick="fContextMenuNewFolder()">New Folder</button>';
 
-  if (t.kind !== 'root' && !Platform.isNative)
+  if (t.kind !== 'root' && fCanShare())
     html += '<div class="file-menu-divider"></div>' +
             '<button class="file-menu-item" onclick="fOpenShareModal()">Share&hellip;</button>';
 

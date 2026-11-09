@@ -139,6 +139,7 @@ function fPaginationCss(l)
           '.pdf-band-top{top:' + (m.top / 2) + 'mm;}\n' +
           '.pdf-band-bottom{top:' + (l.heightMm - m.bottom / 2) + 'mm;}\n' +
           '.pdf-band span{flex:1;min-width:0;white-space:nowrap;}\n' +
+          '.toc-no-bullets ul{list-style:none;}\n' +
           '.toc-has-pages ul{list-style:none;padding-left:1.2em;}\n' +
           '.toc-has-pages>ul{padding-left:0;}\n' +
           '.toc-has-pages li a{display:flex;align-items:baseline;gap:.4em;text-decoration:none;color:inherit;}\n' +

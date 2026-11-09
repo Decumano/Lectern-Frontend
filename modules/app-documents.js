@@ -1792,15 +1792,18 @@ function fRenderTOC(optionText)
   var withPages = !!opts.pages && (!opts.pages.hasValue || /^(on|true|yes)$/i.test(opts.pages.value)),
       leaders = !(opts.leader && /^(none|off|no)$/i.test(opts.leader.value));
 
+  // bullets=off takes away the dots in front of the entries.
+  var bullets = !(opts.bullets && /^(off|none|no|false)$/i.test(opts.bullets.value));
+
   if (withPages)
     docPageSettings.tocPages = true;
 
-  var style = fParseBlockDirectives((optionText || '').replace(/\b(?:title|numbers|depth|pages|leader)=("[^"]*"|'[^']*'|\S+)/gi, '')),
+  var style = fParseBlockDirectives((optionText || '').replace(/\b(?:title|numbers|depth|pages|leader|bullets)=("[^"]*"|'[^']*'|\S+)/gi, '')),
       numbered = opts.numbers && /^(on|true|yes)$/i.test(opts.numbers.value),
       counters = [0, 0, 0, 0, 0, 0, 0],
       minDepth = entries.reduce(function(min, h) { return Math.min(min, h.depth); }, entries[0].depth);
 
-  var html = '<nav class="toc' + (withPages ? ' toc-with-pages' : '') + (withPages && !leaders ? ' toc-no-leader' : '') + '"' + (style ? ' style="' + style + '"' : '') + '>',
+  var html = '<nav class="toc' + (withPages ? ' toc-with-pages' : '') + (withPages && !leaders ? ' toc-no-leader' : '') + (bullets ? '' : ' toc-no-bullets') + '"' + (style ? ' style="' + style + '"' : '') + '>',
       openDepth = minDepth - 1;
 
   if (opts.title && opts.title.value)

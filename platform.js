@@ -290,28 +290,51 @@ var Platform = (function () {
     return tauri.invoke('cloud_resolve_conflict', { relPath: relPath, choice: choice });
   }
 
-  // ── Sharing & comments (web only; the desktop app works on a local folder
-  // and reaches shared content through the website instead) ──
+  // ── Sharing & comments ──
+  // On the web these are plain requests. The desktop app has no session of its
+  // own to send; it asks the cloud connection (the account it syncs with) to
+  // make the request, and only for share links, account shares and comments.
+  // Reading what others shared with you stays on the website.
 
-  function fWebOnly() { return Promise.reject(new Error('sharing is available on the web app')); }
+  function fWebOnly() { return Promise.reject(new Error('this is available on the web app')); }
 
-  function fShareEntry(relPath, isDir, email, permission) {
-    if (tauri) return fWebOnly();
-    return fApiJson('/shares', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ relPath: fActiveRel(relPath), isDir: isDir, email: email, permission: permission })
+  function fCloudApi(method, path, bodyObject) {
+    return tauri.invoke('cloud_api', {
+      method: method,
+      path: path,
+      body: bodyObject === undefined ? '' : JSON.stringify(bodyObject)
+    }).then(function (res) {
+      var parsed = null;
+      try { parsed = res.body ? JSON.parse(res.body) : null; } catch (e) { parsed = null; }
+      if (res.status < 200 || res.status >= 300)
+        throw new Error((parsed && parsed.error) || ('Request failed: ' + res.status));
+      return parsed;
     });
   }
 
+  // GET/POST/DELETE one of the sharing or comment endpoints, wherever the app runs.
+  function fShareApi(method, path, bodyObject) {
+    if (tauri) return fCloudApi(method, path, bodyObject);
+    var options = { method: method };
+    if (bodyObject !== undefined) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(bodyObject);
+    }
+    return method === 'DELETE'
+      ? fApi(path, options).then(function () { return undefined; })
+      : fApiJson(path, options);
+  }
+
+  function fShareEntry(relPath, isDir, email, permission) {
+    return fShareApi('POST', '/shares', { relPath: fActiveRel(relPath), isDir: isDir, email: email, permission: permission });
+  }
+
   function fListSharesFor(relPath) {
-    if (tauri) return Promise.resolve([]);
-    return fApiJson('/shares?path=' + encodeURIComponent(fActiveRel(relPath)));
+    return fShareApi('GET', '/shares?path=' + encodeURIComponent(fActiveRel(relPath)));
   }
 
   function fRevokeShare(shareId) {
-    if (tauri) return fWebOnly();
-    return fApi('/shares/' + encodeURIComponent(shareId), { method: 'DELETE' }).then(function () { return undefined; });
+    return fShareApi('DELETE', '/shares/' + encodeURIComponent(shareId));
   }
 
   function fListSharedWithMe() {
@@ -347,22 +370,15 @@ var Platform = (function () {
   // ── Link shares ("anyone with the link"; the token is the authorization) ──
 
   function fCreateShareLink(relPath, isDir, permission) {
-    if (tauri) return fWebOnly();
-    return fApiJson('/links', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ relPath: fActiveRel(relPath), isDir: isDir, permission: permission })
-    });
+    return fShareApi('POST', '/links', { relPath: fActiveRel(relPath), isDir: isDir, permission: permission });
   }
 
   function fListShareLinks(relPath) {
-    if (tauri) return Promise.resolve([]);
-    return fApiJson('/links?path=' + encodeURIComponent(fActiveRel(relPath)));
+    return fShareApi('GET', '/links?path=' + encodeURIComponent(fActiveRel(relPath)));
   }
 
   function fRevokeShareLink(linkId) {
-    if (tauri) return fWebOnly();
-    return fApi('/links/' + encodeURIComponent(linkId), { method: 'DELETE' }).then(function () { return undefined; });
+    return fShareApi('DELETE', '/links/' + encodeURIComponent(linkId));
   }
 
   function fLinkMeta(token) {
@@ -404,28 +420,22 @@ var Platform = (function () {
   }
 
   function fListComments(target) {
-    if (tauri) return Promise.resolve([]);
-    return fApiJson('/comments?' + fCommentQs(target));
+    if (tauri && (target.link || target.share)) return Promise.resolve([]); // shared content is read on the website
+    return fShareApi('GET', '/comments?' + fCommentQs(target));
   }
 
   function fAddComment(target, body, anchor) {
-    if (tauri) return fWebOnly();
     var payload = target.link
       ? { link: target.link, subPath: target.subPath || '', body: body }
       : target.share
         ? { share: target.share, subPath: target.subPath || '', body: body }
         : { path: fActiveRel(target.path), body: body };
     if (anchor) payload.anchor = anchor;
-    return fApiJson('/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    return fShareApi('POST', '/comments', payload);
   }
 
   function fDeleteComment(commentId) {
-    if (tauri) return fWebOnly();
-    return fApi('/comments/' + encodeURIComponent(commentId), { method: 'DELETE' }).then(function () { return undefined; });
+    return fShareApi('DELETE', '/comments/' + encodeURIComponent(commentId));
   }
 
   // ── Custom fonts (account-level; see src/fonts.rs) ──

@@ -323,9 +323,18 @@ function fOpenShareModal()
 
 // ── Share links ("anyone with the link") ──
 
+// Sharing and comments need an account on a server: always there on the web;
+// on the desktop, only while the app is connected to one (Settings > Cloud sync).
+function fCanShare()
+{
+  return !Platform.isNative || !!(cloudStatusCache && cloudStatusCache.connected);
+}
+
 function fShareLinkUrl(token)
 {
-  return window.location.origin + '/#link=' + token;
+  // A link opens in the website, so on the desktop it points at the server.
+  var base = Platform.isNative ? String((cloudStatusCache && cloudStatusCache.serverUrl) || '').replace(/\/+$/, '') : window.location.origin;
+  return base + '/#link=' + token;
 }
 
 async function fRenderShareLinksList()
@@ -452,7 +461,7 @@ var commentAnchorRegistry = {};    // commentId -> parsed anchor (for click-to-n
 
 function fCommentTarget()
 {
-  if (Platform.isNative) return null;
+  if (!fCanShare()) return null;
   if (!currentFileId || !files[currentFileId]) return null;
   if (sharedCtx && sharedCtx.link) return { link: sharedCtx.link, subPath: sharedCtx.subPath };
   if (sharedCtx) return { share: sharedCtx.shareId, subPath: sharedCtx.subPath };

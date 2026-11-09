@@ -24,6 +24,10 @@ async function fRefreshCloudStatus()
   catch(e) { cloudStatusCache = { connected: false }; }
 
   fRenderCloudSyncSection();
+
+  // Sharing and comments exist only while connected.
+  if (typeof fUpdateCommentsUI === 'function')
+    fUpdateCommentsUI();
 }
 
 function fRenderCloudSyncSection()

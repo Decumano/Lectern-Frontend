@@ -876,6 +876,10 @@ mark.fr-hl.fr-current
   margin: 0.2em 0 0.2em 1.2em;
   list-style: disc;
 }
+:is(#preview-content, #split-rendered) .toc.toc-no-bullets ul
+{
+  list-style: none;
+}
 :is(#preview-content, #split-rendered) .toc > ul
 {
   margin-left: 0;
